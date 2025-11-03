@@ -412,6 +412,12 @@ export default function App() {
                   role={Roles.RECEPTION}
                 />
                 <SecureRoute
+                  path="/Storage"
+                  exact
+                  component={() => <Home />}
+                  role={[Roles.RECEPTION, Roles.RESULTS, Roles.GLOBAL_ADMIN]}
+                />
+                <SecureRoute
                   path="/PatientHistory"
                   exact
                   component={() => <PatientHistory />}
