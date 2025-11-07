@@ -199,6 +199,72 @@ managers
 - Q: Can multiple rows be expanded simultaneously? → A: Only one row can be expanded at a time (expanding another collapses the previous)
 - Q: Should the expanded view allow editing fields directly? → A: Read-only display (Edit action remains in overflow menu)
 
+### Session 2025-11-06 (Barcode Workflows)
+
+- Q: What barcode formats/standards should be supported for storage location scanning? → A: Support industry-standard 1D barcodes (Code 128, Code 39, EAN-13) and 2D barcodes (QR Code, Data Matrix). Code 128 is the primary format for storage location labels due to high data density and alphanumeric support, barcode settings are inherited from the barcode setup in system administration. System should auto-detect format.
+
+- Q: What is the expected barcode data structure for location labels? → A: Hierarchical path encoded with delimiters. Format: `{ROOM_CODE}-{DEVICE_CODE}-{SHELF_CODE}-{RACK_CODE}` (e.g., "MAIN-FRZ01-SHA-RKR1"). Position is NOT encoded in barcode - user enters manually after scan. Use hyphen (-) as delimiter for easy parsing.
+
+- Q: What hardware requirements should be specified for barcode scanners? → A: Support standard USB HID barcode scanners (keyboard wedge mode) - most common in lab settings. Scanner input should be processed as keyboard input with automatic Enter/Return at end. No special drivers or software required. Bluetooth scanners acceptable if they support HID profile.
+
+- Q: How should the barcode input field behave and provide feedback? → A: Dedicated barcode input field with icon indicator. On focus, show "Ready to scan" state with animation/pulse. On successful scan, show green checkmark with decoded path preview. On error, show red X with error message. Field should auto-clear after successful population of location fields.
+
+- Q: What validation should occur when a barcode is scanned? → A: (1) Verify barcode format is valid and parseable, (2) Verify all encoded location codes exist in database, (3) Verify location hierarchy is correct (e.g., Shelf-A is actually child of Freezer Unit 1), (4) Verify location is active (not decommissioned), (5) Show clear error messages for each failure type.
+
+- Q: What should happen if a scanned barcode contains invalid or non-existent location codes? → A: Display error message specifying which component failed validation (e.g., "Rack 'RKR1' not found in Shelf 'SHA'"). Allow user to either rescan correct barcode OR switch to manual selection mode to correct the error. Do not partially populate fields with invalid data.
+
+- Q: How should barcode scanning integrate with the existing cascading dropdown and type-ahead modes? → A: Provide mode toggle buttons/tabs: "Manual Select" (cascading dropdowns) or the user can also use a "Enter / Scan" field that will allow a type ahead search or scan, the format will be the same for either entry. Both types of entry should be visible at the same time, though the user can fill either one.
+
+- Q: Should barcode scanning support sample barcodes in addition to location barcodes? → A: Yes - support dual barcode types with auto-detection. Sample barcodes (format: accession number like "S-2025-001") trigger sample lookup and load sample details. Location barcodes populate location hierarchy. System distinguishes by format pattern matching. If sample barcode scanned, pre-fill sample context; if location barcode scanned, populate location selectors.
+
+- Q: What audio/visual feedback should occur on successful vs failed barcode scans? → A: Successful scan: Green flash + smooth transition to populated fields. Failed scan: Red flash + error message with retry instruction.
+
+- Q: How should the barcode scanner handle rapid successive scans or accidental double-scans? → A: Implement debouncing with 500ms cooldown period after each scan. If duplicate barcode scanned within cooldown, ignore silently (no error). If different barcode scanned within cooldown, show warning "Please wait before next scan" and ignore input. Prevents accidental double-entry.
+
+- Q: What should happen when a user manually edits location fields after a successful barcode scan? → A: They will be separate but be on the screen at the same time, so if the user scans a barcode, it should run that search, it should update the drop downs to reflect what was scanned, and can be modified by the user, e.g., if the user is moving a sample to a different box on the same rack, they might scan the wrong rack, then fix it in the dropdown and save. User can rescan to overwrite manual changes.
+
+- Q: Should barcode functionality be available in all location assignment contexts (Order Entry, Results, Move, Dashboard)? → A: Yes - barcode scanning should be available consistently across all workflows where location assignment occurs: Order Entry widget, Results workflow, Move Sample modal, Manage Location modal, and Dashboard Add/Edit Location forms. Same barcode input component and behavior in all contexts.
+
+- Q: What error recovery options should be provided when barcode scanning fails? → A: Provide two recovery paths: (1) prompt user to scan again, stay in the same text input to allow a second scan without intervention, (2) allow the user to enter manually using the cascading dropdown mode with scanned code visible for reference, or to use the type-ahead search, which is the same as the barcode field. Show last scanned code in error message to help user identify issue.
+
+- Q: How should barcode printing/generation be addressed for new storage locations? → A: When clicking the action button on devices, shelves, and racks, it should say label management, and show a modal with 2 fields: short code - which must be unique within its context, e.g., one shelf1 in the same device - and print label, which will allow the user to print a label for that shelf. It will be the same label type and size as is specified in the system administration, barcode configuration. It will give a warning before changing the short code that alerts the user that changing the short code will invalidate any already printed labels, and those will need to be re-generated for any labels that belong to this level or lower.
+
+### Session 2025-11-06 (Barcode Implementation Details)
+
+- Q: When a user clicks "Label Management" on a device/shelf/rack, how should the system handle the "Print Label" action? → A: Send directly to the configured default barcode printer from system administration settings. If no default printer is configured, show printer selection dialog. Generate label using the barcode format and size specified in system admin settings. Show the preview of the PDF label in a new tab.
+
+- Q: What should the short code format/validation be? → A: Maximum 10 characters. Alphanumeric only (A-Z, 0-9, no special characters except hyphen and underscore). Auto-uppercase all input for consistency. Manual entry only (no auto-generate). Must start with a letter or number (not hyphen/underscore).
+
+- Q: For the warning about invalidating printed labels when changing short codes, what user actions should be available? → A: Show blocking confirmation dialog with two options: (1) "Cancel" - abort the change and keep existing short code, (2) "Proceed" - save the new short code with warning acknowledged. After proceeding, display informational message listing all affected location levels that need label reprinting (e.g., "Labels need reprinting for: Shelf-A, Rack R1, Rack R2, Position A1-A10"). No automatic re-print trigger.
+
+- Q: How should the system handle barcode scans that include Position level data (even though spec says Position NOT encoded)? → A: Accept and parse all levels including Position if present in barcode. If 5th level detected, auto-populate Position field. This provides flexibility for labs that choose to encode full 5-level hierarchy despite recommendation. System validates the parsed position exists and is valid for that rack.
+
+- Q: What happens if a scanned barcode has ONLY 2 levels (e.g., "MAIN-FRZ01") instead of the expected 4? → A: Valid - accept 2-level barcodes since Room+Device is the minimum requirement. Auto-populate only Room and Device fields, leave Shelf, Rack, Position empty for user to optionally fill manually. This supports device-level storage assignments where shelves/racks aren't used.
+
+- Q: Should the delimiter be configurable or always hyphen? → A: Fixed as hyphen (-) for consistency and simplicity. All location barcodes must use hyphen delimiter. This ensures predictable parsing and reduces configuration complexity. If system admin settings include delimiter configuration, it applies to other barcode types (samples, specimens) but location barcodes always use hyphen.
+
+- Q: How should the system distinguish between a barcode scanner input vs manual typing in the "Enter / Scan" field? → A: No distinction needed - treat equally. Field accepts both scanner input (fast keyboard wedge entry with automatic Enter) and manual typing. Validation occurs on Enter key or field blur. If input matches location barcode format (contains hyphens, valid codes), parse as barcode. If input matches location name/code without delimiters, treat as type-ahead search query. Format-based logic, not input-method detection.
+
+- Q: When both "Manual Select" dropdowns and "Enter / Scan" field are visible, what happens if user fills BOTH? → A: Last-modified wins. If user selects from dropdowns then scans/types in Enter field, the scan/type overwrites dropdown selections. If user scans/types then uses dropdowns, dropdown selections overwrite the scan/type values. Provide visual feedback showing which method is currently active (highlight border or icon). No error - seamless switching between methods.
+
+- Q: What is the exact format pattern matching logic to distinguish sample barcodes from location barcodes? → A: If the format matches a lab accession number (like defined in the admin section), it will be treated as a lab/sample number, but there are no fields where there are both location barcodes and sample barcodes both being scanned. The search can look for strings that match either, if the search can be for a sample or a location.
+
+- Q: If auto-detection fails (ambiguous barcode), how should the system respond? → A: Display error message "Unable to identify barcode type. Please verify the barcode format." Show the scanned value and provide option to manually enter using cascading dropdowns or type-ahead search. Log ambiguous barcode for admin review. This should be rare given clear format patterns defined in admin settings.
+
+- Q: When showing "last scanned code in error message," should it show the raw barcode string or the parsed/interpreted components? → A: Show both for maximum clarity. Format: "Scanned code: MAIN-FRZ01-SHA-RKR1 (Room: MAIN, Device: FRZ01, Shelf: SHA, Rack: RKR1)" with the specific error below (e.g., "Rack 'RKR1' not found in Shelf 'SHA'"). If parsing fails completely, show only raw string.
+
+- Q: When a scan fails and user switches to cascading dropdown mode, should the failed barcode components be pre-populated in the dropdowns (if some components were valid)? → A: Yes - pre-fill valid components automatically. If Room code "MAIN" is valid but Device code "FRZ01" doesn't exist, pre-select Room="Main Laboratory" in dropdown and leave Device dropdown ready for manual selection. Show informational message: "Room pre-filled from scan. Please select Device." This reduces re-entry work and guides user to fix only the problematic component.
+
+- Q: Should "Label Management" be a separate menu item or integrated into the existing "Edit" modal for devices/shelves/racks? → A: Separate menu item in the overflow menu. Menu items for devices/shelves/racks: Edit, Delete, Label Management. This keeps the Edit modal focused on entity properties (name, description, attributes) while Label Management handles barcode-specific operations (short code, printing). Clear separation of concerns.
+
+- Q: After printing a label, should the system track print history? → A: Yes - record basic print audit trail: who printed, when (timestamp), for which location entity. Store in audit/history table. Display print history in Label Management modal as read-only list showing "Last printed: 2025-11-06 14:32 by John Smith" with optional "View History" link for full print log. Useful for compliance and troubleshooting label issues.
+
+- Q: Can users print labels in bulk (e.g., select multiple racks and print all labels)? → A: Future enhancement - defer to post-POC. For POC, support one-at-a-time printing only through Label Management modal. Document requirement for bulk printing in future phase: select multiple devices/shelves/racks from dashboard table, right-click or bulk actions menu → "Print Labels", generate PDF with all labels for batch printing.
+
+- Q: What specific settings are "inherited from the barcode setup in system administration"? → A: All of the above: (1) Label size/dimensions (e.g., 2"x1", 4"x2"), (2) Barcode format preference (Code 128, Code 39, QR Code - Code 128 default for locations), (3) Label template layout (barcode position, text size, margins). System admin defines these globally; Label Management inherits and applies them to generated labels.
+
+- Q: Can users override inherited settings at print time, or are they fixed? → A: Fixed from system admin - no override at print time. This ensures consistency across all printed labels in the lab. If users need different label formats, system admin must create multiple barcode configurations and users select which configuration to use. Simplifies user workflow and maintains standardization for compliance.
+
 ## POC Scope
 
 **In Scope for POC**:
@@ -866,8 +932,7 @@ movement) are covered by unit/integration tests, not E2E tests.
   sample information section, current location display, visual separator, full
   assignment form (barcode scan input, Room/Device/Shelf/Rack/Position
   selectors, condition notes), Cancel and "Assign Storage Location" buttons
-- **FR-018j**: Barcode scanning functionality in expanded modal view is deferred
-  to later stage (not required for initial implementation)
+- **FR-018j**: Barcode scanning functionality in expanded modal view MUST follow same specifications as FR-021, FR-021a, FR-021b, FR-021c (unified input field supporting scan/type-ahead with manual dropdown fallback)
 
 #### Multi-Mode Location Selection
 
@@ -880,24 +945,43 @@ movement) are covered by unit/integration tests, not E2E tests.
   support keyboard navigation
 - **FR-021**: System MUST provide **barcode scanning** workflow: Scan
   pre-printed barcode label → auto-populate hierarchy fields → focus Position
-  field for manual entry **[Note: Barcode scanning deferred to later stage - not
-  required for initial implementation]**
+  field for manual entry
+- **FR-021a**: System MUST provide unified input field that supports both barcode scanning and type-ahead search. The same field accepts either scanned barcode input or manual type-ahead text entry. Format is the same for either entry method.
+- **FR-021b**: System MUST display both input modes simultaneously: "Manual Select" mode (cascading dropdowns) and "Enter / Scan" field (unified barcode/type-ahead input). Both types of entry MUST be visible at the same time, though the user can fill either one. User can switch between modes or use both.
+- **FR-021c**: System MUST allow manual dropdown fallback: If barcode scan fails or user prefers manual selection, user can enter manually using the cascading dropdown mode. Scanned code (if any) remains visible for reference. User can rescan to overwrite manual changes.
 - **FR-022**: System MUST display current selection as hierarchical path below
   selector: `Room > Device > Shelf > Rack > Position`
 
 #### Barcode Format and Handling
 
-- **FR-023**: System MUST support hierarchical barcode format:
+- **FR-023**: System MUST support hierarchical barcode format (see FR-023c for detailed data structure):
   - Device: `{room}-{device}` (e.g., "MAIN-FRZ01")
   - Shelf: `{room}-{device}-{shelf}` (e.g., "MAIN-FRZ01-SHA")
   - Rack: `{room}-{device}-{shelf}-{rack}` (e.g., "MAIN-FRZ01-SHA-RKR1")
+- **FR-023a**: System MUST support USB HID barcode scanners operating in keyboard wedge mode (see Session 2025-11-06 for hardware requirements). Scanners emit rapid keyboard events (typically 30-50ms between characters) that are captured as standard keyboard input. No special hardware drivers or browser extensions required.
+- **FR-023b**: System MUST support multiple barcode formats: Code 128, Code 39, EAN-13, QR codes, and Data Matrix (see Session 2025-11-06 for format details). Format detection is automatic based on scanned data structure and pattern matching.
+- **FR-023c**: Location barcodes MUST use hierarchical path with delimiter format: Device format `{room}-{device}`, Shelf format `{room}-{device}-{shelf}`, Rack format `{room}-{device}-{shelf}-{rack}`. Delimiters are fixed as hyphens (-) for all location barcodes (not configurable). System MUST accept 2-level barcodes (Room+Device minimum) and 5-level barcodes (including Position if encoded). Sample barcodes use accession number format (e.g., "S-2025-001"). System MUST parse barcode format and extract hierarchical components automatically (see FR-024a for validation process, Session 2025-11-06 for delimiter and level flexibility details).
 - **FR-024**: Scanning rack barcode MUST auto-populate Room, Device, Shelf, Rack
-  fields and focus Position field for manual entry
+  fields and focus Position field for manual entry (see FR-024a for validation process, FR-024b for dual barcode support, FR-024c for debouncing, FR-024d for visual feedback)
+- **FR-024a**: System MUST implement 5-step validation process when barcode is scanned (see Session 2025-11-06 for validation details): (1) Parse barcode format and extract hierarchical components, (2) Validate barcode structure matches expected pattern (location or sample), (3) Lookup location/sample in database, (4) Verify location is active and accessible, (5) Check for conflicts (e.g., occupied position). Each step MUST provide specific error messages if validation fails.
+- **FR-024b**: System MUST support dual barcode types with auto-detection (see Session 2025-11-06 for auto-detection details): Sample barcodes (format: accession number like "S-2025-001") trigger sample lookup and load sample details. Location barcodes populate location hierarchy. System distinguishes by format pattern matching. If sample barcode scanned, pre-fill sample context; if location barcode scanned, populate location selectors.
+- **FR-024c**: System MUST implement debouncing with 500ms cooldown period after each scan (see Session 2025-11-06 for debouncing details). If duplicate barcode scanned within cooldown, ignore silently (no error). If different barcode scanned within cooldown, show warning "Please wait before next scan" and ignore input. Prevents accidental double-entry.
+- **FR-024d**: System MUST provide visual feedback for barcode scans (see Session 2025-11-06 for feedback details): Dedicated barcode input field with icon indicator. On focus, show "Ready to scan" state with animation/pulse. Successful scan displays green checkmark with decoded path preview + smooth transition to populated fields. Failed scan displays red X with error message. Field MUST auto-clear after successful population of location fields. No audio feedback (visual only).
+- **FR-024e**: System MUST handle input method detection: No distinction between barcode scanner input vs manual typing in "Enter / Scan" field - treat equally. Field accepts both scanner input (fast keyboard wedge entry with automatic Enter) and manual typing. Validation occurs on Enter key or field blur. If input matches location barcode format (contains hyphens, valid codes), parse as barcode. If input matches location name/code without delimiters, treat as type-ahead search query. Format-based logic, not input-method detection (see Session 2025-11-06 for input handling details).
+- **FR-024f**: System MUST implement "last-modified wins" behavior when both "Manual Select" dropdowns and "Enter / Scan" field are visible: If user selects from dropdowns then scans/types in Enter field, the scan/type overwrites dropdown selections. If user scans/types then uses dropdowns, dropdown selections overwrite the scan/type values. Provide visual feedback showing which method is currently active (highlight border or icon). No error - seamless switching between methods (see Session 2025-11-06 for mode interaction details).
+- **FR-024g**: System MUST display error messages with both raw barcode string and parsed components: Format "Scanned code: MAIN-FRZ01-SHA-RKR1 (Room: MAIN, Device: FRZ01, Shelf: SHA, Rack: RKR1)" with the specific error below (e.g., "Rack 'RKR1' not found in Shelf 'SHA'"). If parsing fails completely, show only raw string (see Session 2025-11-06 for error message format details).
+- **FR-024h**: System MUST pre-fill valid components automatically when scan fails and user switches to cascading dropdown mode: If Room code "MAIN" is valid but Device code "FRZ01" doesn't exist, pre-select Room="Main Laboratory" in dropdown and leave Device dropdown ready for manual selection. Show informational message: "Room pre-filled from scan. Please select Device." This reduces re-entry work and guides user to fix only the problematic component (see Session 2025-11-06 for pre-population details).
 - **FR-025**: System MUST handle duplicate barcode labels with disambiguation
   dialog (e.g., two racks labeled "R1" in different devices)
 - **FR-026**: System MUST generate printable labels for Device, Shelf, Rack
   levels including human-readable text and barcode
 - **FR-027**: System MUST support printing individual or batch labels
+- **FR-027a**: System MUST provide label management modal accessible as separate menu item in overflow menu for Devices, Shelves, and Racks (see Session 2025-11-06 for menu structure). Modal MUST be titled "Label Management" and display two fields: Short Code (text input) and Print Label (button/action).
+- **FR-027b**: Short Code field MUST be unique within its context (e.g., one "shelf1" per device). System MUST validate uniqueness before allowing save. Short code format MUST be: maximum 10 characters, alphanumeric only (A-Z, 0-9, hyphen and underscore allowed), auto-uppercase all input for consistency, manual entry only (no auto-generate), must start with a letter or number (not hyphen/underscore). Short code is used in barcode generation and MUST follow same format constraints as location codes (see Session 2025-11-06 for format details).
+- **FR-027c**: Print Label functionality MUST send directly to configured default barcode printer from system administration settings. If no default printer is configured, show printer selection dialog. Generate label using barcode format and size specified in system admin settings (inherited: label size/dimensions, barcode format preference with Code 128 default for locations, label template layout). Labels MUST include human-readable text and barcode encoding of the hierarchical path (or short code if configured). Show preview of PDF label in new tab. Settings are fixed from system admin - no override at print time (see Session 2025-11-06 for inheritance details).
+- **FR-027d**: System MUST display blocking confirmation dialog before allowing short code changes with two options: (1) "Cancel" - abort the change and keep existing short code, (2) "Proceed" - save the new short code with warning acknowledged. After proceeding, display informational message listing all affected location levels that need label reprinting (e.g., "Labels need reprinting for: Shelf-A, Rack R1, Rack R2, Position A1-A10"). No automatic re-print trigger (see Session 2025-11-06 for dialog details).
+- **FR-027e**: System MUST track print history: record basic print audit trail (who printed, when/timestamp, for which location entity) in audit/history table. Display print history in Label Management modal as read-only list showing "Last printed: [date] [time] by [user]" with optional "View History" link for full print log (see Session 2025-11-06 for audit trail details).
+- **FR-027f**: Bulk label printing MUST be deferred to post-POC. For POC, support one-at-a-time printing only through Label Management modal. Future requirement: select multiple devices/shelves/racks from dashboard table, bulk actions menu → "Print Labels", generate PDF with all labels for batch printing (see Session 2025-11-06 for bulk printing details).
 
 #### Inline Location Creation (Widget-Based)
 
@@ -1067,9 +1151,7 @@ operations.
   location) between current location and location selection form
 - **FR-040e**: Location management modal MUST display location selection form in a
   bordered box containing:
-  - Barcode scan input field (Quick Assign) **[Note: Barcode scanning deferred
-    to later stage - input field present but functionality not required for
-    initial implementation]**
+  - Barcode scan input field (Quick Assign) - MUST follow specifications in FR-021, FR-021a, FR-021b, FR-021c (unified input field supporting scan/type-ahead with manual dropdown fallback)
   - Room dropdown selector (required, marked with \*)
   - Device dropdown selector
   - Shelf dropdown selector

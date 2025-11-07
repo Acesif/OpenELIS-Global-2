@@ -1069,6 +1069,7 @@ const StorageDashboard = () => {
           onDelete={handleDeleteLocation}
         />
       ),
+      isExpanded: expandedRowId === String(room.id || ""),
     }));
   };
 
@@ -1136,6 +1137,7 @@ const StorageDashboard = () => {
             onDelete={handleDeleteLocation}
           />
         ),
+        isExpanded: expandedRowId === String(device.id || ""),
       };
     });
   };
@@ -1191,6 +1193,7 @@ const StorageDashboard = () => {
             onDelete={handleDeleteLocation}
           />
         ),
+        isExpanded: expandedRowId === String(shelf.id || ""),
       };
     });
   };
@@ -1249,6 +1252,7 @@ const StorageDashboard = () => {
             onDelete={handleDeleteLocation}
           />
         ),
+        isExpanded: expandedRowId === String(rack.id || ""),
       };
     });
   };
@@ -2348,7 +2352,6 @@ const StorageDashboard = () => {
                                   <TableExpandRow
                                     data-testid={`room-row-${row.id}`}
                                     {...getRowProps({ row })}
-                                    isExpanded={expandedRowId === row.id}
                                     onExpand={() => handleRowExpand(row.id)}
                                   >
                                     {row.cells.map((cell) => (
@@ -2553,7 +2556,6 @@ const StorageDashboard = () => {
                                   <TableExpandRow
                                     data-testid={`device-row-${row.id}`}
                                     {...getRowProps({ row })}
-                                    isExpanded={expandedRowId === row.id}
                                     onExpand={() => handleRowExpand(row.id)}
                                   >
                                     {row.cells.map((cell) => (
@@ -2808,7 +2810,6 @@ const StorageDashboard = () => {
                                   <TableExpandRow
                                     data-testid={`shelf-row-${row.id}`}
                                     {...getRowProps({ row })}
-                                    isExpanded={expandedRowId === row.id}
                                     onExpand={() => handleRowExpand(row.id)}
                                   >
                                     {row.cells.map((cell) => (
@@ -3063,7 +3064,6 @@ const StorageDashboard = () => {
                                   <TableExpandRow
                                     data-testid={`rack-row-${row.id}`}
                                     {...getRowProps({ row })}
-                                    isExpanded={expandedRowId === row.id}
                                     onExpand={() => handleRowExpand(row.id)}
                                   >
                                     {row.cells.map((cell) => (
