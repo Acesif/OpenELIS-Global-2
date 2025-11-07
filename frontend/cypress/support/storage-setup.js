@@ -4,6 +4,11 @@ import LoginPage from "../pages/LoginPage";
  * Common setup for all storage E2E tests
  * Consolidates login, fixture loading, and API readiness checks
  * Usage: cy.setupStorageTests()
+ * 
+ * Environment variables:
+ * - SKIP_FIXTURES=true: Skip fixture loading (for fast iteration)
+ * - CLEANUP_FIXTURES=false: Skip cleanup (keep fixtures for next run)
+ * - FORCE_FIXTURES=true: Force reload fixtures even if they exist
  */
 Cypress.Commands.add("setupStorageTests", () => {
   // Wait for backend API to be available
@@ -14,8 +19,23 @@ Cypress.Commands.add("setupStorageTests", () => {
   loginPage.visit();
   const homePage = loginPage.goToHomePage();
 
-  // Load storage test fixtures
-  cy.loadStorageFixtures();
+  // Load storage test fixtures (skip if SKIP_FIXTURES=true, or check if already exist)
+  if (Cypress.env("SKIP_FIXTURES") === true) {
+    cy.log("Skipping fixture loading (SKIP_FIXTURES=true)");
+  } else if (Cypress.env("FORCE_FIXTURES") === true) {
+    cy.log("Force loading fixtures (FORCE_FIXTURES=true)");
+    cy.loadStorageFixtures();
+  } else {
+    // Check if fixtures already exist before loading
+    cy.checkStorageFixturesExist().then((fixturesExist) => {
+      if (fixturesExist) {
+        cy.log("Fixtures already exist - skipping load for faster iteration");
+      } else {
+        cy.log("Fixtures not found - loading test data");
+        cy.loadStorageFixtures();
+      }
+    });
+  }
 
   // Return homePage for tests that need it
   return cy.wrap(homePage);

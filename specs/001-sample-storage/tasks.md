@@ -1672,6 +1672,75 @@ separate "Move" and "View Storage" items.
 
 ---
 
+## Phase 6.5: Expandable Row Functionality Implementation
+
+**Purpose**: Add expandable row functionality to location tables (Rooms, Devices, Shelves, Racks) in StorageDashboard component. Expanded rows display additional entity fields not visible in table columns, formatted as key-value pairs in read-only format. Only one row can be expanded at a time. Expansion triggered by clicking chevron icon in dedicated first column (Carbon DataTable standard pattern).
+
+**Goal**: Users can expand location table rows to view additional entity details (Description, Created Date, Created By, Last Modified Date, Last Modified By, and entity-specific fields) without leaving the table view.
+
+**Independent Test**: Click chevron icon on a room row, verify expanded content displays Description, Created Date, Created By, Last Modified Date, Last Modified By. Click chevron on another room row, verify previous row collapses and new row expands. Verify expanded content is read-only (no edit capability).
+
+**Dependencies**: Requires Phase 6 (Location CRUD) - StorageDashboard component must exist with location tables. All required fields already available in existing API responses (no backend changes needed).
+
+**Spec Reference**: FR-059a through FR-059f  
+**Research**: [research.md Section 8](./research.md#8-carbon-datatable-expandable-rows)
+
+### Tests First - Frontend Unit Tests (Write BEFORE implementation)
+
+- [x] T161 [P] Write unit test `frontend/src/components/storage/StorageDashboard/StorageDashboard.test.jsx` for expanded state management: testHandleRowExpand_TogglesExpandedState (clicking same row collapses, clicking different row expands new and collapses previous), testHandleRowExpand_OnlyOneRowExpanded (only one row can be expanded at a time), testTabSwitch_ResetsExpandedState (switching tabs resets expanded state to null)
+
+- [x] T162 [P] Write unit test `frontend/src/components/storage/StorageDashboard/StorageDashboard.test.jsx` for expanded content rendering: testRenderExpandedContent_Room (renders Description, Created Date, Created By, Last Modified Date, Last Modified By for room), testRenderExpandedContent_Device (renders Temperature Setting, Capacity Limit, Description, Created Date, Created By, Last Modified Date, Last Modified By for device), testRenderExpandedContent_Shelf (renders Capacity Limit, Description, Created Date, Created By, Last Modified Date, Last Modified By for shelf), testRenderExpandedContent_Rack (renders Position Schema Hint, Description, Created Date, Created By, Last Modified Date, Last Modified By for rack)
+
+- [x] T163 [P] Write unit test `frontend/src/components/storage/StorageDashboard/StorageDashboard.test.jsx` for missing field handling: testRenderExpandedContent_MissingFields_ShowsNA (displays "N/A" for missing optional fields like description), testRenderExpandedContent_DateFormatting (formats dates using intl.formatDate()), testRenderExpandedContent_ReadOnly (expanded content contains no input fields, only read-only display)
+
+- [x] T164 Run frontend unit tests → Verify all FAIL: `npm test -- StorageDashboard.test.jsx`
+
+### Tests First - Frontend E2E Tests (Write BEFORE final verification)
+
+- [x] T165 [P] Write Cypress E2E test `frontend/cypress/e2e/storageLocationExpandableRows.cy.js` for expand/collapse interaction: testExpandRow_ClickChevronIcon (click chevron icon expands row), testExpandRow_ShowsExpandedContent (expanded content visible and displays correct fields), testExpandRow_SingleRowExpansion (expanding new row collapses previous), testExpandRow_CollapseSameRow (clicking same chevron collapses row), testExpandRow_KeyboardNavigation (Enter/Space key expands/collapses row)
+
+- [x] T166 [P] Write Cypress E2E test `frontend/cypress/e2e/storageLocationExpandableRows.cy.js` for expanded content verification: testExpandedContent_RoomFields (verifies Description, Created Date, Created By, Last Modified Date, Last Modified By displayed for room), testExpandedContent_DeviceFields (verifies Temperature Setting, Capacity Limit, Description, Created Date, Created By, Last Modified Date, Last Modified By displayed for device), testExpandedContent_ShelfFields (verifies Capacity Limit, Description, Created Date, Created By, Last Modified Date, Last Modified By displayed for shelf), testExpandedContent_RackFields (verifies Position Schema Hint, Description, Created Date, Created By, Last Modified Date, Last Modified By displayed for rack), testExpandedContent_ReadOnly (verifies no input fields in expanded content, only read-only display)
+
+- [x] T167 [P] Write Cypress E2E test `frontend/cypress/e2e/storageLocationExpandableRows.cy.js` for accessibility: testExpandedContent_ARIA (verifies aria-expanded attribute on TableExpandRow), testExpandedContent_KeyboardNavigation (Enter/Space key works for expand/collapse), testExpandedContent_ScreenReader (verifies semantic HTML structure with role="region" and aria-label)
+
+- [ ] T168 Run Cypress E2E tests → Verify expandable row scenarios work: `npm run cy:run -- --spec "cypress/e2e/storageLocationExpandableRows.cy.js"`
+
+### Implementation - Frontend Components
+
+- [x] T169 Add expandableRows prop to DataTable components in StorageDashboard.jsx `frontend/src/components/storage/StorageDashboard.jsx`: Add `expandableRows` prop to DataTable components for Rooms, Devices, Shelves, Racks tabs (Samples tab does not need expandable rows)
+
+- [x] T170 Import Carbon expandable row components in StorageDashboard.jsx `frontend/src/components/storage/StorageDashboard.jsx`: Import `TableExpandHeader`, `TableExpandRow`, `TableExpandedRow` from `@carbon/react`
+
+- [x] T171 Add expandedRowId state management in StorageDashboard.jsx `frontend/src/components/storage/StorageDashboard.jsx`: Add `useState` for `expandedRowId` (single state variable per tab or shared across tabs), initialize to `null`
+
+- [x] T172 Implement handleRowExpand function in StorageDashboard.jsx `frontend/src/components/storage/StorageDashboard.jsx`: Create `handleRowExpand(rowId)` function that toggles expanded state (if same row clicked, collapse; if different row, expand new and collapse previous), logic: `setExpandedRowId(expandedRowId === rowId ? null : rowId)`
+
+- [x] T173 Create renderExpandedContent function for Rooms in StorageDashboard.jsx `frontend/src/components/storage/StorageDashboard.jsx`: Create `renderExpandedContentRoom(row)` function that displays Description, Created Date, Created By, Last Modified Date, Last Modified By as key-value pairs using Carbon Grid/Column components, format dates using `intl.formatDate()`, display "N/A" for missing optional fields, use React Intl message keys for labels
+
+- [x] T174 [P] Create renderExpandedContent function for Devices in StorageDashboard.jsx `frontend/src/components/storage/StorageDashboard.jsx`: Create `renderExpandedContentDevice(row)` function that displays Temperature Setting, Capacity Limit, Description, Created Date, Created By, Last Modified Date, Last Modified By as key-value pairs, format dates and numbers appropriately, display "N/A" for missing fields
+
+- [x] T175 [P] Create renderExpandedContent function for Shelves in StorageDashboard.jsx `frontend/src/components/storage/StorageDashboard.jsx`: Create `renderExpandedContentShelf(row)` function that displays Capacity Limit, Description, Created Date, Created By, Last Modified Date, Last Modified By as key-value pairs, format appropriately
+
+- [x] T176 [P] Create renderExpandedContent function for Racks in StorageDashboard.jsx `frontend/src/components/storage/StorageDashboard.jsx`: Create `renderExpandedContentRack(row)` function that displays Position Schema Hint, Description, Created Date, Created By, Last Modified Date, Last Modified By as key-value pairs, format appropriately
+
+- [x] T177 Update Rooms table structure in StorageDashboard.jsx `frontend/src/components/storage/StorageDashboard.jsx`: Replace `TableRow` with `TableExpandRow` in header row (add `TableExpandHeader` as first column), replace `TableRow` with `TableExpandRow` for data rows (add `isExpanded={expandedRowId === row.id}` and `onExpand={() => handleRowExpand(row.id)}` props), add `TableExpandedRow` after each `TableExpandRow` with `colSpan={headers.length + 1}` and expanded content from `renderExpandedContentRoom(row)`
+
+- [x] T178 [P] Update Devices table structure in StorageDashboard.jsx `frontend/src/components/storage/StorageDashboard.jsx`: Apply same pattern as Rooms table - add `TableExpandHeader`, replace `TableRow` with `TableExpandRow`, add `TableExpandedRow` with `renderExpandedContentDevice(row)`
+
+- [x] T179 [P] Update Shelves table structure in StorageDashboard.jsx `frontend/src/components/storage/StorageDashboard.jsx`: Apply same pattern - add `TableExpandHeader`, replace `TableRow` with `TableExpandRow`, add `TableExpandedRow` with `renderExpandedContentShelf(row)`
+
+- [x] T180 [P] Update Racks table structure in StorageDashboard.jsx `frontend/src/components/storage/StorageDashboard.jsx`: Apply same pattern - add `TableExpandHeader`, replace `TableRow` with `TableExpandRow`, add `TableExpandedRow` with `renderExpandedContentRack(row)`
+
+- [x] T181 Add tab switch handler to reset expanded state in StorageDashboard.jsx `frontend/src/components/storage/StorageDashboard.jsx`: Add `useEffect` that resets `expandedRowId` to `null` when active tab changes (monitor tab state change)
+
+- [x] T182 Add React Intl message keys for expanded content labels in `frontend/src/languages/en.json`, `fr.json`, `sw.json`: Add message keys for "Description", "Created Date", "Created By", "Last Modified Date", "Last Modified By", "Temperature Setting", "Capacity Limit", "Position Schema Hint", "Not Available" (N/A) if not already present
+
+- [ ] T183 Run frontend unit tests → Verify all PASS: `npm test -- StorageDashboard.test.jsx`
+
+**Checkpoint**: Expandable row functionality complete. Users can expand location table rows (Rooms, Devices, Shelves, Racks) to view additional entity fields as key-value pairs in read-only format. Only one row can be expanded at a time. Expansion triggered by clicking chevron icon. Expanded state resets when switching tabs. All unit and E2E tests pass.
+
+---
+
 ## Phase 7: Polish & Cross-Cutting Concerns
 
 **Purpose**: Final integration, optimization, and validation across all user
@@ -1692,9 +1761,75 @@ stories
       resources, verify hierarchy complete, verify immediate FHIR sync working
       for all entities, verify Specimen.container links correct
 - [ ] T142 Run full test suite: `mvn clean install` (all backend tests) and
-      `npm run cy:run` (all E2E tests), verify all pass
+      `npm run cy:run` (all E2E tests - CI/CD only per Constitution V.5), verify
+      all pass
 - [ ] T143 Update documentation: Add any missing details to quickstart.md based
       on implementation learnings
+
+### E2E Test Refactoring & Validation (Per Constitution V.5)
+
+**Purpose**: Refactor existing Cypress E2E tests to align with Constitution V.5
+best practices and efficiently cover core functionality (happy paths).
+
+**Reference**: Constitution Section V.5, plan.md Test Refactoring Patterns section
+
+- [ ] T152 [P] Update `frontend/cypress.config.js` to align with Constitution V.5:
+      Set `video: false` (disabled by default), ensure `screenshotOnRunFailure: true`
+      (enabled), verify browser console logging is captured (Cypress does this
+      automatically), add note about individual test execution requirement
+
+- [ ] T153 [P] Refactor `frontend/cypress/e2e/storageAssignment.cy.js` per
+      Constitution V.5: Move all `cy.intercept()` calls to before actions that
+      trigger them (intercept timing), replace `.then()` callbacks with `.should()`
+      assertions (retry-ability), add element readiness checks before all
+      interactions (wait for visibility), replace arbitrary `cy.wait(1000)` with
+      proper waits (`cy.wait('@alias')` or `.should()`), ensure test covers happy
+      path: cascading dropdowns assignment workflow
+
+- [ ] T154 [P] Refactor `frontend/cypress/e2e/storageSearch.cy.js` per Constitution
+      V.5: Apply intercept timing (setup intercepts before actions), apply
+      retry-ability (use `.should()` assertions), add element readiness checks,
+      replace arbitrary waits, ensure test covers happy path: search by sample ID
+      and filter by location
+
+- [ ] T155 [P] Refactor `frontend/cypress/e2e/storageMovement.cy.js` per Constitution
+      V.5: Apply intercept timing, apply retry-ability, add element readiness
+      checks, replace arbitrary waits, ensure test covers happy path: single sample
+      movement between locations
+
+- [ ] T156 [P] Refactor `frontend/cypress/e2e/storageLocationCRUD.cy.js` (if exists)
+      per Constitution V.5: Apply intercept timing, apply retry-ability, add
+      element readiness checks, replace arbitrary waits, ensure tests cover happy
+      paths: edit location name/description, delete location with no constraints
+
+- [ ] T157 [P] Review and refactor any other storage-related E2E test files per
+      Constitution V.5: Check `frontend/cypress/e2e/storage*.cy.js` files, apply
+      all refactoring patterns (intercept timing, retry-ability, element readiness,
+      state verification), remove arbitrary waits
+
+- [ ] T158 Run E2E tests individually per Constitution V.5: Run
+      `npm run cy:run -- --spec "cypress/e2e/storageAssignment.cy.js"` and review
+      console logs and screenshots post-run, run
+      `npm run cy:run -- --spec "cypress/e2e/storageSearch.cy.js"` and review
+      console logs and screenshots post-run, run
+      `npm run cy:run -- --spec "cypress/e2e/storageMovement.cy.js"` and review
+      console logs and screenshots post-run
+
+- [ ] T159 Verify E2E tests cover core happy paths efficiently: Verify
+      `storageAssignment.cy.js` covers cascading dropdowns assignment (P1), verify
+      `storageSearch.cy.js` covers search by sample ID and filter by location
+      (P2A), verify `storageMovement.cy.js` covers single sample movement (P2B),
+      ensure tests are focused on user workflows (not implementation details),
+      ensure tests can run independently (no dependencies on full suite)
+
+- [ ] T160 Document E2E test execution workflow: Update test README or add note in
+      test files about running tests individually during development, document
+      post-run review process (console logs and screenshots), document that full
+      suite runs are for CI/CD only
+
+**Checkpoint**: All E2E tests refactored to align with Constitution V.5, tests
+run individually during development, console logs and screenshots reviewed
+post-run, core happy paths efficiently covered.
 
 ---
 
@@ -1730,6 +1865,13 @@ stories
       sys_user_id + lastupdated), verify input validation (Hibernate Validator
       annotations present). **Permission enforcement testing deferred to
       post-POC**
+- [ ] T151a **Cypress E2E Testing (Constitution V.5)**: Verify E2E tests follow
+      Constitution V.5 requirements: Verify `cypress.config.js` has `video: false`
+      and `screenshotOnRunFailure: true`, verify tests use intercept timing
+      (intercepts set up before actions), verify tests use retry-ability
+      (`.should()` assertions), verify tests check element readiness before
+      interaction, verify tests run individually during development (not full suite),
+      verify post-run review of console logs and screenshots is documented
 
 **Verification Commands**:
 
@@ -1737,8 +1879,12 @@ stories
 # Backend: Code formatting + build + tests
 mvn spotless:check && mvn clean install
 
-# Frontend: Formatting + linting + E2E tests
-cd frontend && npm run format:check && npm run lint && npm run cy:run
+# Frontend: Formatting + linting + E2E tests (run individually per Constitution V.5)
+cd frontend && npm run format:check && npm run lint
+npm run cy:run -- --spec "cypress/e2e/storageAssignment.cy.js"
+npm run cy:run -- --spec "cypress/e2e/storageSearch.cy.js"
+npm run cy:run -- --spec "cypress/e2e/storageMovement.cy.js"
+# Full suite only in CI/CD: npm run cy:run
 
 # Coverage reports
 mvn verify  # JaCoCo report in target/site/jacoco/
@@ -1770,7 +1916,10 @@ Phase 2 (Foundational) ← BLOCKS all user stories
     │         └──> Phase 5 (US2B - Movement)  ← Can run in parallel ──┼─> Phase 6 (Location CRUD)
     │                                                                  │    (needs only T032-T039)
     ├──> Phase 4 (US2A - Search)    ← Can run in parallel ───────────┘         ↓
+                                                                      Phase 6.5 (Expandable Rows)
+                                                                         ↓
                                                                       Phase 7 (Polish)
+                                                                         ├──> E2E Test Refactoring (T152-T160)
                                                                          ↓
                                                                       Phase 8 (Compliance)
 ```
@@ -1790,6 +1939,10 @@ Phase 2 (Foundational) ← BLOCKS all user stories
   StorageLocationRestController) - Can start as soon as service layer and
   controller infrastructure exists, does NOT need full Phase 3 completion (sample
   assignment, frontend widgets, dashboard)
+- **Expandable Rows (Phase 6.5)**: Depends on Phase 6 (Location CRUD) - Requires
+  StorageDashboard component with location tables (Rooms, Devices, Shelves, Racks)
+  already implemented. All required fields already available in existing API
+  responses (no backend changes needed)
 
 ### Task Dependencies Within Phases
 
@@ -1850,6 +2003,13 @@ Phase 2 (Foundational) ← BLOCKS all user stories
 - T121-T123 (PUT endpoints for devices/shelves/racks) can run in parallel
 - T125-T127 (DELETE endpoints for devices/shelves/racks) can run in parallel
 - T134-T135 (E2E tests) can run in parallel
+
+**Phase 6.5 (Expandable Rows)**:
+
+- T161-T163 (Frontend unit tests) can run in parallel
+- T165-T167 (E2E tests) can run in parallel
+- T174-T176 (renderExpandedContent functions for Devices/Shelves/Racks) can run in parallel
+- T178-T180 (Table structure updates for Devices/Shelves/Racks) can run in parallel
 
 **Phase 7 (Polish)**:
 
@@ -1965,6 +2125,38 @@ Task T127: "Add DELETE /rest/storage/racks/{id}"
 # All different endpoints, no conflicts
 ```
 
+### Phase 6.5 - Parallel Expandable Rows Tests
+
+```bash
+# All frontend unit tests can be written simultaneously:
+Task T161: "Write expanded state management unit tests"
+Task T162: "Write expanded content rendering unit tests"
+Task T163: "Write missing field handling unit tests"
+# All test different aspects, no conflicts
+
+# All E2E tests can be written simultaneously:
+Task T165: "Write expand/collapse interaction E2E tests"
+Task T166: "Write expanded content verification E2E tests"
+Task T167: "Write accessibility E2E tests"
+# All test different aspects, no conflicts
+```
+
+### Phase 6.5 - Parallel Expandable Rows Implementation
+
+```bash
+# renderExpandedContent functions for Devices/Shelves/Racks can be created simultaneously:
+Task T174: "Create renderExpandedContentDevice function"
+Task T175: "Create renderExpandedContentShelf function"
+Task T176: "Create renderExpandedContentRack function"
+# All different functions, can be done by different developers
+
+# Table structure updates for Devices/Shelves/Racks can be done simultaneously:
+Task T178: "Update Devices table structure with expandable rows"
+Task T179: "Update Shelves table structure with expandable rows"
+Task T180: "Update Racks table structure with expandable rows"
+# All different tables, no conflicts
+```
+
 ### Cross-Story Parallelization
 
 ```bash
@@ -1985,6 +2177,14 @@ Developer E: Phase 6 (Location CRUD) ← Can start IMMEDIATELY after T032-T039 c
 # US1 and US2A are independent, can be worked simultaneously
 # US2B requires Phase 2.5 position hierarchy structure update
 # Phase 6 can be worked in parallel with rest of Phase 3, Phase 4, and Phase 5
+
+# Phase 6.5 can start after Phase 6 completes:
+Developer E (continuing): Phase 6 (Location CRUD) - Complete location tables with overflow menus
+Developer F: Phase 6.5 (Expandable Rows) ← Can start IMMEDIATELY after Phase 6 complete
+# Phase 6.5 does NOT need to wait for:
+#   - Phase 7 (Polish)
+#   - Phase 8 (Compliance)
+# Phase 6.5 can be worked in parallel with Phase 7 if needed
 ```
 
 ---
@@ -2054,7 +2254,7 @@ eliminating "unknown location" problem
 
 ## Task Summary
 
-**Total Tasks**: 251
+**Total Tasks**: 274
 
 | Phase                          | Task Count | Parallel Opportunities        | Test Tasks   | Implementation Tasks |
 | ------------------------------ | ---------- | ----------------------------- | ------------ | -------------------- |
@@ -2066,14 +2266,15 @@ eliminating "unknown location" problem
 | Phase 4: US2A (Search)         | 18         | 6 (tests)                     | 6            | 12                   |
 | Phase 5: US2B (Movement)       | 33         | 10 (tests)                    | 10           | 23                   |
 | Phase 6: Location CRUD        | 38         | 15 (tests, parallel endpoints)| 15           | 23                   |
+| Phase 6.5: Expandable Rows    | 23         | 12 (tests, render functions)  | 7            | 16                   |
 | Phase 7: Polish                | 7          | 4                             | 0            | 7                    |
 | Phase 8: Compliance            | 8          | 7 (most)                      | 0            | 8                    |
-| **TOTAL**                      | **251**    | **113 (45%)**                 | **65 (26%)** | **186 (74%)**        |
+| **TOTAL**                      | **274**    | **125 (46%)**                 | **72 (26%)** | **202 (74%)**        |
 
-**Test-to-Implementation Ratio**: 65 test tasks, 186 implementation tasks (1:2.9
+**Test-to-Implementation Ratio**: 72 test tasks, 202 implementation tasks (1:2.8
 ratio indicates strong test coverage)
 
-**Parallelization**: 45% of tasks can run in parallel (113 marked with [P])
+**Parallelization**: 46% of tasks can run in parallel (125 marked with [P])
 
 **Story Breakdown**:
 
@@ -2084,8 +2285,11 @@ ratio indicates strong test coverage)
   for results workflow
 - **US2B**: 33 tasks (13% of total) - Adds movement, overflow menu, and three
   modals (Move, Dispose, View Storage) on top of assignment
-- **Location CRUD**: 38 tasks (15% of total) - Adds Edit and Delete operations
+- **Location CRUD**: 38 tasks (14% of total) - Adds Edit and Delete operations
   for location tabs (Rooms, Devices, Shelves, Racks) with constraint validation
+- **Expandable Rows**: 23 tasks (8% of total) - Adds expandable row functionality
+  to location tables (Rooms, Devices, Shelves, Racks) displaying additional
+  entity fields as key-value pairs in read-only format
 
 ---
 

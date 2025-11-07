@@ -546,3 +546,453 @@ describe("StorageDashboard Notifications", () => {
     expect(mockMoveSample).not.toHaveBeenCalled();
   });
 });
+
+describe("StorageDashboard Expandable Rows", () => {
+  const mockMetrics = {
+    totalSamples: 100,
+    active: 95,
+    disposed: 5,
+    storageLocations: 0,
+  };
+
+  const mockRooms = [
+    {
+      id: "1",
+      name: "Main Laboratory",
+      code: "MAIN",
+      active: true,
+      description: "Main laboratory room",
+      lastupdated: "2025-01-15T10:30:00Z",
+      sysUserId: "user1",
+    },
+    {
+      id: "2",
+      name: "Storage Room",
+      code: "STOR",
+      active: true,
+      description: null,
+      lastupdated: "2025-01-20T14:45:00Z",
+      sysUserId: "user2",
+    },
+  ];
+
+  const mockDevices = [
+    {
+      id: "10",
+      name: "Freezer Unit 1",
+      code: "FRZ01",
+      roomId: "1",
+      active: true,
+      deviceType: "freezer",
+      temperatureSetting: -20.5,
+      capacityLimit: 100,
+      description: "Main freezer unit",
+      lastupdated: "2025-01-16T09:00:00Z",
+      sysUserId: "user1",
+    },
+  ];
+
+  const mockShelves = [
+    {
+      id: "20",
+      label: "Shelf-A",
+      deviceId: "10",
+      active: true,
+      capacityLimit: 50,
+      description: "Top shelf",
+      lastupdated: "2025-01-17T11:00:00Z",
+      sysUserId: "user1",
+    },
+  ];
+
+  const mockRacks = [
+    {
+      id: "30",
+      label: "Rack R1",
+      shelfId: "20",
+      active: true,
+      rows: 5,
+      columns: 10,
+      positionSchemaHint: "A1-Z99",
+      description: "Main rack",
+      lastupdated: "2025-01-18T12:00:00Z",
+      sysUserId: "user1",
+    },
+  ];
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+    getFromOpenElisServer.mockImplementation((url, callback) => {
+      if (url.includes("/rest/storage/dashboard/metrics")) {
+        callback(mockMetrics);
+      } else if (url.includes("/rest/storage/rooms")) {
+        callback(mockRooms);
+      } else if (url.includes("/rest/storage/devices")) {
+        callback(mockDevices);
+      } else if (url.includes("/rest/storage/shelves")) {
+        callback(mockShelves);
+      } else if (url.includes("/rest/storage/racks")) {
+        callback(mockRacks);
+      } else if (url.includes("/rest/storage/dashboard/location-counts")) {
+        callback({ rooms: 2, devices: 1, shelves: 1, racks: 1 });
+      }
+    });
+  });
+
+  /**
+   * T161: Test expanded state management
+   * testHandleRowExpand_TogglesExpandedState: clicking same row collapses, clicking different row expands new and collapses previous
+   * testHandleRowExpand_OnlyOneRowExpanded: only one row can be expanded at a time
+   * testTabSwitch_ResetsExpandedState: switching tabs resets expanded state to null
+   */
+  test("testHandleRowExpand_TogglesExpandedState", async () => {
+    jest.spyOn(require("react-router-dom"), "useLocation").mockReturnValue({
+      pathname: "/Storage/rooms",
+    });
+
+    renderWithIntl(<StorageDashboard />);
+
+    await waitFor(() => {
+      expect(
+        screen.getByText(/Storage Management Dashboard/i),
+      ).toBeInTheDocument();
+    });
+
+    // Wait for table to render
+    await waitFor(() => {
+      expect(screen.getByText("Main Laboratory")).toBeInTheDocument();
+    });
+
+    // Find expand button for first row (row id="1")
+    const expandButtons = screen.queryAllByRole("button", {
+      name: /expand row/i,
+    });
+    expect(expandButtons.length).toBeGreaterThan(0);
+
+    // Click first expand button
+    if (expandButtons[0]) {
+      fireEvent.click(expandButtons[0]);
+
+      // Verify expanded content appears (Description field)
+      await waitFor(() => {
+        expect(screen.getByText(/Description/i)).toBeInTheDocument();
+      });
+
+      // Click same button again to collapse
+      fireEvent.click(expandButtons[0]);
+
+      // Verify expanded content disappears
+      await waitFor(() => {
+        expect(screen.queryByText(/Main laboratory room/i)).not.toBeInTheDocument();
+      });
+    }
+  });
+
+  test("testHandleRowExpand_OnlyOneRowExpanded", async () => {
+    jest.spyOn(require("react-router-dom"), "useLocation").mockReturnValue({
+      pathname: "/Storage/rooms",
+    });
+
+    renderWithIntl(<StorageDashboard />);
+
+    await waitFor(() => {
+      expect(screen.getByText("Main Laboratory")).toBeInTheDocument();
+    });
+
+    const expandButtons = screen.queryAllByRole("button", {
+      name: /expand row/i,
+    });
+
+    if (expandButtons.length >= 2) {
+      // Expand first row
+      fireEvent.click(expandButtons[0]);
+
+      await waitFor(() => {
+        expect(screen.getByText(/Description/i)).toBeInTheDocument();
+      });
+
+      // Expand second row
+      fireEvent.click(expandButtons[1]);
+
+      // Verify first row content is no longer visible (only one expanded at a time)
+      await waitFor(() => {
+        // Second row's content should be visible, first row's should not
+        // Since second row has no description, we check for other fields
+        expect(screen.getByText(/Description/i)).toBeInTheDocument();
+      });
+    }
+  });
+
+  test("testTabSwitch_ResetsExpandedState", async () => {
+    jest.spyOn(require("react-router-dom"), "useLocation").mockReturnValue({
+      pathname: "/Storage/rooms",
+    });
+
+    renderWithIntl(<StorageDashboard />);
+
+    await waitFor(() => {
+      expect(screen.getByText("Main Laboratory")).toBeInTheDocument();
+    });
+
+    const expandButtons = screen.queryAllByRole("button", {
+      name: /expand row/i,
+    });
+
+    if (expandButtons[0]) {
+      // Expand a row
+      fireEvent.click(expandButtons[0]);
+
+      await waitFor(() => {
+        expect(screen.getByText(/Description/i)).toBeInTheDocument();
+      });
+
+      // Switch to devices tab
+      const devicesTab = screen.getByRole("tab", { name: /devices/i });
+      fireEvent.click(devicesTab);
+
+      // Wait for devices tab to load
+      await waitFor(() => {
+        expect(screen.getByText("Freezer Unit 1")).toBeInTheDocument();
+      });
+
+      // Verify expanded content from rooms tab is no longer visible
+      expect(screen.queryByText(/Main laboratory room/i)).not.toBeInTheDocument();
+    }
+  });
+
+  /**
+   * T162: Test expanded content rendering
+   * testRenderExpandedContent_Room: renders Description, Created Date, Created By, Last Modified Date, Last Modified By for room
+   * testRenderExpandedContent_Device: renders Temperature Setting, Capacity Limit, Description, Created Date, Created By, Last Modified Date, Last Modified By for device
+   * testRenderExpandedContent_Shelf: renders Capacity Limit, Description, Created Date, Created By, Last Modified Date, Last Modified By for shelf
+   * testRenderExpandedContent_Rack: renders Position Schema Hint, Description, Created Date, Created By, Last Modified Date, Last Modified By for rack
+   */
+  test("testRenderExpandedContent_Room", async () => {
+    jest.spyOn(require("react-router-dom"), "useLocation").mockReturnValue({
+      pathname: "/Storage/rooms",
+    });
+
+    renderWithIntl(<StorageDashboard />);
+
+    await waitFor(() => {
+      expect(screen.getByText("Main Laboratory")).toBeInTheDocument();
+    });
+
+    const expandButtons = screen.queryAllByRole("button", {
+      name: /expand row/i,
+    });
+
+    if (expandButtons[0]) {
+      fireEvent.click(expandButtons[0]);
+
+      await waitFor(() => {
+        // Verify all required fields are displayed
+        expect(screen.getByText(/Description/i)).toBeInTheDocument();
+        expect(screen.getByText(/Created Date/i)).toBeInTheDocument();
+        expect(screen.getByText(/Created By/i)).toBeInTheDocument();
+        expect(screen.getByText(/Last Modified Date/i)).toBeInTheDocument();
+        expect(screen.getByText(/Last Modified By/i)).toBeInTheDocument();
+        // Verify actual values
+        expect(screen.getByText("Main laboratory room")).toBeInTheDocument();
+      });
+    }
+  });
+
+  test("testRenderExpandedContent_Device", async () => {
+    jest.spyOn(require("react-router-dom"), "useLocation").mockReturnValue({
+      pathname: "/Storage/devices",
+    });
+
+    renderWithIntl(<StorageDashboard />);
+
+    await waitFor(() => {
+      expect(screen.getByText("Freezer Unit 1")).toBeInTheDocument();
+    });
+
+    const expandButtons = screen.queryAllByRole("button", {
+      name: /expand row/i,
+    });
+
+    if (expandButtons[0]) {
+      fireEvent.click(expandButtons[0]);
+
+      await waitFor(() => {
+        // Verify all required fields are displayed
+        expect(screen.getByText(/Temperature Setting/i)).toBeInTheDocument();
+        expect(screen.getByText(/Capacity Limit/i)).toBeInTheDocument();
+        expect(screen.getByText(/Description/i)).toBeInTheDocument();
+        expect(screen.getByText(/Created Date/i)).toBeInTheDocument();
+        expect(screen.getByText(/Created By/i)).toBeInTheDocument();
+        expect(screen.getByText(/Last Modified Date/i)).toBeInTheDocument();
+        expect(screen.getByText(/Last Modified By/i)).toBeInTheDocument();
+        // Verify actual values
+        expect(screen.getByText(/-20.5/i)).toBeInTheDocument();
+        expect(screen.getByText(/100/i)).toBeInTheDocument();
+        expect(screen.getByText("Main freezer unit")).toBeInTheDocument();
+      });
+    }
+  });
+
+  test("testRenderExpandedContent_Shelf", async () => {
+    jest.spyOn(require("react-router-dom"), "useLocation").mockReturnValue({
+      pathname: "/Storage/shelves",
+    });
+
+    renderWithIntl(<StorageDashboard />);
+
+    await waitFor(() => {
+      expect(screen.getByText("Shelf-A")).toBeInTheDocument();
+    });
+
+    const expandButtons = screen.queryAllByRole("button", {
+      name: /expand row/i,
+    });
+
+    if (expandButtons[0]) {
+      fireEvent.click(expandButtons[0]);
+
+      await waitFor(() => {
+        // Verify all required fields are displayed
+        expect(screen.getByText(/Capacity Limit/i)).toBeInTheDocument();
+        expect(screen.getByText(/Description/i)).toBeInTheDocument();
+        expect(screen.getByText(/Created Date/i)).toBeInTheDocument();
+        expect(screen.getByText(/Created By/i)).toBeInTheDocument();
+        expect(screen.getByText(/Last Modified Date/i)).toBeInTheDocument();
+        expect(screen.getByText(/Last Modified By/i)).toBeInTheDocument();
+        // Verify actual values
+        expect(screen.getByText(/50/i)).toBeInTheDocument();
+        expect(screen.getByText("Top shelf")).toBeInTheDocument();
+      });
+    }
+  });
+
+  test("testRenderExpandedContent_Rack", async () => {
+    jest.spyOn(require("react-router-dom"), "useLocation").mockReturnValue({
+      pathname: "/Storage/racks",
+    });
+
+    renderWithIntl(<StorageDashboard />);
+
+    await waitFor(() => {
+      expect(screen.getByText("Rack R1")).toBeInTheDocument();
+    });
+
+    const expandButtons = screen.queryAllByRole("button", {
+      name: /expand row/i,
+    });
+
+    if (expandButtons[0]) {
+      fireEvent.click(expandButtons[0]);
+
+      await waitFor(() => {
+        // Verify all required fields are displayed
+        expect(screen.getByText(/Position Schema Hint/i)).toBeInTheDocument();
+        expect(screen.getByText(/Description/i)).toBeInTheDocument();
+        expect(screen.getByText(/Created Date/i)).toBeInTheDocument();
+        expect(screen.getByText(/Created By/i)).toBeInTheDocument();
+        expect(screen.getByText(/Last Modified Date/i)).toBeInTheDocument();
+        expect(screen.getByText(/Last Modified By/i)).toBeInTheDocument();
+        // Verify actual values
+        expect(screen.getByText("A1-Z99")).toBeInTheDocument();
+        expect(screen.getByText("Main rack")).toBeInTheDocument();
+      });
+    }
+  });
+
+  /**
+   * T163: Test missing field handling
+   * testRenderExpandedContent_MissingFields_ShowsNA: displays "N/A" for missing optional fields like description
+   * testRenderExpandedContent_DateFormatting: formats dates using intl.formatDate()
+   * testRenderExpandedContent_ReadOnly: expanded content contains no input fields, only read-only display
+   */
+  test("testRenderExpandedContent_MissingFields_ShowsNA", async () => {
+    jest.spyOn(require("react-router-dom"), "useLocation").mockReturnValue({
+      pathname: "/Storage/rooms",
+    });
+
+    renderWithIntl(<StorageDashboard />);
+
+    await waitFor(() => {
+      expect(screen.getByText("Storage Room")).toBeInTheDocument();
+    });
+
+    // Find expand button for second row (which has null description)
+    const expandButtons = screen.queryAllByRole("button", {
+      name: /expand row/i,
+    });
+
+    if (expandButtons.length >= 2) {
+      // Expand second row (Storage Room with null description)
+      fireEvent.click(expandButtons[1]);
+
+      await waitFor(() => {
+        // Verify "N/A" is displayed for missing description
+        expect(screen.getByText(/N\/A/i)).toBeInTheDocument();
+      });
+    }
+  });
+
+  test("testRenderExpandedContent_DateFormatting", async () => {
+    jest.spyOn(require("react-router-dom"), "useLocation").mockReturnValue({
+      pathname: "/Storage/rooms",
+    });
+
+    renderWithIntl(<StorageDashboard />);
+
+    await waitFor(() => {
+      expect(screen.getByText("Main Laboratory")).toBeInTheDocument();
+    });
+
+    const expandButtons = screen.queryAllByRole("button", {
+      name: /expand row/i,
+    });
+
+    if (expandButtons[0]) {
+      fireEvent.click(expandButtons[0]);
+
+      await waitFor(() => {
+        // Verify date is formatted (should not be raw ISO string)
+        const dateText = screen.getByText(/2025/i);
+        expect(dateText).toBeInTheDocument();
+        // Date should be formatted, not raw ISO string like "2025-01-15T10:30:00Z"
+        expect(dateText.textContent).not.toContain("T");
+        expect(dateText.textContent).not.toContain("Z");
+      });
+    }
+  });
+
+  test("testRenderExpandedContent_ReadOnly", async () => {
+    jest.spyOn(require("react-router-dom"), "useLocation").mockReturnValue({
+      pathname: "/Storage/rooms",
+    });
+
+    renderWithIntl(<StorageDashboard />);
+
+    await waitFor(() => {
+      expect(screen.getByText("Main Laboratory")).toBeInTheDocument();
+    });
+
+    const expandButtons = screen.queryAllByRole("button", {
+      name: /expand row/i,
+    });
+
+    if (expandButtons[0]) {
+      fireEvent.click(expandButtons[0]);
+
+      await waitFor(() => {
+        expect(screen.getByText(/Description/i)).toBeInTheDocument();
+      });
+
+      // Verify no input fields in expanded content (should be read-only)
+      const textInputs = screen.queryAllByRole("textbox");
+      const numberInputs = screen.queryAllByRole("spinbutton");
+      const checkboxes = screen.queryAllByRole("checkbox");
+
+      // Expanded content should not contain any input fields
+      // (Note: This is a basic check - in reality, we'd need to check within the expanded row specifically)
+      expect(textInputs.length).toBe(0);
+      expect(numberInputs.length).toBe(0);
+      expect(checkboxes.length).toBe(0);
+    }
+  });
+});

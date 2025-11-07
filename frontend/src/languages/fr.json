@@ -1609,5 +1609,14 @@
   "storage.assigned.by": "Attribué par",
   "storage.assigned.date": "Date d'attribution",
   "storage.current.location": "Emplacement actuel",
-  "storage.target.location": "Emplacement cible"
+  "storage.target.location": "Emplacement cible",
+  "storage.expanded.description": "Description",
+  "storage.expanded.createdDate": "Date de création",
+  "storage.expanded.createdBy": "Créé par",
+  "storage.expanded.lastModifiedDate": "Dernière date de modification",
+  "storage.expanded.lastModifiedBy": "Dernière modification par",
+  "storage.expanded.temperatureSetting": "Réglage de température",
+  "storage.expanded.capacityLimit": "Limite de capacité",
+  "storage.expanded.positionSchemaHint": "Indice de schéma de position",
+  "storage.expanded.notAvailable": "N/D"
 }

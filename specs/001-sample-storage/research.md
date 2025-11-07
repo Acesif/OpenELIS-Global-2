@@ -848,6 +848,215 @@ echo | openssl s_client -servername storage.openelis-global.org -connect storage
    - Verify nginx is running during renewal
    - Ensure challenge path is accessible
 
+## 8. Carbon DataTable Expandable Rows
+
+**Date**: 2025-11-07  
+**Feature**: Expandable rows in location tables (Rooms, Devices, Shelves, Racks)
+
+### Research Questions
+
+#### Q1: How to implement Carbon DataTable expandable rows?
+
+**Decision**: Use Carbon DataTable `expandableRows` prop with `TableExpandHeader`, `TableExpandRow`, and `TableExpandedRow` components.
+
+**Rationale**: 
+- Carbon Design System v1.15 provides built-in expandable row support via `expandableRows` prop
+- Existing codebase pattern found in `EOrder.js` component demonstrates this pattern
+- Follows constitution requirement (Principle II: Carbon Design System First)
+- Provides accessibility support (ARIA labels, keyboard navigation)
+
+**Implementation Pattern** (from EOrder.js):
+```jsx
+<DataTable
+  rows={data}
+  headers={headers}
+  expandableRows
+>
+  {({ rows, headers, getHeaderProps, getRowProps, getTableProps }) => (
+    <TableContainer>
+      <Table>
+        <TableHead>
+          <TableRow>
+            <TableExpandHeader aria-label="expand row" />
+            {headers.map((header) => (
+              <TableHeader {...getHeaderProps({ header })}>
+                {header.header}
+              </TableHeader>
+            ))}
+          </TableRow>
+        </TableHead>
+        <TableBody>
+          {rows.map((row) => (
+            <React.Fragment key={row.id}>
+              <TableExpandRow {...getRowProps({ row })}>
+                {row.cells.map((cell) => renderCell(cell, row))}
+              </TableExpandRow>
+              <TableExpandedRow colSpan={headers.length + 1}>
+                {renderExpandedContent(row)}
+              </TableExpandedRow>
+            </React.Fragment>
+          ))}
+        </TableBody>
+      </Table>
+    </TableContainer>
+  )}
+</DataTable>
+```
+
+**Alternatives Considered**:
+- ❌ Custom accordion component: Would violate Carbon Design System requirement
+- ❌ Modal dialog: Would interrupt workflow, not inline
+- ❌ Side panel: More complex, not standard Carbon pattern
+
+**Reference**: 
+- Carbon DataTable documentation: https://react.carbondesignsystem.com/?path=/docs/components-datatable--expandable
+- Existing implementation: `frontend/src/components/eOrder/EOrder.js` (lines 290-340)
+
+#### Q2: How to manage single-row expansion state?
+
+**Decision**: Use React `useState` to track expanded row ID, with logic to collapse previous row when new row expands.
+
+**Rationale**:
+- Simple state management pattern
+- Single source of truth for expanded state
+- Easy to implement "only one expanded at a time" behavior
+- No need for complex state management library
+
+**Implementation Pattern**:
+```jsx
+const [expandedRowId, setExpandedRowId] = useState(null);
+
+const handleRowExpand = (rowId) => {
+  setExpandedRowId(expandedRowId === rowId ? null : rowId);
+};
+
+// In TableExpandRow:
+<TableExpandRow
+  {...getRowProps({ row })}
+  isExpanded={expandedRowId === row.id}
+  onExpand={() => handleRowExpand(row.id)}
+>
+```
+
+**Alternatives Considered**:
+- ❌ Multiple rows expanded: Violates spec requirement (FR-059d)
+- ❌ Redux/Context: Overkill for simple local component state
+
+#### Q3: What data format for expanded content?
+
+**Decision**: Display additional fields as key-value pairs in a structured layout using Carbon Grid/Column components.
+
+**Rationale**:
+- Clear, scannable format
+- Easy to implement with Carbon components
+- Consistent with read-only requirement (FR-059e)
+- Supports internationalization (key labels via React Intl)
+
+**Implementation Pattern**:
+```jsx
+const renderExpandedContent = (row) => {
+  const location = row.original; // Full location object
+  return (
+    <div style={{ padding: '1rem' }}>
+      <Grid>
+        <Column md={6}>
+          <strong>Description:</strong> {location.description || 'N/A'}
+        </Column>
+        <Column md={6}>
+          <strong>Created Date:</strong> {formatDate(location.createdDate)}
+        </Column>
+        {/* More key-value pairs */}
+      </Grid>
+    </div>
+  );
+};
+```
+
+**Alternatives Considered**:
+- ❌ Plain text list: Less structured, harder to scan
+- ❌ Nested table: Overkill for simple key-value display
+- ❌ Card component: More visual weight than needed
+
+#### Q4: How to handle missing/optional fields in expanded view?
+
+**Decision**: Display "N/A" or empty string for missing optional fields, format dates/timestamps consistently.
+
+**Rationale**:
+- Prevents empty/blank spaces in UI
+- Consistent user experience
+- Clear indication when data is not available
+- Follows existing OpenELIS patterns
+
+**Implementation Pattern**:
+```jsx
+const formatField = (value, formatter) => {
+  if (value === null || value === undefined || value === '') {
+    return intl.formatMessage({ id: 'common.not.available', defaultMessage: 'N/A' });
+  }
+  return formatter ? formatter(value) : value;
+};
+```
+
+**Alternatives Considered**:
+- ❌ Hide missing fields: Inconsistent row heights, confusing
+- ❌ Show empty: Looks like a bug
+
+#### Q5: How to ensure expanded content is accessible?
+
+**Decision**: Use Carbon's built-in ARIA attributes from `TableExpandRow` and `TableExpandedRow`, add semantic HTML structure.
+
+**Rationale**:
+- Carbon components provide accessibility out of the box
+- ARIA labels automatically handled by `TableExpandHeader` and `TableExpandRow`
+- Keyboard navigation supported (Enter/Space to expand)
+- Screen reader friendly with proper heading structure
+
+**Implementation Pattern**:
+- Carbon `TableExpandRow` automatically handles:
+  - `aria-expanded` attribute
+  - `aria-controls` linking to expanded content
+  - Keyboard navigation (Enter/Space)
+- Use semantic HTML in expanded content:
+  ```jsx
+  <TableExpandedRow>
+    <div role="region" aria-label="Additional location details">
+      {/* Content */}
+    </div>
+  </TableExpandedRow>
+  ```
+
+**Alternatives Considered**:
+- ❌ Custom ARIA implementation: Carbon already handles this
+- ❌ No accessibility: Violates WCAG 2.1 AA requirement
+
+### Technical Decisions Summary
+
+| Decision | Choice | Rationale |
+|----------|--------|-----------|
+| UI Pattern | Carbon DataTable expandable rows | Constitution compliance, existing pattern |
+| State Management | React useState (single expandedRowId) | Simple, sufficient for requirement |
+| Content Format | Key-value pairs in Grid layout | Clear, scannable, i18n-friendly |
+| Missing Fields | Display "N/A" | Consistent UX, clear indication |
+| Accessibility | Carbon built-in + semantic HTML | WCAG compliance, minimal custom work |
+
+### Dependencies
+
+- **Carbon Design System v1.15**: `@carbon/react` with `TableExpandHeader`, `TableExpandRow`, `TableExpandedRow`
+- **React Intl**: For internationalized field labels
+- **Existing StorageDashboard**: Modify current table implementations
+
+### Implementation Notes
+
+1. **Backend Changes**: None required - all fields already available in API responses
+2. **API Changes**: None required - expanded view uses existing location data
+3. **State Management**: Local component state sufficient (no global state needed)
+4. **Testing**: 
+   - Unit tests: Test expanded state management, content rendering
+   - E2E tests: Test expand/collapse interaction, single-row behavior
+5. **Performance**: Minimal impact - expanded content rendered on-demand, no additional API calls
+
+---
+
 ## Summary of Research Findings
 
 | Question                    | Answer                                                                                                                                                                                                                        | Source                                                          |
@@ -859,6 +1068,7 @@ echo | openssl s_client -servername storage.openelis-global.org -connect storage
 | Frontend Data Fetching      | Custom `getFromOpenElisServer` utility with useState/useEffect (NOT SWR)                                                                                                                                                      | Existing OpenELIS hooks                                         |
 | Cypress E2E Setup           | Use existing Cypress 12.17.3 framework, follow patientEntry.cy.js pattern                                                                                                                                                     | Existing OpenELIS E2E tests                                     |
 | Certificate Architecture    | Self-signed certs via certgen container, distributed via Docker volumes to nginx/proxy and Java services. Let's Encrypt setup requires Certbot container, nginx ACME challenge handling, and subdomain-specific server blocks | dev.docker-compose.yml, nginx.conf, certificate-setup-report.md |
+| Carbon DataTable Expandable Rows | Carbon DataTable expandableRows prop with TableExpandHeader/TableExpandRow/TableExpandedRow, React useState for single-row expansion, key-value pairs in Grid layout | Carbon DataTable docs, EOrder.js implementation |
 
 **Decisions Made**:
 

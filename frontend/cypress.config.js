@@ -21,9 +21,13 @@ module.exports = defineConfig({
   e2e: {
     setupNodeEvents(on, config) {
       // Task to log messages to terminal (for console.log capture)
+      // This is used to forward browser console logs to terminal
       on("task", {
-        log(message) {
-          console.log(message);
+        log(message, options = {}) {
+          // Only log if not explicitly disabled
+          if (options.log !== false) {
+            console.log(message);
+          }
           return null;
         },
         logObject(obj) {
@@ -62,6 +66,28 @@ module.exports = defineConfig({
             console.error("SQL file path:", sqlFile);
             console.error("Project root:", PROJECT_ROOT);
             return null;
+          }
+        },
+        checkStorageFixturesExist() {
+          const { execSync } = require("child_process");
+          // Check if E2E test data exists (quick check for a known test room)
+          const checkSql = `
+            SELECT COUNT(*) as count FROM storage_room WHERE code IN ('MAIN', 'SEC', 'INACTIVE');
+          `;
+          try {
+            const result = execSync(
+              `docker exec -i openelisglobal-database psql -U clinlims -d clinlims -t -c "${checkSql}"`,
+              {
+                cwd: PROJECT_ROOT,
+                shell: "/bin/bash",
+                encoding: "utf8",
+              },
+            );
+            const count = parseInt(result.trim(), 10);
+            return count >= 2; // At least 2 test rooms exist
+          } catch (error) {
+            console.error("Error checking storage fixtures:", error);
+            return false;
           }
         },
         cleanStorageTestData() {

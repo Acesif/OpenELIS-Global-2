@@ -1,6 +1,6 @@
 # Implementation Plan: Sample Storage Management
 
-**Branch**: `001-sample-storage` | **Date**: 2025-10-30 | **Spec**:
+**Branch**: `001-sample-storage` | **Date**: 2025-10-30 | **Last Updated**: 2025-11-07 | **Spec**:
 [spec.md](./spec.md)  
 **Input**: Feature specification from `/specs/001-sample-storage/spec.md`
 
@@ -32,6 +32,14 @@ Delete validates constraints (child locations, active samples) before deletion.
 Map storage entities to FHIR Location resources for external interoperability.
 **Note**: MoveSampleModal is largely implemented and can be used as a starting
 point for the consolidated Location Management Modal.
+
+**Amendment (2025-11-07)**: Add expandable row functionality to location tables
+(Rooms, Devices, Shelves, Racks) using Carbon DataTable expandable row pattern.
+Expanded rows display additional entity fields (not visible in table columns) as
+key-value pairs in read-only format. Only one row can be expanded at a time.
+Expansion triggered by clicking chevron icon in dedicated first column. See
+[research.md](./research.md#8-carbon-datatable-expandable-rows) for implementation
+details.
 
 ## Technical Context
 
@@ -88,7 +96,7 @@ Verify compliance with
 - [x] **Configuration-Driven**: Position naming free-text (no validation),
       capacity thresholds configurable
 - [x] **Carbon Design System**: UI uses @carbon/react exclusively (Tabs,
-      DataTable, Modal, TextInput, Dropdown, OverflowMenu)
+      DataTable with expandable rows, Modal, TextInput, Dropdown, OverflowMenu)
 - [x] **FHIR/IHE Compliance**: All hierarchy levels (Room, Device, Shelf, Rack,
       Position) map to FHIR Location resources, sample links via
       Specimen.container. Positions can have 2-5 levels (minimum: room+device,
@@ -2168,6 +2176,126 @@ Similar endpoints for `/rest/storage/devices/{id}`, `/rest/storage/shelves/{id}`
 - Table updates after Edit/Delete operations
 
 ---
+
+## Phase 7: Expandable Row Functionality Implementation
+
+**Date**: 2025-11-07  
+**Status**: Planning  
+**Spec Reference**: FR-059a through FR-059f  
+**Research**: [research.md Section 8](./research.md#8-carbon-datatable-expandable-rows)
+
+### Overview
+
+Add expandable row functionality to location tables (Rooms, Devices, Shelves, Racks) in StorageDashboard component. Expanded rows display additional entity fields not visible in table columns, formatted as key-value pairs in read-only format. Only one row can be expanded at a time. Expansion triggered by clicking chevron icon in dedicated first column (Carbon DataTable standard pattern).
+
+### Requirements Summary
+
+- **FR-059a**: Location tables MUST support expandable rows using Carbon DataTable expandable row pattern
+- **FR-059b**: Expandable rows MUST be triggered by clicking chevron/expand icon in dedicated column (first column)
+- **FR-059c**: Expanded row content MUST display all entity fields not visible in table columns, formatted as key-value pairs in read-only format
+- **FR-059d**: Only one row can be expanded at a time (expanding another automatically collapses the previous)
+- **FR-059e**: Expanded row content MUST be read-only (Edit action remains in overflow menu)
+- **FR-059f**: Expanded row MUST show entity-specific additional fields:
+  - **Rooms**: Description, Created Date, Created By, Last Modified Date, Last Modified By
+  - **Devices**: Temperature Setting, Capacity Limit, Description, Created Date, Created By, Last Modified Date, Last Modified By
+  - **Shelves**: Capacity Limit, Description, Created Date, Created By, Last Modified Date, Last Modified By
+  - **Racks**: Position Schema Hint, Description, Created Date, Created By, Last Modified Date, Last Modified By
+
+### Technical Approach
+
+**Frontend Changes**:
+
+1. **Modify StorageDashboard.jsx**:
+   - Add `expandableRows` prop to DataTable components for Rooms, Devices, Shelves, Racks tabs
+   - Import `TableExpandHeader`, `TableExpandRow`, `TableExpandedRow` from `@carbon/react`
+   - Add state management for expanded row ID (`useState` for `expandedRowId`)
+   - Implement `handleRowExpand` function to manage single-row expansion
+   - Create `renderExpandedContent` function for each location type (room, device, shelf, rack)
+   - Update table structure to use `TableExpandHeader` in header row
+   - Replace `TableRow` with `TableExpandRow` for data rows
+   - Add `TableExpandedRow` after each `TableExpandRow` with expanded content
+
+2. **Expanded Content Format**:
+   - Use Carbon Grid/Column components for layout
+   - Display fields as key-value pairs with labels from React Intl
+   - Format dates using `intl.formatDate()`
+   - Display "N/A" for missing optional fields
+   - Read-only display (no input fields)
+
+3. **State Management**:
+   - Single `expandedRowId` state variable per tab (or shared across tabs)
+   - Toggle logic: if same row clicked, collapse; if different row, expand new and collapse previous
+   - Reset expanded state when switching tabs
+
+**Backend Changes**: None required - all fields already available in existing API responses
+
+**API Changes**: None required - expanded view uses existing location data
+
+### Test-Driven Development Plan
+
+**Test Order** (TDD workflow):
+
+1. **Unit Tests** (Jest + React Testing Library):
+   - Test expanded state management (`handleRowExpand` function)
+   - Test expanded content rendering for each location type
+   - Test single-row expansion behavior (collapsing previous row)
+   - Test missing field handling ("N/A" display)
+   - Test date formatting in expanded content
+   - Test tab switching resets expanded state
+
+2. **E2E Tests** (Cypress):
+   - Test expand row interaction (click chevron icon)
+   - Test expanded content visibility and correctness
+   - Test single-row expansion (expanding new row collapses previous)
+   - Test expanded content is read-only (no edit capability)
+   - Test expanded content for each location type (Rooms, Devices, Shelves, Racks)
+   - Test keyboard navigation (Enter/Space to expand)
+   - Test accessibility (ARIA attributes, screen reader support)
+
+**Test Files**:
+
+- Unit: `frontend/src/components/storage/StorageDashboard/StorageDashboard.test.jsx`
+- E2E: `frontend/cypress/e2e/storageLocationExpandableRows.cy.js`
+
+### Implementation Tasks
+
+1. **Research & Design** ✅ (Complete - see research-expandable-rows.md)
+2. **Unit Tests**: Write tests for expanded state management and content rendering
+3. **Implementation**: Modify StorageDashboard.jsx to add expandable row functionality
+4. **E2E Tests**: Write Cypress tests for expand/collapse interaction
+5. **Accessibility Testing**: Verify ARIA attributes and keyboard navigation
+6. **Integration Testing**: Test with real data from API
+
+### Files to Modify
+
+- `frontend/src/components/storage/StorageDashboard.jsx` - Add expandable row functionality
+- `frontend/src/components/storage/StorageDashboard/StorageDashboard.test.jsx` - Add unit tests
+- `frontend/cypress/e2e/storageLocationExpandableRows.cy.js` - Add E2E tests (new file)
+- `frontend/src/languages/en.json` - Add message keys for expanded content labels (if needed)
+
+### Dependencies
+
+- **Carbon Design System v1.15**: `@carbon/react` with `TableExpandHeader`, `TableExpandRow`, `TableExpandedRow`
+- **React Intl**: For internationalized field labels
+- **Existing StorageDashboard**: Modify current table implementations
+
+### Constitution Compliance
+
+- ✅ **Carbon Design System First**: Uses Carbon DataTable expandable row pattern exclusively
+- ✅ **Internationalization**: All field labels use React Intl message keys
+- ✅ **Accessibility**: Carbon components provide ARIA attributes and keyboard navigation
+- ✅ **Test Coverage**: Unit + E2E tests planned (>70% coverage goal)
+
+### Success Criteria
+
+- [ ] Expandable rows work for all location types (Rooms, Devices, Shelves, Racks)
+- [ ] Only one row can be expanded at a time
+- [ ] Expanded content displays all required fields as key-value pairs
+- [ ] Expanded content is read-only (no edit capability)
+- [ ] All unit tests pass
+- [ ] All E2E tests pass
+- [ ] Accessibility verified (ARIA attributes, keyboard navigation)
+- [ ] Internationalization complete (all labels use React Intl)
 
 ## Implementation Enhancements
 

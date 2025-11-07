@@ -185,15 +185,19 @@ managers
 
 ### Session 2025-11-22
 
-### Session 2025-11-07
-
-- Q: Should E2E tests cover all acceptance scenarios or focus on critical user journeys? → A: E2E tests focus on critical user journeys only (as specified in amendment plan). Edge cases and validation scenarios are better covered by unit/integration tests.
-
 - Q: How should the Move and View Storage menu items be consolidated? → A: Replace both "Move" and "View Storage" with a single "Manage Location" menu item that opens the consolidated modal
 - Q: What wording should be used for the consolidated modal title and button? → A: Dynamic wording based on location existence: If no location assigned → "Assign Storage Location" (title) / "Assign" (button). If location exists → "Move Sample" (title) / "Confirm Move" (button) - keep movement terminology when location exists
 - Q: When should the "Reason for Move" field appear and be required? → A: Show "Reason for Move" field only when sample has existing location AND user selects a different location. Field is optional (not required)
 - Q: What sample details should be displayed in the consolidated modal? → A: Show Sample ID, Type, Status, plus additional fields like Date Collected, Patient ID, Test Orders (comprehensive details beyond basic ID/Type/Status)
 - Q: What does "dashboard sample table options" refer to that needs clarification? → A: "Options" refers to action menu items (overflow menu) - addressed by consolidating Move/View Storage into single menu item
+
+### Session 2025-11-07
+
+- Q: What UI pattern should be used for expanding location table rows to view additional fields? → A: Expandable row with inline content below the row (Carbon DataTable expandable row pattern)
+- Q: How should row expansion be triggered? → A: Click chevron/expand icon in a dedicated column (Carbon DataTable standard)
+- Q: What content should be displayed in the expanded row? → A: All entity fields not visible in table columns, formatted as key-value pairs
+- Q: Can multiple rows be expanded simultaneously? → A: Only one row can be expanded at a time (expanding another collapses the previous)
+- Q: Should the expanded view allow editing fields directly? → A: Read-only display (Edit action remains in overflow menu)
 
 ## POC Scope
 
@@ -541,29 +545,41 @@ procurement of additional storage equipment.
 
    **Rooms Tab**:
 
-   - Shows: Name | Code | Devices (count) | Samples (count) | Status | Actions
-   - Example row: "Main Laboratory" | MAIN | 8 devices | 1,234 samples | Active
+   - Shows: [Expand] | Name | Code | Devices (count) | Samples (count) | Status | Actions
+   - Example row: [▶] | "Main Laboratory" | MAIN | 8 devices | 1,234 samples | Active
      | [⋮]
+   - Expandable row: Clicking expand icon (▶) reveals additional fields below row:
+     Description, Created Date, Created By, Last Modified Date, Last Modified By
+     (formatted as key-value pairs, read-only)
 
    **Devices Tab**:
 
-   - Shows: Name | Code | Room | Type (badge) | Occupancy | Status | Actions
-   - Example row: "Freezer Unit 1" | FRZ01 | Main Laboratory | [freezer] |
+   - Shows: [Expand] | Name | Code | Room | Type (badge) | Occupancy | Status | Actions
+   - Example row: [▶] | "Freezer Unit 1" | FRZ01 | Main Laboratory | [freezer] |
      287/500 (57%) [progress bar] | Active | [⋮]
    - Type badges: "freezer", "fridge", "cabinet" (visual indicators)
+   - Expandable row: Clicking expand icon reveals additional fields: Temperature
+     Setting, Capacity Limit, Description, Created Date, Created By, Last Modified
+     Date, Last Modified By (formatted as key-value pairs, read-only)
 
    **Shelves Tab**:
 
-   - Shows: Label | Device | Room | Occupancy | Status | Actions
-   - Example row: "Shelf-A" | Freezer Unit 1 | Main Laboratory | 23/81 (28%)
+   - Shows: [Expand] | Label | Device | Room | Occupancy | Status | Actions
+   - Example row: [▶] | "Shelf-A" | Freezer Unit 1 | Main Laboratory | 23/81 (28%)
      [progress bar] | Active | [⋮]
+   - Expandable row: Clicking expand icon reveals additional fields: Capacity
+     Limit, Description, Created Date, Created By, Last Modified Date, Last
+     Modified By (formatted as key-value pairs, read-only)
 
    **Racks Tab**:
 
-   - Shows: Label | Shelf | Device | Room | Dimensions | Occupancy | Status |
+   - Shows: [Expand] | Label | Shelf | Device | Room | Dimensions | Occupancy | Status |
      Actions
-   - Example row: "Rack R1" | Shelf-A | Freezer Unit 1 | Main Laboratory | 9 × 9
+   - Example row: [▶] | "Rack R1" | Shelf-A | Freezer Unit 1 | Main Laboratory | 9 × 9
      | 23/81 (28%) [progress bar] | Active | [⋮]
+   - Expandable row: Clicking expand icon reveals additional fields: Position
+     Schema Hint, Description, Created Date, Created By, Last Modified Date, Last
+     Modified By (formatted as key-value pairs, read-only)
 
    **Samples Tab**:
 
@@ -1169,9 +1185,28 @@ operations.
 - **FR-058**: Dashboard MUST provide 5 tabs: Samples | Rooms | Devices | Shelves
   | Racks
 - **FR-059**: Each tab MUST show data table appropriate for that entity level
-  with relevant columns
+   with relevant columns
+- **FR-059a**: Location tables (Rooms, Devices, Shelves, Racks) MUST support
+   expandable rows using Carbon DataTable expandable row pattern
+- **FR-059b**: Expandable rows MUST be triggered by clicking chevron/expand icon
+   in a dedicated column (first column, Carbon DataTable standard)
+- **FR-059c**: Expanded row content MUST display all entity fields not visible in
+   table columns, formatted as key-value pairs in read-only format
+- **FR-059d**: Only one row can be expanded at a time (expanding another row
+   automatically collapses the previously expanded row)
+- **FR-059e**: Expanded row content MUST be read-only (Edit action remains in
+   overflow menu, no inline editing in expanded view)
+- **FR-059f**: Expanded row MUST show entity-specific additional fields:
+   - **Rooms**: Description, Created Date, Created By, Last Modified Date, Last
+     Modified By
+   - **Devices**: Temperature Setting, Capacity Limit, Description, Created Date,
+     Created By, Last Modified Date, Last Modified By
+   - **Shelves**: Capacity Limit, Description, Created Date, Created By, Last
+     Modified Date, Last Modified By
+   - **Racks**: Position Schema Hint, Description, Created Date, Created By, Last
+     Modified Date, Last Modified By
 - **FR-060**: Tab selection state MUST be visually distinct (active tab
-  highlighted)
+   highlighted)
 - **FR-060a**: Dashboard MUST provide action buttons positioned to the right of
   the tabs: "Add Location" button (navigates to location management form page)
   and "Export" button (exports current filtered table data to CSV), both visible
@@ -1509,7 +1544,8 @@ functional design:_
 
 - **INT-006**: Leverage existing **UI/UX patterns**
   - Tab navigation (Carbon Tabs component, used in multiple screens)
-  - Data tables (Carbon DataTable with pagination, sorting, filtering)
+  - Data tables (Carbon DataTable with pagination, sorting, filtering, expandable
+    rows)
   - Modal dialogs (Carbon Modal for confirmations, forms)
   - Overflow menu (Carbon OverflowMenu for row actions)
   - Form validation (existing validation utilities)

@@ -16,6 +16,9 @@ import {
   TableHeader,
   TableBody,
   TableCell,
+  TableExpandHeader,
+  TableExpandRow,
+  TableExpandedRow,
   Tag,
   ProgressBar,
   Search,
@@ -87,12 +90,33 @@ const StorageDashboard = () => {
   const [selectedLocation, setSelectedLocation] = useState(null);
   const [selectedLocationType, setSelectedLocationType] = useState(null);
 
+  // Expandable row state
+  const [expandedRowId, setExpandedRowId] = useState(null);
+
+  // Handle row expand/collapse for expandable rows
+  const handleRowExpand = (rowId) => {
+    setExpandedRowId(expandedRowId === rowId ? null : rowId);
+  };
+
+  // Reset expanded state when tab changes
+  useEffect(() => {
+    setExpandedRowId(null);
+  }, [selectedTab]);
+
   // Handle Edit location
   const handleEditLocation = (location) => {
     setSelectedLocation(location);
     // Determine location type from current tab (rooms -> room, devices -> device, etc.)
     const tabName = TAB_ROUTES[selectedTab] || "rooms";
-    const locationType = tabName.slice(0, -1); // Remove 's' from plural (rooms -> room)
+    // Map tab names to location types (handle special cases like shelves -> shelf)
+    const locationTypeMap = {
+      rooms: "room",
+      devices: "device",
+      shelves: "shelf",
+      racks: "rack",
+      samples: "sample",
+    };
+    const locationType = locationTypeMap[tabName] || tabName.slice(0, -1);
     setSelectedLocationType(locationType);
     setEditModalOpen(true);
   };
@@ -102,7 +126,15 @@ const StorageDashboard = () => {
     setSelectedLocation(location);
     // Determine location type from current tab (rooms -> room, devices -> device, etc.)
     const tabName = TAB_ROUTES[selectedTab] || "rooms";
-    const locationType = tabName.slice(0, -1); // Remove 's' from plural (rooms -> room)
+    // Map tab names to location types (handle special cases like shelves -> shelf)
+    const locationTypeMap = {
+      rooms: "room",
+      devices: "device",
+      shelves: "shelf",
+      racks: "rack",
+      samples: "sample",
+    };
+    const locationType = locationTypeMap[tabName] || tabName.slice(0, -1);
     setSelectedLocationType(locationType);
     setDeleteModalOpen(true);
   };
@@ -1221,6 +1253,379 @@ const StorageDashboard = () => {
     });
   };
 
+  // Render expanded content for Rooms
+  const renderExpandedContentRoom = (row) => {
+    // Find the original room data from the formatted row
+    const room = rooms.find((r) => String(r.id) === row.id);
+    if (!room) return null;
+
+    const formatDate = (dateString) => {
+      if (!dateString) return "N/A";
+      try {
+        return intl.formatDate(new Date(dateString), {
+          year: "numeric",
+          month: "short",
+          day: "numeric",
+          hour: "2-digit",
+          minute: "2-digit",
+        });
+      } catch (e) {
+        return "N/A";
+      }
+    };
+
+    return (
+      <div role="region" aria-label="Additional room details" style={{ padding: "1rem" }}>
+        <Grid fullWidth>
+          <Column lg={8} md={4} sm={4}>
+            <div style={{ marginBottom: "0.5rem" }}>
+              <strong>
+                <FormattedMessage id="storage.expanded.description" defaultMessage="Description" />:
+              </strong>{" "}
+              {room.description || (
+                <FormattedMessage id="storage.expanded.notAvailable" defaultMessage="N/A" />
+              )}
+            </div>
+          </Column>
+          <Column lg={8} md={4} sm={4}>
+            <div style={{ marginBottom: "0.5rem" }}>
+              <strong>
+                <FormattedMessage id="storage.expanded.createdDate" defaultMessage="Created Date" />:
+              </strong>{" "}
+              {formatDate(room.lastupdated)}
+            </div>
+          </Column>
+          <Column lg={8} md={4} sm={4}>
+            <div style={{ marginBottom: "0.5rem" }}>
+              <strong>
+                <FormattedMessage id="storage.expanded.createdBy" defaultMessage="Created By" />:
+              </strong>{" "}
+              {room.sysUserId || (
+                <FormattedMessage id="storage.expanded.notAvailable" defaultMessage="N/A" />
+              )}
+            </div>
+          </Column>
+          <Column lg={8} md={4} sm={4}>
+            <div style={{ marginBottom: "0.5rem" }}>
+              <strong>
+                <FormattedMessage
+                  id="storage.expanded.lastModifiedDate"
+                  defaultMessage="Last Modified Date"
+                />:
+              </strong>{" "}
+              {formatDate(room.lastupdated)}
+            </div>
+          </Column>
+          <Column lg={8} md={4} sm={4}>
+            <div style={{ marginBottom: "0.5rem" }}>
+              <strong>
+                <FormattedMessage
+                  id="storage.expanded.lastModifiedBy"
+                  defaultMessage="Last Modified By"
+                />:
+              </strong>{" "}
+              {room.sysUserId || (
+                <FormattedMessage id="storage.expanded.notAvailable" defaultMessage="N/A" />
+              )}
+            </div>
+          </Column>
+        </Grid>
+      </div>
+    );
+  };
+
+  // Render expanded content for Devices
+  const renderExpandedContentDevice = (row) => {
+    const device = devices.find((d) => String(d.id) === row.id);
+    if (!device) return null;
+
+    const formatDate = (dateString) => {
+      if (!dateString) return "N/A";
+      try {
+        return intl.formatDate(new Date(dateString), {
+          year: "numeric",
+          month: "short",
+          day: "numeric",
+          hour: "2-digit",
+          minute: "2-digit",
+        });
+      } catch (e) {
+        return "N/A";
+      }
+    };
+
+    return (
+      <div role="region" aria-label="Additional device details" style={{ padding: "1rem" }}>
+        <Grid fullWidth>
+          <Column lg={8} md={4} sm={4}>
+            <div style={{ marginBottom: "0.5rem" }}>
+              <strong>
+                <FormattedMessage
+                  id="storage.expanded.temperatureSetting"
+                  defaultMessage="Temperature Setting"
+                />:
+              </strong>{" "}
+              {device.temperatureSetting != null
+                ? `${device.temperatureSetting}°C`
+                : <FormattedMessage id="storage.expanded.notAvailable" defaultMessage="N/A" />}
+            </div>
+          </Column>
+          <Column lg={8} md={4} sm={4}>
+            <div style={{ marginBottom: "0.5rem" }}>
+              <strong>
+                <FormattedMessage
+                  id="storage.expanded.capacityLimit"
+                  defaultMessage="Capacity Limit"
+                />:
+              </strong>{" "}
+              {device.capacityLimit != null
+                ? device.capacityLimit
+                : <FormattedMessage id="storage.expanded.notAvailable" defaultMessage="N/A" />}
+            </div>
+          </Column>
+          <Column lg={8} md={4} sm={4}>
+            <div style={{ marginBottom: "0.5rem" }}>
+              <strong>
+                <FormattedMessage id="storage.expanded.description" defaultMessage="Description" />:
+              </strong>{" "}
+              {device.description || (
+                <FormattedMessage id="storage.expanded.notAvailable" defaultMessage="N/A" />
+              )}
+            </div>
+          </Column>
+          <Column lg={8} md={4} sm={4}>
+            <div style={{ marginBottom: "0.5rem" }}>
+              <strong>
+                <FormattedMessage id="storage.expanded.createdDate" defaultMessage="Created Date" />:
+              </strong>{" "}
+              {formatDate(device.lastupdated)}
+            </div>
+          </Column>
+          <Column lg={8} md={4} sm={4}>
+            <div style={{ marginBottom: "0.5rem" }}>
+              <strong>
+                <FormattedMessage id="storage.expanded.createdBy" defaultMessage="Created By" />:
+              </strong>{" "}
+              {device.sysUserId || (
+                <FormattedMessage id="storage.expanded.notAvailable" defaultMessage="N/A" />
+              )}
+            </div>
+          </Column>
+          <Column lg={8} md={4} sm={4}>
+            <div style={{ marginBottom: "0.5rem" }}>
+              <strong>
+                <FormattedMessage
+                  id="storage.expanded.lastModifiedDate"
+                  defaultMessage="Last Modified Date"
+                />:
+              </strong>{" "}
+              {formatDate(device.lastupdated)}
+            </div>
+          </Column>
+          <Column lg={8} md={4} sm={4}>
+            <div style={{ marginBottom: "0.5rem" }}>
+              <strong>
+                <FormattedMessage
+                  id="storage.expanded.lastModifiedBy"
+                  defaultMessage="Last Modified By"
+                />:
+              </strong>{" "}
+              {device.sysUserId || (
+                <FormattedMessage id="storage.expanded.notAvailable" defaultMessage="N/A" />
+              )}
+            </div>
+          </Column>
+        </Grid>
+      </div>
+    );
+  };
+
+  // Render expanded content for Shelves
+  const renderExpandedContentShelf = (row) => {
+    const shelf = shelves.find((s) => String(s.id) === row.id);
+    if (!shelf) return null;
+
+    const formatDate = (dateString) => {
+      if (!dateString) return "N/A";
+      try {
+        return intl.formatDate(new Date(dateString), {
+          year: "numeric",
+          month: "short",
+          day: "numeric",
+          hour: "2-digit",
+          minute: "2-digit",
+        });
+      } catch (e) {
+        return "N/A";
+      }
+    };
+
+    return (
+      <div role="region" aria-label="Additional shelf details" style={{ padding: "1rem" }}>
+        <Grid fullWidth>
+          <Column lg={8} md={4} sm={4}>
+            <div style={{ marginBottom: "0.5rem" }}>
+              <strong>
+                <FormattedMessage
+                  id="storage.expanded.capacityLimit"
+                  defaultMessage="Capacity Limit"
+                />:
+              </strong>{" "}
+              {shelf.capacityLimit != null
+                ? shelf.capacityLimit
+                : <FormattedMessage id="storage.expanded.notAvailable" defaultMessage="N/A" />}
+            </div>
+          </Column>
+          <Column lg={8} md={4} sm={4}>
+            <div style={{ marginBottom: "0.5rem" }}>
+              <strong>
+                <FormattedMessage id="storage.expanded.description" defaultMessage="Description" />:
+              </strong>{" "}
+              {shelf.description || (
+                <FormattedMessage id="storage.expanded.notAvailable" defaultMessage="N/A" />
+              )}
+            </div>
+          </Column>
+          <Column lg={8} md={4} sm={4}>
+            <div style={{ marginBottom: "0.5rem" }}>
+              <strong>
+                <FormattedMessage id="storage.expanded.createdDate" defaultMessage="Created Date" />:
+              </strong>{" "}
+              {formatDate(shelf.lastupdated)}
+            </div>
+          </Column>
+          <Column lg={8} md={4} sm={4}>
+            <div style={{ marginBottom: "0.5rem" }}>
+              <strong>
+                <FormattedMessage id="storage.expanded.createdBy" defaultMessage="Created By" />:
+              </strong>{" "}
+              {shelf.sysUserId || (
+                <FormattedMessage id="storage.expanded.notAvailable" defaultMessage="N/A" />
+              )}
+            </div>
+          </Column>
+          <Column lg={8} md={4} sm={4}>
+            <div style={{ marginBottom: "0.5rem" }}>
+              <strong>
+                <FormattedMessage
+                  id="storage.expanded.lastModifiedDate"
+                  defaultMessage="Last Modified Date"
+                />:
+              </strong>{" "}
+              {formatDate(shelf.lastupdated)}
+            </div>
+          </Column>
+          <Column lg={8} md={4} sm={4}>
+            <div style={{ marginBottom: "0.5rem" }}>
+              <strong>
+                <FormattedMessage
+                  id="storage.expanded.lastModifiedBy"
+                  defaultMessage="Last Modified By"
+                />:
+              </strong>{" "}
+              {shelf.sysUserId || (
+                <FormattedMessage id="storage.expanded.notAvailable" defaultMessage="N/A" />
+              )}
+            </div>
+          </Column>
+        </Grid>
+      </div>
+    );
+  };
+
+  // Render expanded content for Racks
+  const renderExpandedContentRack = (row) => {
+    const rack = racks.find((r) => String(r.id) === row.id);
+    if (!rack) return null;
+
+    const formatDate = (dateString) => {
+      if (!dateString) return "N/A";
+      try {
+        return intl.formatDate(new Date(dateString), {
+          year: "numeric",
+          month: "short",
+          day: "numeric",
+          hour: "2-digit",
+          minute: "2-digit",
+        });
+      } catch (e) {
+        return "N/A";
+      }
+    };
+
+    return (
+      <div role="region" aria-label="Additional rack details" style={{ padding: "1rem" }}>
+        <Grid fullWidth>
+          <Column lg={8} md={4} sm={4}>
+            <div style={{ marginBottom: "0.5rem" }}>
+              <strong>
+                <FormattedMessage
+                  id="storage.expanded.positionSchemaHint"
+                  defaultMessage="Position Schema Hint"
+                />:
+              </strong>{" "}
+              {rack.positionSchemaHint || (
+                <FormattedMessage id="storage.expanded.notAvailable" defaultMessage="N/A" />
+              )}
+            </div>
+          </Column>
+          <Column lg={8} md={4} sm={4}>
+            <div style={{ marginBottom: "0.5rem" }}>
+              <strong>
+                <FormattedMessage id="storage.expanded.description" defaultMessage="Description" />:
+              </strong>{" "}
+              {rack.description || (
+                <FormattedMessage id="storage.expanded.notAvailable" defaultMessage="N/A" />
+              )}
+            </div>
+          </Column>
+          <Column lg={8} md={4} sm={4}>
+            <div style={{ marginBottom: "0.5rem" }}>
+              <strong>
+                <FormattedMessage id="storage.expanded.createdDate" defaultMessage="Created Date" />:
+              </strong>{" "}
+              {formatDate(rack.lastupdated)}
+            </div>
+          </Column>
+          <Column lg={8} md={4} sm={4}>
+            <div style={{ marginBottom: "0.5rem" }}>
+              <strong>
+                <FormattedMessage id="storage.expanded.createdBy" defaultMessage="Created By" />:
+              </strong>{" "}
+              {rack.sysUserId || (
+                <FormattedMessage id="storage.expanded.notAvailable" defaultMessage="N/A" />
+              )}
+            </div>
+          </Column>
+          <Column lg={8} md={4} sm={4}>
+            <div style={{ marginBottom: "0.5rem" }}>
+              <strong>
+                <FormattedMessage
+                  id="storage.expanded.lastModifiedDate"
+                  defaultMessage="Last Modified Date"
+                />:
+              </strong>{" "}
+              {formatDate(rack.lastupdated)}
+            </div>
+          </Column>
+          <Column lg={8} md={4} sm={4}>
+            <div style={{ marginBottom: "0.5rem" }}>
+              <strong>
+                <FormattedMessage
+                  id="storage.expanded.lastModifiedBy"
+                  defaultMessage="Last Modified By"
+                />:
+              </strong>{" "}
+              {rack.sysUserId || (
+                <FormattedMessage id="storage.expanded.notAvailable" defaultMessage="N/A" />
+              )}
+            </div>
+          </Column>
+        </Grid>
+      </div>
+    );
+  };
+
   // Format samples data for table
   const formatSamplesData = (samplesData) => {
     if (!samplesData || samplesData.length === 0) {
@@ -1510,19 +1915,19 @@ const StorageDashboard = () => {
         <Column lg={16} md={8} sm={4} className="tabs-column">
           <Tabs selectedIndex={selectedTab} onChange={handleTabChange}>
             <TabList aria-label="Storage dashboard tabs" contained>
-              <Tab>
+              <Tab data-testid="tab-samples">
                 <FormattedMessage id="storage.tab.samples" />
               </Tab>
-              <Tab className="tab-rooms">
+              <Tab className="tab-rooms" data-testid="tab-rooms">
                 <FormattedMessage id="storage.tab.rooms" />
               </Tab>
-              <Tab className="tab-devices">
+              <Tab className="tab-devices" data-testid="tab-devices">
                 <FormattedMessage id="storage.tab.devices" />
               </Tab>
-              <Tab className="tab-shelves">
+              <Tab className="tab-shelves" data-testid="tab-shelves">
                 <FormattedMessage id="storage.tab.shelves" />
               </Tab>
-              <Tab className="tab-racks">
+              <Tab className="tab-racks" data-testid="tab-racks">
                 <FormattedMessage id="storage.tab.racks" />
               </Tab>
             </TabList>
@@ -1911,6 +2316,7 @@ const StorageDashboard = () => {
                       rows={formatRoomsData(filteredRooms)}
                       headers={roomsHeaders}
                       isSortable
+                      expandableRows
                     >
                       {({
                         rows,
@@ -1923,6 +2329,7 @@ const StorageDashboard = () => {
                           <Table {...getTableProps()}>
                             <TableHead>
                               <TableRow>
+                                <TableExpandHeader aria-label="expand row" />
                                 {headers.map((header) => (
                                   <TableHeader
                                     key={
@@ -1937,16 +2344,23 @@ const StorageDashboard = () => {
                             </TableHead>
                             <TableBody>
                               {rows.map((row) => (
-                                <TableRow
-                                  key={row.id || row.key}
-                                  {...getRowProps({ row })}
-                                >
-                                  {row.cells.map((cell) => (
-                                    <TableCell key={cell.id}>
-                                      {cell.value}
-                                    </TableCell>
-                                  ))}
-                                </TableRow>
+                                <React.Fragment key={row.id || row.key}>
+                                  <TableExpandRow
+                                    data-testid={`room-row-${row.id}`}
+                                    {...getRowProps({ row })}
+                                    isExpanded={expandedRowId === row.id}
+                                    onExpand={() => handleRowExpand(row.id)}
+                                  >
+                                    {row.cells.map((cell) => (
+                                      <TableCell key={cell.id}>
+                                        {cell.value}
+                                      </TableCell>
+                                    ))}
+                                  </TableExpandRow>
+                                  <TableExpandedRow colSpan={headers.length + 1}>
+                                    {renderExpandedContentRoom(row)}
+                                  </TableExpandedRow>
+                                </React.Fragment>
                               ))}
                             </TableBody>
                           </Table>
@@ -2107,6 +2521,7 @@ const StorageDashboard = () => {
                       rows={formatDevicesData(filteredDevices)}
                       headers={devicesHeaders}
                       isSortable
+                      expandableRows
                     >
                       {({
                         rows,
@@ -2119,6 +2534,7 @@ const StorageDashboard = () => {
                           <Table {...getTableProps()}>
                             <TableHead>
                               <TableRow>
+                                <TableExpandHeader aria-label="expand row" />
                                 {headers.map((header) => (
                                   <TableHeader
                                     key={
@@ -2133,16 +2549,23 @@ const StorageDashboard = () => {
                             </TableHead>
                             <TableBody>
                               {rows.map((row) => (
-                                <TableRow
-                                  key={row.id || row.key}
-                                  {...getRowProps({ row })}
-                                >
-                                  {row.cells.map((cell) => (
-                                    <TableCell key={cell.id}>
-                                      {cell.value}
-                                    </TableCell>
-                                  ))}
-                                </TableRow>
+                                <React.Fragment key={row.id || row.key}>
+                                  <TableExpandRow
+                                    data-testid={`device-row-${row.id}`}
+                                    {...getRowProps({ row })}
+                                    isExpanded={expandedRowId === row.id}
+                                    onExpand={() => handleRowExpand(row.id)}
+                                  >
+                                    {row.cells.map((cell) => (
+                                      <TableCell key={cell.id}>
+                                        {cell.value}
+                                      </TableCell>
+                                    ))}
+                                  </TableExpandRow>
+                                  <TableExpandedRow colSpan={headers.length + 1}>
+                                    {renderExpandedContentDevice(row)}
+                                  </TableExpandedRow>
+                                </React.Fragment>
                               ))}
                             </TableBody>
                           </Table>
@@ -2353,6 +2776,7 @@ const StorageDashboard = () => {
                       rows={formatShelvesData(filteredShelves)}
                       headers={shelvesHeaders}
                       isSortable
+                      expandableRows
                     >
                       {({
                         rows,
@@ -2365,6 +2789,7 @@ const StorageDashboard = () => {
                           <Table {...getTableProps()}>
                             <TableHead>
                               <TableRow>
+                                <TableExpandHeader aria-label="expand row" />
                                 {headers.map((header) => (
                                   <TableHeader
                                     key={
@@ -2379,16 +2804,23 @@ const StorageDashboard = () => {
                             </TableHead>
                             <TableBody>
                               {rows.map((row) => (
-                                <TableRow
-                                  key={row.id || row.key}
-                                  {...getRowProps({ row })}
-                                >
-                                  {row.cells.map((cell) => (
-                                    <TableCell key={cell.id}>
-                                      {cell.value}
-                                    </TableCell>
-                                  ))}
-                                </TableRow>
+                                <React.Fragment key={row.id || row.key}>
+                                  <TableExpandRow
+                                    data-testid={`shelf-row-${row.id}`}
+                                    {...getRowProps({ row })}
+                                    isExpanded={expandedRowId === row.id}
+                                    onExpand={() => handleRowExpand(row.id)}
+                                  >
+                                    {row.cells.map((cell) => (
+                                      <TableCell key={cell.id}>
+                                        {cell.value}
+                                      </TableCell>
+                                    ))}
+                                  </TableExpandRow>
+                                  <TableExpandedRow colSpan={headers.length + 1}>
+                                    {renderExpandedContentShelf(row)}
+                                  </TableExpandedRow>
+                                </React.Fragment>
                               ))}
                             </TableBody>
                           </Table>
@@ -2599,6 +3031,7 @@ const StorageDashboard = () => {
                       rows={formatRacksData(filteredRacks)}
                       headers={racksHeaders}
                       isSortable
+                      expandableRows
                     >
                       {({
                         rows,
@@ -2611,6 +3044,7 @@ const StorageDashboard = () => {
                           <Table {...getTableProps()}>
                             <TableHead>
                               <TableRow>
+                                <TableExpandHeader aria-label="expand row" />
                                 {headers.map((header) => (
                                   <TableHeader
                                     key={
@@ -2625,16 +3059,23 @@ const StorageDashboard = () => {
                             </TableHead>
                             <TableBody>
                               {rows.map((row) => (
-                                <TableRow
-                                  key={row.id || row.key}
-                                  {...getRowProps({ row })}
-                                >
-                                  {row.cells.map((cell) => (
-                                    <TableCell key={cell.id}>
-                                      {cell.value}
-                                    </TableCell>
-                                  ))}
-                                </TableRow>
+                                <React.Fragment key={row.id || row.key}>
+                                  <TableExpandRow
+                                    data-testid={`rack-row-${row.id}`}
+                                    {...getRowProps({ row })}
+                                    isExpanded={expandedRowId === row.id}
+                                    onExpand={() => handleRowExpand(row.id)}
+                                  >
+                                    {row.cells.map((cell) => (
+                                      <TableCell key={cell.id}>
+                                        {cell.value}
+                                      </TableCell>
+                                    ))}
+                                  </TableExpandRow>
+                                  <TableExpandedRow colSpan={headers.length + 1}>
+                                    {renderExpandedContentRack(row)}
+                                  </TableExpandedRow>
+                                </React.Fragment>
                               ))}
                             </TableBody>
                           </Table>

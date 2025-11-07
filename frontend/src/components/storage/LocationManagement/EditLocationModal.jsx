@@ -12,7 +12,7 @@ import {
   InlineNotification,
 } from "@carbon/react";
 import { FormattedMessage, useIntl } from "react-intl";
-import { putToOpenElisServer } from "../../utils/Utils";
+import { putToOpenElisServer, getFromOpenElisServerV2 } from "../../utils/Utils";
 import "./EditLocationModal.css";
 
 /**
@@ -34,28 +34,123 @@ const EditLocationModal = ({
   onSave,
 }) => {
   const intl = useIntl();
-  const [formData, setFormData] = useState({});
+  // Initialize formData with default values to ensure controlled components
+  const [formData, setFormData] = useState({
+    name: "",
+    code: "",
+    description: "",
+    active: false,
+    type: "",
+    temperatureSetting: "",
+    capacityLimit: "",
+    label: "",
+    rows: "",
+    columns: "",
+    positionSchemaHint: "",
+  });
   const [error, setError] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
 
-  // Initialize form data when location changes
+  // Helper function to normalize active value to boolean
+  const normalizeActive = (value) => {
+    return value === true || value === "true" || value === 1 || value === "1";
+  };
+
+  // Helper function to get correct plural form for API endpoints
+  const getPluralType = (type) => {
+    const pluralMap = {
+      room: "rooms",
+      device: "devices",
+      shelf: "shelves", // Not "shelfs"
+      rack: "racks",
+    };
+    return pluralMap[type] || `${type}s`;
+  };
+
+  // Helper function to get capitalized location type name for titles
+  const getLocationTypeName = (type) => {
+    const nameMap = {
+      room: "Room",
+      device: "Device",
+      shelf: "Shelf",
+      rack: "Rack",
+    };
+    return nameMap[type] || type;
+  };
+
+  // Helper function to initialize form data from location prop
+  const initializeFormDataFromLocation = (loc) => {
+    if (!loc) return {};
+    return {
+      name: loc.name || "",
+      code: loc.code || "",
+      description: loc.description || "",
+      active: normalizeActive(loc.active),
+      type: loc.type || "",
+      temperatureSetting: loc.temperatureSetting || "",
+      capacityLimit: loc.capacityLimit || "",
+      label: loc.label || "",
+      rows: loc.rows || "",
+      columns: loc.columns || "",
+      positionSchemaHint: loc.positionSchemaHint || "",
+    };
+  };
+
+  // Initialize form data when modal opens or location changes
+  // First initialize from location prop (synchronous), then fetch full data from API
   useEffect(() => {
-    if (location) {
-      setFormData({
-        name: location.name || "",
-        code: location.code || "",
-        description: location.description || "",
-        active: location.active !== undefined ? location.active : true,
-        type: location.type || "",
-        temperatureSetting: location.temperatureSetting || "",
-        capacityLimit: location.capacityLimit || "",
-        label: location.label || "",
-        rows: location.rows || "",
-        columns: location.columns || "",
-        positionSchemaHint: location.positionSchemaHint || "",
-      });
+    let isMounted = true;
+    
+    if (open && location && location.id && locationType) {
+      // Initialize immediately from location prop to avoid undefined values
+      setFormData(initializeFormDataFromLocation(location));
+      setIsLoading(true);
       setError(null);
-    } else {
+      
+      // Fetch full location data from API when modal opens
+      const endpoint = `/rest/storage/${getPluralType(locationType)}/${location.id}`;
+      getFromOpenElisServerV2(endpoint)
+        .then((fullLocation) => {
+          // Only update state if component is still mounted
+          if (!isMounted) return;
+          
+          if (fullLocation) {
+            setFormData({
+              name: fullLocation.name || "",
+              code: fullLocation.code || "",
+              description: fullLocation.description || "",
+              // Ensure active is properly initialized as boolean
+              active: normalizeActive(fullLocation.active),
+              type: fullLocation.type || "",
+              temperatureSetting: fullLocation.temperatureSetting || "",
+              capacityLimit: fullLocation.capacityLimit || "",
+              label: fullLocation.label || "",
+              rows: fullLocation.rows || "",
+              columns: fullLocation.columns || "",
+              positionSchemaHint: fullLocation.positionSchemaHint || "",
+            });
+            setError(null);
+            setIsLoading(false);
+          } else {
+            throw new Error("No data returned from API");
+          }
+        })
+        .catch((err) => {
+          // Only update state if component is still mounted
+          if (!isMounted) return;
+          
+          console.warn("Failed to fetch location data, using prop data:", err);
+          // Keep the formData that was initialized from location prop
+          // (already set above, so no need to set again)
+          setError("Failed to load location data");
+          setIsLoading(false);
+        });
+    } else if (location && !open) {
+      // Reset when modal closes
+      setFormData({});
+      setIsLoading(false);
+    } else if (!location) {
       // Initialize with empty values to avoid uncontrolled component warnings
       setFormData({
         name: "",
@@ -70,8 +165,14 @@ const EditLocationModal = ({
         columns: "",
         positionSchemaHint: "",
       });
+      setIsLoading(false);
     }
-  }, [location]);
+    
+    // Cleanup function to prevent state updates after unmount
+    return () => {
+      isMounted = false;
+    };
+  }, [open, location, locationType]);
 
   // Reset form when modal closes
   useEffect(() => {
@@ -93,7 +194,7 @@ const EditLocationModal = ({
 
     try {
       // Build endpoint based on location type
-      const endpoint = `/rest/storage/${locationType}s/${location.id}`;
+      const endpoint = `/rest/storage/${getPluralType(locationType)}/${location.id}`;
 
       // Build payload with only editable fields
       const payload = {};
@@ -182,10 +283,13 @@ const EditLocationModal = ({
       data-testid="edit-location-modal"
     >
       <ModalHeader
-        title={intl.formatMessage({
-          id: "storage.edit.location",
-          defaultMessage: "Edit Location",
-        })}
+        title={intl.formatMessage(
+          {
+            id: "storage.edit.location.type",
+            defaultMessage: "Edit {type}",
+          },
+          { type: getLocationTypeName(locationType) },
+        )}
       />
       <ModalBody>
         {error && (
@@ -247,7 +351,7 @@ const EditLocationModal = ({
                   id: "storage.location.active",
                   defaultMessage: "Active",
                 })}
-                toggled={formData.active}
+                toggled={formData.active === true}
                 onToggle={(checked) => handleFieldChange("active", checked)}
               />
             </>
@@ -286,9 +390,9 @@ const EditLocationModal = ({
                   defaultMessage: "Parent Room",
                 })}
                 value={
-                  location.parentRoom?.name ||
-                  location.roomName ||
-                  location.parentRoomName ||
+                  (location && location.parentRoom?.name) ||
+                  (location && location.roomName) ||
+                  (location && location.parentRoomName) ||
                   ""
                 }
                 disabled
@@ -347,7 +451,7 @@ const EditLocationModal = ({
                   id: "storage.location.active",
                   defaultMessage: "Active",
                 })}
-                toggled={formData.active}
+                toggled={formData.active === true}
                 onToggle={(checked) => handleFieldChange("active", checked)}
               />
             </>
@@ -375,9 +479,9 @@ const EditLocationModal = ({
                   defaultMessage: "Parent Device",
                 })}
                 value={
-                  location.parentDevice?.name ||
-                  location.deviceName ||
-                  location.parentDeviceName ||
+                  (location && location.parentDevice?.name) ||
+                  (location && location.deviceName) ||
+                  (location && location.parentDeviceName) ||
                   ""
                 }
                 disabled
@@ -403,7 +507,7 @@ const EditLocationModal = ({
                   id: "storage.location.active",
                   defaultMessage: "Active",
                 })}
-                toggled={formData.active}
+                toggled={formData.active === true}
                 onToggle={(checked) => handleFieldChange("active", checked)}
               />
             </>
@@ -431,9 +535,9 @@ const EditLocationModal = ({
                   defaultMessage: "Parent Shelf",
                 })}
                 value={
-                  location.parentShelf?.label ||
-                  location.shelfLabel ||
-                  location.parentShelfLabel ||
+                  (location && location.parentShelf?.label) ||
+                  (location && location.shelfLabel) ||
+                  (location && location.parentShelfLabel) ||
                   ""
                 }
                 disabled
@@ -484,7 +588,7 @@ const EditLocationModal = ({
                   id: "storage.location.active",
                   defaultMessage: "Active",
                 })}
-                toggled={formData.active}
+                toggled={formData.active === true}
                 onToggle={(checked) => handleFieldChange("active", checked)}
               />
             </>
@@ -503,7 +607,13 @@ const EditLocationModal = ({
         <Button
           kind="primary"
           onClick={handleSave}
-          disabled={isSubmitting || !formData.name}
+          disabled={
+            isSubmitting ||
+            (locationType === "room" && !formData.name) ||
+            (locationType === "device" && !formData.name) ||
+            (locationType === "shelf" && !formData.label) ||
+            (locationType === "rack" && (!formData.label || !formData.rows || !formData.columns))
+          }
           data-testid="edit-location-save-button"
         >
           <FormattedMessage

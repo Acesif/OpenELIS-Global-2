@@ -1666,6 +1666,15 @@
   "storage.device.placeholder": "Select or type to create device...",
   "storage.shelf.placeholder": "Select or type to create shelf...",
   "storage.rack.placeholder": "Select or type to create rack...",
+  "storage.expanded.description": "Description",
+  "storage.expanded.createdDate": "Created Date",
+  "storage.expanded.createdBy": "Created By",
+  "storage.expanded.lastModifiedDate": "Last Modified Date",
+  "storage.expanded.lastModifiedBy": "Last Modified By",
+  "storage.expanded.temperatureSetting": "Temperature Setting",
+  "storage.expanded.capacityLimit": "Capacity Limit",
+  "storage.expanded.positionSchemaHint": "Position Schema Hint",
+  "storage.expanded.notAvailable": "N/A",
   "banner.menu.storage": "Storage",
   "banner.menu.storage.tooltip": "Sample Storage Management"
 }
