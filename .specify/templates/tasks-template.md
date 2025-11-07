@@ -94,6 +94,10 @@ parallel
       `config.addAnnotatedClass()`, validate annotations, <5s execution
 - [ ] T011 [P] [US1] Integration test for [user journey] in
       tests/integration/test\_[name].py
+- [ ] T011b [P] [US1] Cypress E2E test for [user story] in
+      frontend/cypress/e2e/[feature].cy.js (per Constitution V.5):
+      * Run individually during development
+      * Review console logs and screenshots post-run
 
 ### Implementation for User Story 1
 
@@ -205,7 +209,10 @@ independently
 mvn spotless:apply && mvn spotless:check && mvn clean install
 
 # Frontend: Formatting (MUST run before each commit) + E2E tests
-cd frontend && npm run format && npm run cy:run
+cd frontend && npm run format
+# Run E2E tests individually (per Constitution V.5):
+npm run cy:run -- --spec "cypress/e2e/[feature].cy.js"
+# Full suite only in CI/CD: npm run cy:run
 
 # Coverage reports
 mvn verify  # JaCoCo report in target/site/jacoco/

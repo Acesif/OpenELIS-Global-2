@@ -529,27 +529,40 @@ function useSampleAssignment() {
 - Configuration: `frontend/cypress.config.js`
 - Existing tests: patientEntry.cy.js, orderEntity.cy.js, validation.cy.js, etc.
 
-**Cypress Configuration** (existing):
+**Cypress Configuration** (per Constitution V.5):
 
 ```javascript
 // cypress.config.js
 const { defineConfig } = require("cypress");
 
 module.exports = defineConfig({
-  defaultCommandTimeout: 8000,
+  video: false, // MUST be disabled by default (per Constitution V.5)
+  screenshotOnRunFailure: true, // MUST be enabled (per Constitution V.5)
+  defaultCommandTimeout: 30000,
   viewportWidth: 1200,
   viewportHeight: 700,
-  video: false,
   watchForFileChanges: false,
   e2e: {
+    setupNodeEvents(on, config) {
+      // Browser console logging enabled by default (Cypress captures automatically)
+      return config;
+    },
     baseUrl: "https://localhost",
-    testIsolation: false,
+    testIsolation: false, // Only if shared state needed
     env: {
       STARTUP_WAIT_MILLISECONDS: 300000,
     },
   },
 });
 ```
+
+**Note**: For complete Cypress E2E testing guidelines, see Constitution Section V.5.
+Key requirements:
+- Run tests individually during development (not full suite)
+- Browser console logging enabled by default
+- Video recording disabled (`video: false`)
+- Post-run review of console logs and screenshots required
+- Follow intercept timing, retry-ability, and element readiness best practices
 
 **Test Structure** (follow existing pattern):
 
@@ -560,71 +573,88 @@ frontend/cypress/e2e/
 └── storageMovement.cy.js (P2B - Sample Movement, including bulk)
 ```
 
-**Example Test Pattern** (based on existing patientEntry.cy.js):
+**Example Test Pattern** (updated with best practices per Constitution V.5):
 
 ```javascript
-// storageAssignment.cy.js
+// storageAssignment.cy.js - UPDATED with best practices
 import LoginPage from "../pages/LoginPage";
 
-let homePage = null;
-let loginPage = null;
-let sampleEntryPage = null;
-
-before("login", () => {
-  loginPage = new LoginPage();
-  loginPage.visit();
-});
-
 describe("Sample Storage Assignment (P1)", function () {
-  it("User navigates to Sample Entry Page", () => {
-    homePage = loginPage.goToHomePage();
-    sampleEntryPage = homePage.goToSampleEntry();
+  before("Setup and login", () => {
+    // Setup intercepts BEFORE any actions (best practice: intercept timing)
+    cy.intercept("GET", "**/rest/storage/rooms").as("getRooms");
+    cy.intercept("GET", "**/rest/storage/devices**").as("getDevices");
+    cy.intercept("POST", "**/rest/storage/assignments").as("createAssignment");
+    
+    // Login
+    const loginPage = new LoginPage();
+    loginPage.visit();
+    const homePage = loginPage.goToHomePage();
+    homePage.goToSampleEntry();
   });
 
-  it("Should assign sample using cascading dropdowns", function () {
-    // Complete sample accessioning
-    sampleEntryPage.getAccessionNumberInput().type("S-2025-001");
-    // ... fill other sample fields ...
-
-    // Open Storage Location Selector
+  it("should assign sample using cascading dropdowns", function () {
+    cy.log("Starting assignment workflow");
+    
+    // Wait for storage selector to be ready (best practice: element readiness)
     cy.get('[data-testid="storage-location-selector"]').should("be.visible");
-
-    // Select room
-    cy.get('[data-testid="room-dropdown"]').click();
-    cy.contains("Main Laboratory").click();
-
-    // Select device
-    cy.get('[data-testid="device-dropdown"]').should("not.be.disabled");
-    cy.get('[data-testid="device-dropdown"]').click();
-    cy.contains("Freezer Unit 1").click();
-
-    // Select shelf
-    cy.get('[data-testid="shelf-dropdown"]').should("not.be.disabled");
-    cy.get('[data-testid="shelf-dropdown"]').click();
-    cy.contains("Shelf-A").click();
-
-    // Select rack
-    cy.get('[data-testid="rack-dropdown"]').should("not.be.disabled");
-    cy.get('[data-testid="rack-dropdown"]').click();
-    cy.contains("Rack R1").click();
-
-    // Enter position
-    cy.get('[data-testid="position-input"]').type("A5");
-
-    // Verify hierarchical path display
-    cy.get('[data-testid="location-path"]').should(
-      "contain.text",
-      "Main Laboratory > Freezer Unit 1 > Shelf-A > Rack R1 > Position A5"
-    );
-
-    // Save assignment
-    cy.get('[data-testid="save-button"]').click();
-
-    // Verify success notification
-    cy.get('div[role="status"]').should("be.visible");
+    
+    // Open selector and wait for API call (best practice: intercept timing)
+    cy.get('[data-testid="storage-location-selector"]').click();
+    cy.wait("@getRooms");
+    
+    // Select room - wait for element readiness (best practice: retry-ability)
+    cy.get('[data-testid="room-dropdown"]').should("be.visible").click();
+    cy.contains("Main Laboratory").should("be.visible").click();
+    
+    // Select device - wait for API and element readiness
+    cy.wait("@getDevices");
+    cy.get('[data-testid="device-dropdown"]')
+      .should("be.visible")
+      .should("not.be.disabled")
+      .click();
+    cy.contains("Freezer Unit 1").should("be.visible").click();
+    
+    // Select shelf - same pattern
+    cy.wait("@getDevices"); // May trigger again for shelf data
+    cy.get('[data-testid="shelf-dropdown"]')
+      .should("be.visible")
+      .should("not.be.disabled")
+      .click();
+    cy.contains("Shelf-A").should("be.visible").click();
+    
+    // Select rack - same pattern
+    cy.get('[data-testid="rack-dropdown"]')
+      .should("be.visible")
+      .should("not.be.disabled")
+      .click();
+    cy.contains("Rack R1").should("be.visible").click();
+    
+    // Enter position - wait for field to be ready
+    cy.get('[data-testid="position-input"]')
+      .should("be.visible")
+      .type("A5");
+    
+    // Verify hierarchical path display (best practice: retry-able assertions)
+    cy.get('[data-testid="location-path"]')
+      .should("contain.text", "Main Laboratory > Freezer Unit 1 > Shelf-A > Rack R1 > Position A5");
+    
+    // Save assignment and verify
+    cy.get('[data-testid="save-button"]').should("not.be.disabled").click();
+    cy.wait("@createAssignment");
+    cy.get('div[role="status"]')
+      .should("be.visible")
+      .and("contain.text", "assigned successfully");
   });
 });
 ```
+
+**Key Best Practices Demonstrated**:
+- **Intercept Timing**: Set up `cy.intercept()` before actions that trigger API calls
+- **Retry-Ability**: Use `.should()` assertions that automatically retry
+- **Element Readiness**: Wait for elements to be visible before interaction
+- **State Verification**: Use proper assertions (`contain.text`, `be.visible`)
+- **No Arbitrary Waits**: Use `cy.wait('@alias')` instead of `cy.wait(1000)`
 
 **Page Object Pattern** (follow existing structure):
 
@@ -665,21 +695,28 @@ class StorageAssignmentPage {
 export default StorageAssignmentPage;
 ```
 
-**Run Commands**:
+**Run Commands** (per Constitution V.5):
 
 ```bash
-# Run all Cypress tests
-npm run cy:run
+# Run individual test file (RECOMMENDED during development)
+npm run cy:run -- --spec "cypress/e2e/storageAssignment.cy.js"
 
-# Run specific test file
-npx cypress run --spec "cypress/e2e/storageAssignment.cy.js"
+# Run individual test case
+npm run cy:run -- --spec "cypress/e2e/storageAssignment.cy.js" --grep "should assign sample"
 
-# Open Cypress UI for development
+# Open Cypress UI for interactive debugging (with console logging)
 npx cypress open
 
-# Run headed mode (see browser)
+# Run headed mode (see browser + console)
 npx cypress run --headed
+
+# Full suite (CI/CD only)
+npm run cy:run
 ```
+
+**Note**: Per Constitution V.5, tests MUST be run individually during development
+(not full suite). Full suite runs are for CI/CD only. After each run, review
+browser console logs and screenshots (especially on failures).
 
 ---
 

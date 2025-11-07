@@ -185,6 +185,10 @@ managers
 
 ### Session 2025-11-22
 
+### Session 2025-11-07
+
+- Q: Should E2E tests cover all acceptance scenarios or focus on critical user journeys? → A: E2E tests focus on critical user journeys only (as specified in amendment plan). Edge cases and validation scenarios are better covered by unit/integration tests.
+
 - Q: How should the Move and View Storage menu items be consolidated? → A: Replace both "Move" and "View Storage" with a single "Manage Location" menu item that opens the consolidated modal
 - Q: What wording should be used for the consolidated modal title and button? → A: Dynamic wording based on location existence: If no location assigned → "Assign Storage Location" (title) / "Assign" (button). If location exists → "Move Sample" (title) / "Confirm Move" (button) - keep movement terminology when location exists
 - Q: When should the "Reason for Move" field appear and be required? → A: Show "Reason for Move" field only when sample has existing location AND user selects a different location. Field is optional (not required)
@@ -688,6 +692,56 @@ samples are assigned/moved/disposed.
 - **Export large dataset**: User exports all 100,000 samples to CSV. System
   processes export in background and provides download link when complete
   (within reasonable time, <1 minute for 100k records).
+
+## E2E Test Scenarios
+
+**Purpose**: E2E tests validate complete user workflows end-to-end, ensuring
+critical user journeys work correctly from a user's perspective. These tests
+focus on user-facing functionality rather than implementation details.
+
+**Test Execution Requirements**: All E2E tests MUST follow Constitution Section
+V.5 requirements:
+- Run tests individually during development (not full suite)
+- Browser console logging enabled and reviewed after each run
+- Video recording disabled by default
+- Post-run review of console logs and screenshots required
+
+### User Story P1 - Basic Storage Assignment
+
+E2E tests validate the three assignment methods and key user-facing behaviors:
+
+- **E2E Test**: "should assign sample to location via cascading dropdowns"
+- **E2E Test**: "should assign sample to location via type-ahead autocomplete"
+- **E2E Test**: "should assign sample to location via barcode scan"
+- **E2E Test**: "should create new location inline during assignment"
+- **E2E Test**: "should display capacity warnings at 80%, 90%, 100%"
+
+**Note**: Edge cases and validation scenarios (e.g., occupied position errors,
+inactive location errors) are covered by unit/integration tests, not E2E tests.
+
+### User Story P2A - Sample Search and Retrieval
+
+E2E tests validate search and filtering functionality:
+
+- **E2E Test**: "should search samples by accession number"
+- **E2E Test**: "should filter samples by storage room"
+- **E2E Test**: "should filter samples by multiple criteria"
+- **E2E Test**: "should clear filters and show all samples"
+
+**Note**: Performance testing (e.g., search with 100,000+ samples) is covered
+by integration tests, not E2E tests.
+
+### User Story P2B - Sample Movement
+
+E2E tests validate movement workflows:
+
+- **E2E Test**: "should move single sample between locations"
+- **E2E Test**: "should prevent moving to occupied position"
+- **E2E Test**: "should move multiple samples with auto-assigned positions"
+- **E2E Test**: "should allow manual position editing during bulk move"
+
+**Note**: Edge cases (e.g., concurrent access conflicts, disposed sample
+movement) are covered by unit/integration tests, not E2E tests.
 
 ## Requirements
 

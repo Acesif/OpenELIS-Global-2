@@ -851,9 +851,10 @@ Create `research.md` with sections:
 
 ## 6. Cypress E2E Configuration
 
-- **Status**: [Existing Cypress 12.17.3 framework in OpenELIS]
-- **Configuration**: [cypress.config.js structure and test patterns]
-- **Test Structure**: [Page object pattern from existing tests]
+- **Status**: Existing Cypress 12.17.3 framework in OpenELIS
+- **Configuration**: See enhanced configuration section below (per Constitution V.5)
+- **Test Structure**: Page object pattern from existing tests
+- **Best Practices**: See Test Refactoring Patterns section below
 ```
 
 **Deliverable**: `specs/001-sample-storage/research.md` with all 6 questions
@@ -1294,8 +1295,11 @@ implementation code.
    # Unit tests
    npm test -- components/storage
 
-   # E2E tests (Cypress)
-   npm run cy:run -- --spec "cypress/e2e/storage*.cy.js"
+   # E2E tests (Cypress) - Run individually per Constitution V.5
+   npm run cy:run -- --spec "cypress/e2e/storageAssignment.cy.js"
+   npm run cy:run -- --spec "cypress/e2e/storageSearch.cy.js"
+   npm run cy:run -- --spec "cypress/e2e/storageMovement.cy.js"
+   # Full suite only in CI/CD: npm run cy:run
    ```
 
 ## FHIR Validation
@@ -1878,6 +1882,141 @@ Implement full CRUD operations for location tabs (Rooms, Devices, Shelves, Racks
    - `testDeleteDevice_WithSamples_ShowsError()` - Attempt to delete device with samples
    - `testDeleteLocation_NoConstraints_Deletes()` - Delete location with no constraints
    - `testDeleteLocation_ConfirmationRequired()` - Verify confirmation dialog appears
+
+#### Cypress Configuration (Per Constitution V.5)
+
+**File**: `frontend/cypress.config.js`
+
+**Configuration Requirements**:
+
+```javascript
+const { defineConfig } = require("cypress");
+
+module.exports = defineConfig({
+  video: false, // MUST be disabled by default (per Constitution V.5)
+  screenshotOnRunFailure: true, // MUST be enabled (per Constitution V.5)
+  defaultCommandTimeout: 30000,
+  viewportWidth: 1200,
+  viewportHeight: 700,
+  e2e: {
+    setupNodeEvents(on, config) {
+      // Browser console logging enabled by default (Cypress captures automatically)
+      // Use on('task') to forward browser console to terminal if needed
+      on('task', {
+        log(message) {
+          console.log(message);
+          return null;
+        }
+      });
+      return config;
+    },
+    baseUrl: "https://localhost",
+    testIsolation: false, // Only if shared state needed
+  },
+});
+```
+
+**Key Configuration Points**:
+- `video: false` - Disabled by default for performance (per Constitution V.5)
+- `screenshotOnRunFailure: true` - Enabled for debugging (per Constitution V.5)
+- Browser console logging automatically captured by Cypress
+- Individual test execution during development (not full suite)
+
+#### Test Refactoring Patterns
+
+**Purpose**: Fix existing anti-patterns in Cypress E2E tests to align with best practices (per Constitution V.5).
+
+**Pattern 1: Intercept Timing**
+
+**Anti-Pattern**: Setting up intercepts after actions that trigger API calls
+```javascript
+// ❌ WRONG: Intercept after action
+cy.get('[data-testid="storage-selector"]').click();
+cy.intercept("GET", "**/rest/storage/rooms").as("getRooms");
+cy.wait("@getRooms"); // May miss the request
+```
+
+**Correct Pattern**: Set up intercepts before actions
+```javascript
+// ✅ CORRECT: Intercept before action
+cy.intercept("GET", "**/rest/storage/rooms").as("getRooms");
+cy.get('[data-testid="storage-selector"]').click();
+cy.wait("@getRooms");
+```
+
+**Pattern 2: Retry-Ability**
+
+**Anti-Pattern**: Using `.then()` callbacks for state verification (no retry)
+```javascript
+// ❌ WRONG: No retry-ability
+cy.get('[data-testid="modal"]').then(($el) => {
+  expect($el).to.be.visible; // Fails immediately if not ready
+});
+```
+
+**Correct Pattern**: Use `.should()` assertions that automatically retry
+```javascript
+// ✅ CORRECT: Retry-able assertions
+cy.get('[data-testid="modal"]').should("be.visible");
+cy.get('[data-testid="form-field"]').should("have.value", "expected");
+```
+
+**Pattern 3: Element Readiness**
+
+**Anti-Pattern**: Missing element readiness checks before interaction
+```javascript
+// ❌ WRONG: No readiness check
+cy.get('[data-testid="edit-modal"]').click(); // May not be ready
+cy.get('[data-testid="name-field"]').type("new name"); // May fail
+```
+
+**Correct Pattern**: Wait for elements to be visible before interaction
+```javascript
+// ✅ CORRECT: Wait for readiness
+cy.get('[data-testid="edit-modal"]').should("be.visible");
+cy.wait("@getLocation");
+cy.get('[data-testid="name-field"]').should("be.visible").and("not.be.empty");
+```
+
+**Pattern 4: State Verification**
+
+**Anti-Pattern**: Using incorrect assertions for state verification
+```javascript
+// ❌ WRONG: Modal closure check
+cy.get('[data-testid="modal"]').should("not.be.visible"); // May still exist in DOM
+```
+
+**Correct Pattern**: Use proper assertions for state changes
+```javascript
+// ✅ CORRECT: State verification
+cy.get('[data-testid="modal"]').should("not.exist"); // Modal removed from DOM
+cy.get(`[data-testid="row-${id}"]`).should("contain.text", newValue);
+cy.get('div[role="status"]').should("be.visible").and("contain.text", "success");
+```
+
+**Pattern 5: Arbitrary Waits**
+
+**Anti-Pattern**: Using fixed time delays instead of waiting for conditions
+```javascript
+// ❌ WRONG: Arbitrary wait
+cy.wait(1000); // Fixed delay, may be too short or too long
+```
+
+**Correct Pattern**: Use Cypress's built-in waiting mechanisms
+```javascript
+// ✅ CORRECT: Wait for conditions
+cy.intercept("GET", "**/rest/storage/rooms").as("getRooms");
+cy.wait("@getRooms"); // Wait for API call
+cy.get('[data-testid="dropdown"]').should("be.visible"); // Wait for element
+```
+
+**Refactoring Checklist** (for existing tests):
+- [ ] Move all `cy.intercept()` calls to before actions that trigger them
+- [ ] Replace `.then()` callbacks with `.should()` assertions for state verification
+- [ ] Add visibility checks before all interactions (modals, form fields, buttons)
+- [ ] Replace arbitrary `cy.wait(1000)` with proper waits (`cy.wait('@alias')` or `.should()`)
+- [ ] Use proper assertions for state changes (`not.exist` instead of `not.be.visible`)
+- [ ] Ensure tests can run individually (not dependent on full suite)
 
 ### API Contract Updates
 

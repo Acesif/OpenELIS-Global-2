@@ -52,7 +52,12 @@ Verify compliance with
   - **Transaction management MUST be in service layer only** - NO
     `@Transactional` annotations on controller methods
 - [ ] **Test Coverage**: Unit + ORM validation (if applicable) + integration +
-      E2E tests planned (>70% coverage goal per Constitution V.4)
+      E2E tests planned (>70% coverage goal per Constitution V.4 and V.5)
+  - E2E tests MUST follow Cypress best practices (Constitution V.5):
+    * Run tests individually during development (not full suite)
+    * Browser console logging enabled and reviewed after each run
+    * Video recording disabled by default
+    * Post-run review of console logs and screenshots required
 - [ ] **Schema Management**: Database changes via Liquibase changesets only
 - [ ] **Internationalization**: All UI strings use React Intl (no hardcoded
       text)

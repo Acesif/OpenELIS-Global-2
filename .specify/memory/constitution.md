@@ -1,6 +1,71 @@
 # OpenELIS Global 3.0 Constitution
 
 <!--
+SYNC IMPACT REPORT - Enhanced Cypress E2E Testing Workflow and Review Requirements
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Version Change: 1.6.0 → 1.7.0
+Change Type: MINOR - Materially expanded guidance on test execution workflow and review requirements
+Date: 2025-11-07
+
+Added Sections:
+  - Principle V (Test-Driven Development) > Section V.5: Test Execution Workflow
+    * NEW: Mandate to run tests individually during development (not full suite)
+    * NEW: Maximum 5-10 test cases per execution during development
+    * NEW: Full suite runs only in CI/CD pipeline or pre-merge validation
+    * Rationale: Faster feedback, easier debugging, prevents cascading failures
+  
+  - Principle V > Section V.5: Enhanced Browser Console Logging
+    * CHANGED: From "strategic" to "MUST be enabled and reviewed"
+    * NEW: Mandatory review of browser console logs after each test run
+    * NEW: Check for JavaScript errors, API failures, unexpected warnings
+    * Rationale: Console logs reveal underlying issues not visible in test output
+  
+  - Principle V > Section V.5: Post-Run Review Requirements
+    * NEW: Mandatory review checklist (console logs, screenshots, test output)
+    * NEW: Review required before marking tests as passing or filing bug reports
+    * Rationale: Ensures thorough debugging and prevents false positives
+
+Modified Sections:
+  - Principle V > Section V.5: Enhanced Anti-Patterns
+    * ADDED: Arbitrary time delays (use Cypress built-in waiting mechanisms)
+    * ADDED: Missing element readiness checks
+    * ADDED: Not leveraging Cypress retry-ability
+    * ADDED: Setting up intercepts after actions
+    * REMOVED: Technical code examples (moved to plan.md/research.md per functional vs technical separation)
+
+Rationale for Changes:
+  Current Cypress E2E tests have deficiencies: tests don't follow best practices, are messy,
+  need to be run in smaller chunks, and lack mandatory review processes. This amendment
+  establishes clear workflow requirements (individual execution during development) and
+  mandatory review processes (console logs and screenshots) to ensure tests are debuggable
+  and maintainable. Enhanced anti-patterns prevent common mistakes validated against
+  Cypress official documentation.
+
+  This guidance ensures:
+  - Faster feedback through individual test execution
+  - Thorough debugging through mandatory console log and screenshot review
+  - Prevention of common anti-patterns that lead to flaky tests
+  - Clear separation between functional requirements (constitution) and technical implementation (plan/research)
+
+Templates Requiring Updates:
+  ✅ .specify/templates/plan-template.md - Updated Constitution Check to reference V.5 for E2E requirements
+  ✅ .specify/templates/tasks-template.md - Added E2E test task example with reference to V.5
+
+Follow-up TODOs:
+  - Update existing E2E tests to follow new workflow (run individually)
+  - Ensure all developers review console logs and screenshots post-run
+  - Refactor tests to eliminate anti-patterns (arbitrary waits, missing readiness checks)
+
+Commit Message:
+  docs: amend constitution to v1.7.0 (enhanced Cypress E2E testing workflow and review requirements)
+
+  - Add test execution workflow: run tests individually during development
+  - Enhance browser console logging: mandatory review after each run
+  - Add post-run review requirements: mandatory checklist for console logs and screenshots
+  - Expand anti-patterns: arbitrary waits, missing readiness checks, not leveraging retry-ability
+  - Remove technical code examples (functional vs technical separation)
+  - Ensures debuggable and maintainable E2E tests aligned with Cypress best practices
+
 SYNC IMPACT REPORT - Cypress E2E Testing Best Practices
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 Version Change: 1.5.0 → 1.6.0
@@ -575,7 +640,7 @@ test would have caught both immediately.
 **Exception**: Projects without ORM frameworks (pure JDBC, NoSQL, etc.) may skip
 this requirement.
 
-#### Section V.5: Cypress E2E Testing Best Practices (ADDED 2025-11-05)
+#### Section V.5: Cypress E2E Testing Best Practices (ADDED 2025-11-05, ENHANCED 2025-11-07)
 
 **MANDATE**: Cypress E2E tests MUST follow efficiency and maintainability
 principles to ensure fast execution, clear debugging, and accurate user story
@@ -585,32 +650,32 @@ coverage without becoming slow or cumbersome.
 must remain fast, debuggable, and focused on user stories/use cases rather than
 implementation details.
 
+**Test Execution Workflow**:
+
+- **Individual Execution**: E2E tests MUST be executed individually in small,
+  manageable chunks during development. Full test suite runs are for CI/CD only.
+  - Run individual test files during development
+  - Maximum 5-10 test cases per execution during development
+  - Full suite runs only in CI/CD pipeline or pre-merge validation
+  - **Rationale**: Running tests individually provides faster feedback, easier
+    debugging, and prevents cascading failures from masking root causes.
+
 **Configuration Requirements**:
 
-- **Video Recording**: MUST be disabled by default (`video: false` in
-  `cypress.config.js`)
+- **Video Recording**: MUST be disabled by default
   - Video recording slows test execution significantly and consumes disk space
-  - Enable only for debugging specific failures:
-    `cypress run --config video=true`
-  - Or per-test: `cypress.config.js` environment variable override
-- **Screenshots**: MUST be enabled for failures (`screenshotOnRunFailure: true`)
+  - Enable only for debugging specific failures when needed
+- **Screenshots**: MUST be enabled for failures
   - Screenshots provide visual debugging information without performance
     overhead
-  - Review screenshots in `cypress/screenshots/` after test failures
-  - Manual screenshots during test: `cy.screenshot('checkpoint-name')` for key
-    workflow steps
-- **Console Logging**: MUST use console logging strategically for debugging
-  - Use `cy.log()` for test step documentation (visible in Cypress UI)
-  - Use `console.log()` in `setupNodeEvents` for configuration debugging
-  - Avoid excessive logging that slows execution (log only key steps, errors,
-    state transitions)
-- **Test Execution Speed**: MUST optimize for fast execution
-  - Avoid arbitrary `cy.wait()` delays - use `cy.intercept()` and
-    `cy.wait('@apiCall')` for API calls
-  - Use `cy.get()` with options (`{ timeout: 5000 }`) instead of fixed waits
-  - Minimize navigation between pages - use `cy.visit()` only when necessary
-  - Reuse test data setup across tests using `before()` hooks, not per-test
-    setup
+  - Review screenshots after test failures (see Post-Run Review Requirements)
+- **Browser Console Logging**: MUST be enabled for all test executions and
+  reviewed after each run
+  - Browser console logging enabled by default (Cypress captures automatically)
+  - Review browser console logs in Cypress UI after each test run
+  - Check for JavaScript errors, API failures, and unexpected warnings
+  - **Rationale**: Console logs reveal underlying issues (network failures,
+    JavaScript errors) that may not be visible in test output alone.
 
 **Test Organization Requirements**:
 
@@ -630,13 +695,21 @@ implementation details.
   - Use parameterized tests for similar scenarios (e.g.,
     `[freezer, refrigerator].forEach(...)`)
 
+**Post-Run Review Requirements**:
+
+- **Mandatory Review**: After each test execution (especially failures),
+  developers MUST review console logs and screenshots before marking tests as
+  passing or filing bug reports.
+- **Review Checklist**:
+  1. **Console Logs**: Review browser console in Cypress UI for errors, failed
+     API requests, warnings
+  2. **Screenshots**: Review failure screenshots for UI state at failure point
+  3. **Test Output**: Review Cypress command log for execution order and timeouts
+- **Documentation**: Document findings in test file comments or PR description
+  if issues are discovered.
+
 **Debugging and Maintenance**:
 
-- **Screenshot Review**: After test failures, review screenshots to understand
-  UI state at failure point
-- **Console Logging**: Use `cy.log()` strategically to document test flow
-  - Example:
-    `cy.log('Selecting storage location: Main Laboratory > Freezer Unit 1')`
 - **Test Isolation**: Use `testIsolation: false` only when necessary (shared
   state across tests)
   - Prefer isolated tests that can run independently
@@ -645,55 +718,9 @@ implementation details.
   - Target: Individual test <30 seconds, full suite <5 minutes
   - If tests exceed targets, refactor to reduce setup/teardown overhead
 
-**Example Configuration** (`cypress.config.js`):
-
-```javascript
-module.exports = defineConfig({
-  video: false, // Disabled by default for speed
-  screenshotOnRunFailure: true, // Screenshots for debugging
-  defaultCommandTimeout: 30000,
-  e2e: {
-    setupNodeEvents(on, config) {
-      // Console logging for configuration debugging
-      console.log("Cypress configuration loaded");
-      return config;
-    },
-    baseUrl: "https://localhost",
-    testIsolation: false, // Only if shared state needed
-  },
-});
-```
-
-**Example Test Structure**:
-
-```javascript
-describe("User Story P1: Basic Storage Assignment", () => {
-  before(() => {
-    // Shared setup - runs once for all tests
-    cy.task("loadStorageTestData");
-  });
-
-  it("should assign sample to location via cascading dropdowns", () => {
-    cy.log("Starting assignment workflow");
-    cy.visit("/sample-entry");
-
-    // Use cy.intercept() instead of cy.wait()
-    cy.intercept("GET", "/rest/storage/rooms").as("getRooms");
-    cy.get('[data-testid="storage-location-selector"]').click();
-    cy.wait("@getRooms");
-
-    // Select location
-    cy.get('[data-testid="room-dropdown"]').select("Main Laboratory");
-    cy.get('[data-testid="device-dropdown"]').select("Freezer Unit 1");
-
-    // Screenshot for key workflow step
-    cy.screenshot("location-selected");
-
-    cy.get('[data-testid="save-assignment"]').click();
-    cy.contains("Location assigned successfully").should("be.visible");
-  });
-});
-```
+**Note**: Technical implementation details (code examples, configuration
+syntax) belong in plan.md and research.md, not in the constitution. This
+section focuses on functional requirements and principles.
 
 **Rationale**: During implementation of feature 001-sample-storage, Cypress E2E
 tests grew to 65+ test cases with video recording enabled, causing slow
@@ -702,18 +729,25 @@ using screenshots for debugging, and optimizing test structure, execution time
 reduced to <5 minutes. Console logging and screenshot review provide sufficient
 debugging information without performance overhead.
 
-**Anti-Patterns to Avoid**:
+**Anti-Patterns to Avoid** (validated against Cypress official documentation):
 
 - ❌ **Video recording enabled by default** - Slows execution, consumes disk
   space
-- ❌ **Excessive `cy.wait(5000)` delays** - Use `cy.intercept()` and
-  `cy.wait('@alias')` instead
+- ❌ **Arbitrary time delays** - Use Cypress's built-in waiting mechanisms
+  instead of fixed timeouts
+- ❌ **Missing element readiness checks** - Wait for elements to be
+  visible/ready before interaction
 - ❌ **Testing implementation details** - E2E tests should validate user
   workflows, not internal component logic
-- ❌ **Redundant test cases** - Don't test the same workflow multiple times with
-  minor variations
-- ❌ **Per-test setup/teardown** - Use `before()` hooks for shared setup
-- ❌ **No logging** - Use `cy.log()` to document test flow for debugging
+- ❌ **Not leveraging Cypress retry-ability** - Use assertions that
+  automatically retry instead of immediate checks
+- ❌ **Setting up intercepts after actions** - Intercepts must be set up before
+  actions that trigger them
+- ❌ **Redundant test cases** - Don't test the same workflow multiple times
+  with minor variations
+- ❌ **Per-test setup/teardown** - Use shared setup hooks for efficiency
+- ❌ **No console log review** - Always review browser console logs after test
+  execution
 
 ---
 
@@ -1097,10 +1131,11 @@ sync.
 
 ---
 
-**Version**: 1.6.0 | **Ratified**: 2025-10-30 | **Last Amended**: 2025-11-05
+**Version**: 1.7.0 | **Ratified**: 2025-10-30 | **Last Amended**: 2025-11-07
 
 <!--
   Ratification Signatories: OpenELIS Global Core Team
+  Amendment v1.7.0: Enhanced Cypress E2E testing workflow and review requirements (2025-11-07)
   Amendment v1.6.0: Cypress E2E testing best practices (2025-11-05)
   Amendment v1.5.0: Explicit prohibition of @Transactional in controllers (2025-11-05)
   Amendment v1.4.0: Service layer data compilation requirement (2025-11-04)
