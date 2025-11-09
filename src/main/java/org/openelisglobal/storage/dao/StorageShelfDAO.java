@@ -9,6 +9,14 @@ public interface StorageShelfDAO extends BaseDAO<StorageShelf, Integer> {
     List<StorageShelf> findByParentDeviceId(Integer deviceId);
 
     /**
+     * Find shelf by label (anywhere in database) - for existence check
+     *
+     * @param label Shelf label
+     * @return StorageShelf or null if not found
+     */
+    StorageShelf findByLabel(String label);
+
+    /**
      * Find shelf by label and parent device (for barcode validation)
      *
      * @param label Shelf label

@@ -164,6 +164,7 @@ public class BarcodeValidationServiceTest {
 
         when(barcodeParsingService.parseBarcode(barcode)).thenReturn(validParsedBarcode);
         when(storageRoomDAO.findByCode("MAIN")).thenReturn(testRoom);
+        when(storageDeviceDAO.findByCode("FRZ01")).thenReturn(deviceWithWrongParent); // Device exists elsewhere
         when(storageDeviceDAO.findByCodeAndParentRoom("FRZ01", testRoom)).thenReturn(null); // Hierarchy broken
 
         // Act
@@ -191,6 +192,7 @@ public class BarcodeValidationServiceTest {
 
         when(barcodeParsingService.parseBarcode(barcode)).thenReturn(validParsedBarcode);
         when(storageRoomDAO.findByCode("MAIN")).thenReturn(testRoom);
+        when(storageDeviceDAO.findByCode("FRZ01")).thenReturn(testDevice); // Device exists
         when(storageDeviceDAO.findByCodeAndParentRoom("FRZ01", testRoom)).thenReturn(testDevice);
 
         // Act
@@ -264,8 +266,9 @@ public class BarcodeValidationServiceTest {
 
         when(barcodeParsingService.parseBarcode(barcode)).thenReturn(parsedBarcode);
         when(storageRoomDAO.findByCode("MAIN")).thenReturn(testRoom);
+        when(storageDeviceDAO.findByCode("FRZ01")).thenReturn(testDevice); // Device exists
         when(storageDeviceDAO.findByCodeAndParentRoom("FRZ01", testRoom)).thenReturn(testDevice);
-        when(storageShelfDAO.findByLabelAndParentDevice("NONEXISTENT", testDevice)).thenReturn(null);
+        when(storageShelfDAO.findByLabel("NONEXISTENT")).thenReturn(null); // Shelf doesn't exist
 
         // Act
         BarcodeValidationResponse response = barcodeValidationService.validateBarcode(barcode);
@@ -295,6 +298,7 @@ public class BarcodeValidationServiceTest {
 
         when(barcodeParsingService.parseBarcode(barcode)).thenReturn(parsedBarcode);
         when(storageRoomDAO.findByCode("MAIN")).thenReturn(testRoom);
+        when(storageDeviceDAO.findByCode("FRZ01")).thenReturn(testDevice); // Device exists
         when(storageDeviceDAO.findByCodeAndParentRoom("FRZ01", testRoom)).thenReturn(testDevice);
 
         // Act
@@ -326,9 +330,13 @@ public class BarcodeValidationServiceTest {
         String barcode = "MAIN-FRZ01-SHA-RKR1-A5";
         when(barcodeParsingService.parseBarcode(barcode)).thenReturn(validParsedBarcode);
         when(storageRoomDAO.findByCode("MAIN")).thenReturn(testRoom);
+        when(storageDeviceDAO.findByCode("FRZ01")).thenReturn(testDevice);
         when(storageDeviceDAO.findByCodeAndParentRoom("FRZ01", testRoom)).thenReturn(testDevice);
+        when(storageShelfDAO.findByLabel("SHA")).thenReturn(testShelf);
         when(storageShelfDAO.findByLabelAndParentDevice("SHA", testDevice)).thenReturn(testShelf);
+        when(storageRackDAO.findByLabel("RKR1")).thenReturn(testRack);
         when(storageRackDAO.findByLabelAndParentShelf("RKR1", testShelf)).thenReturn(testRack);
+        when(storagePositionDAO.findByCoordinates("A5")).thenReturn(testPosition);
         when(storagePositionDAO.findByCoordinatesAndParentRack("A5", testRack)).thenReturn(testPosition);
         // Note: Occupancy checking removed - done during assignment, not validation
 
@@ -359,6 +367,7 @@ public class BarcodeValidationServiceTest {
 
         when(barcodeParsingService.parseBarcode(barcode)).thenReturn(parsedBarcode);
         when(storageRoomDAO.findByCode("MAIN")).thenReturn(testRoom);
+        when(storageDeviceDAO.findByCode("FRZ01")).thenReturn(testDevice);
         when(storageDeviceDAO.findByCodeAndParentRoom("FRZ01", testRoom)).thenReturn(testDevice);
 
         // Act

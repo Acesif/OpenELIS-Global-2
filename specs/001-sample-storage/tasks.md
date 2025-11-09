@@ -1924,19 +1924,19 @@ post-run, core happy paths efficiently covered.
 
 #### Tests First (Write BEFORE implementation)
 
-- [ ] T227 [P] [US1] Write unit test `src/test/java/org/openelisglobal/storage/service/BarcodeParsingServiceTest.java` with test methods: testParse2LevelBarcode, testParse3LevelBarcode, testParse4LevelBarcode, testParse5LevelBarcode, testParseWithHyphenDelimiter, testRejectInvalidDelimiter, testHandleEmptyBarcode, testHandleNullBarcode
-- [ ] T228 [P] [US1] Write unit test `src/test/java/org/openelisglobal/storage/service/BarcodeValidationServiceTest.java` with test methods: testStep1FormatValidation, testStep2LocationExistenceCheck, testStep3HierarchyValidation, testStep4ActivityCheck, testStep5ConflictCheck, testErrorMessagesForEachFailureType, testPartialValidationWithValidComponents, testPreFillValidComponentsInResponse
-- [ ] T229 [P] [US1] Write integration test `src/test/java/org/openelisglobal/storage/controller/BarcodeValidationRestControllerTest.java` with test methods: testPostBarcodeValidateEndpoint, testRequestResponseFormatMatchesContract, testDatabasePersistenceAfterValidation, testErrorResponse400, testErrorResponse404
-- [ ] T230 Run barcode parsing tests → Verify all FAIL: `mvn test -Dtest="BarcodeParsingServiceTest"`
-- [ ] T231 Run barcode validation tests → Verify all FAIL: `mvn test -Dtest="BarcodeValidationServiceTest"`
-- [ ] T232 Run barcode controller tests → Verify all FAIL: `mvn test -Dtest="BarcodeValidationRestControllerTest"`
+- [X] T227 [P] [US1] Write unit test `src/test/java/org/openelisglobal/storage/service/BarcodeParsingServiceTest.java` with test methods: testParse2LevelBarcode, testParse3LevelBarcode, testParse4LevelBarcode, testParse5LevelBarcode, testParseWithHyphenDelimiter, testRejectInvalidDelimiter, testHandleEmptyBarcode, testHandleNullBarcode
+- [X] T228 [P] [US1] Write unit test `src/test/java/org/openelisglobal/storage/service/BarcodeValidationServiceTest.java` with test methods: testStep1FormatValidation, testStep2LocationExistenceCheck, testStep3HierarchyValidation, testStep4ActivityCheck, testStep5ConflictCheck, testErrorMessagesForEachFailureType, testPartialValidationWithValidComponents, testPreFillValidComponentsInResponse
+- [X] T229 [P] [US1] Write integration test `src/test/java/org/openelisglobal/storage/controller/BarcodeValidationRestControllerTest.java` with test methods: testPostBarcodeValidateEndpoint, testRequestResponseFormatMatchesContract, testDatabasePersistenceAfterValidation, testErrorResponse400, testErrorResponse404
+- [X] T230 Run barcode parsing tests → Verify all FAIL: `mvn test -Dtest="BarcodeParsingServiceTest"`
+- [X] T231 Run barcode validation tests → Verify all FAIL: `mvn test -Dtest="BarcodeValidationServiceTest"`
+- [X] T232 Run barcode controller tests → Verify all FAIL: `mvn test -Dtest="BarcodeValidationRestControllerTest"`
 
 #### Implementation (Make Tests Pass)
 
-- [ ] T233 [US1] Create `src/main/java/org/openelisglobal/storage/service/BarcodeParsingService.java` with methods: parseBarcode(String barcode) returns ParsedBarcode, validateFormat(String barcode) returns boolean, extractComponents(String barcode) returns List<String>
-- [ ] T234 [US1] Create `src/main/java/org/openelisglobal/storage/service/BarcodeValidationService.java` implementing 5-step validation: format validation, location existence check, hierarchy validation, activity check, conflict check, with error messages and pre-fill valid components
-- [ ] T235 [US1] Create `src/main/java/org/openelisglobal/storage/controller/BarcodeValidationRestController.java` with endpoint `POST /rest/storage/barcode/validate` accepting BarcodeValidationRequest, returning BarcodeValidationResponse
-- [ ] T236 [US1] Update API contract `specs/001-sample-storage/contracts/storage-api.json` with barcode validation endpoint schema
+- [X] T233 [US1] Create `src/main/java/org/openelisglobal/storage/service/BarcodeParsingService.java` with methods: parseBarcode(String barcode) returns ParsedBarcode, validateFormat(String barcode) returns boolean, extractComponents(String barcode) returns List<String>
+- [X] T234 [US1] Create `src/main/java/org/openelisglobal/storage/service/BarcodeValidationService.java` implementing 5-step validation: format validation, location existence check, hierarchy validation, activity check, conflict check, with error messages and pre-fill valid components
+- [X] T235 [US1] Create `src/main/java/org/openelisglobal/storage/controller/BarcodeValidationRestController.java` with endpoint `POST /rest/storage/barcode/validate` accepting BarcodeValidationRequest, returning BarcodeValidationResponse
+- [X] T236 [US1] Update API contract `specs/001-sample-storage/contracts/storage-api.json` with barcode validation endpoint schema
 
 **Checkpoint**: Backend barcode parsing and validation working, all tests pass
 

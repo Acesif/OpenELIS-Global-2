@@ -58,6 +58,21 @@ public class StorageShelfDAOImpl extends BaseDAOImpl<StorageShelf, Integer> impl
 
     @Override
     @Transactional(readOnly = true)
+    public StorageShelf findByLabel(String label) {
+        try {
+            String hql = "FROM StorageShelf s WHERE s.label = :label";
+            Query<StorageShelf> query = entityManager.unwrap(Session.class).createQuery(hql, StorageShelf.class);
+            query.setParameter("label", label);
+            query.setMaxResults(1);
+            List<StorageShelf> results = query.list();
+            return results.isEmpty() ? null : results.get(0);
+        } catch (Exception e) {
+            throw new LIMSRuntimeException("Error finding StorageShelf by label", e);
+        }
+    }
+
+    @Override
+    @Transactional(readOnly = true)
     public StorageShelf findByLabelAndParentDevice(String label, org.openelisglobal.storage.valueholder.StorageDevice parentDevice) {
         try {
             if (parentDevice == null) {

@@ -9,6 +9,14 @@ public interface StorageRackDAO extends BaseDAO<StorageRack, Integer> {
     List<StorageRack> findByParentShelfId(Integer shelfId);
 
     /**
+     * Find rack by label (anywhere in database) - for existence check
+     *
+     * @param label Rack label
+     * @return StorageRack or null if not found
+     */
+    StorageRack findByLabel(String label);
+
+    /**
      * Find rack by label and parent shelf (for barcode validation)
      *
      * @param label Rack label

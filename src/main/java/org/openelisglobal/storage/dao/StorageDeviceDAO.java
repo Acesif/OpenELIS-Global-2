@@ -11,6 +11,14 @@ public interface StorageDeviceDAO extends BaseDAO<StorageDevice, Integer> {
     StorageDevice findByParentRoomIdAndCode(Integer roomId, String code);
 
     /**
+     * Find device by code (anywhere in database) - for existence check
+     *
+     * @param code Device code
+     * @return StorageDevice or null if not found
+     */
+    StorageDevice findByCode(String code);
+
+    /**
      * Find device by code and parent room (for barcode validation)
      *
      * @param code Device code

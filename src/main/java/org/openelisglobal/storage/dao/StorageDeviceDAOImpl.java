@@ -82,6 +82,22 @@ public class StorageDeviceDAOImpl extends BaseDAOImpl<StorageDevice, Integer> im
 
     @Override
     @Transactional(readOnly = true)
+    public StorageDevice findByCode(String code) {
+        try {
+            String hql = "FROM StorageDevice d WHERE d.code = :code";
+            Query<StorageDevice> query = entityManager.unwrap(Session.class).createQuery(hql, StorageDevice.class);
+            query.setParameter("code", code);
+            query.setMaxResults(1);
+            List<StorageDevice> results = query.list();
+            return results.isEmpty() ? null : results.get(0);
+        } catch (Exception e) {
+            logger.error("Error finding StorageDevice by code", e);
+            throw new LIMSRuntimeException("Error finding StorageDevice by code", e);
+        }
+    }
+
+    @Override
+    @Transactional(readOnly = true)
     public StorageDevice findByCodeAndParentRoom(String code, org.openelisglobal.storage.valueholder.StorageRoom parentRoom) {
         try {
             if (parentRoom == null) {

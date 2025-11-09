@@ -162,6 +162,21 @@ public class StoragePositionDAOImpl extends BaseDAOImpl<StoragePosition, Integer
 
     @Override
     @Transactional(readOnly = true)
+    public StoragePosition findByCoordinates(String coordinates) {
+        try {
+            String hql = "FROM StoragePosition p WHERE p.coordinate = :coordinates";
+            Query<StoragePosition> query = entityManager.unwrap(Session.class).createQuery(hql, StoragePosition.class);
+            query.setParameter("coordinates", coordinates);
+            query.setMaxResults(1);
+            List<StoragePosition> results = query.list();
+            return results.isEmpty() ? null : results.get(0);
+        } catch (Exception e) {
+            throw new LIMSRuntimeException("Error finding StoragePosition by coordinates", e);
+        }
+    }
+
+    @Override
+    @Transactional(readOnly = true)
     public StoragePosition findByCoordinatesAndParentRack(String coordinates, org.openelisglobal.storage.valueholder.StorageRack parentRack) {
         try {
             if (parentRack == null) {

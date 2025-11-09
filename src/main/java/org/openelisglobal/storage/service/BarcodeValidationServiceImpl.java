@@ -19,6 +19,12 @@ import org.springframework.transaction.annotation.Transactional;
 /**
  * Implementation of BarcodeValidationService
  * Implements 5-step validation process per FR-024 through FR-027
+ *
+ * Key features:
+ * - Two-step validation: existence check + hierarchy check
+ * - Partial validation: continues through all levels even after failure
+ * - Tracks first failure point for user feedback
+ * - Populates validComponents for form pre-filling
  */
 @Service
 @Transactional(readOnly = true)
@@ -47,123 +53,170 @@ public class BarcodeValidationServiceImpl implements BarcodeValidationService {
         BarcodeValidationResponse response = new BarcodeValidationResponse();
         response.setBarcode(barcode);
 
+        boolean isValid = true;  // Assume valid until proven otherwise
+        String firstFailedStep = null;
+        String firstErrorMessage = null;
+
         // Step 1: Format Validation
         ParsedBarcode parsed = barcodeParsingService.parseBarcode(barcode);
         if (!parsed.isValid()) {
             response.setValid(false);
             response.setFailedStep("FORMAT_VALIDATION");
             response.setErrorMessage(parsed.getErrorMessage());
-            return response;
+            return response; // Can't continue without valid parse
         }
 
-        // Step 2: Location Existence Check
+        // Step 2 & 3: Room validation (existence + hierarchy)
         StorageRoom room = storageRoomDAO.findByCode(parsed.getRoomCode());
         if (room == null) {
-            response.setValid(false);
-            response.setFailedStep("LOCATION_EXISTENCE");
-            response.setErrorMessage("Room not found: " + parsed.getRoomCode());
-            return response;
-        }
-        response.addValidComponent("room", createComponentMap(room.getId(), room.getName(), room.getCode()));
+            isValid = false;
+            firstFailedStep = "LOCATION_EXISTENCE";
+            firstErrorMessage = "Room not found: " + parsed.getRoomCode();
+        } else {
+            response.addValidComponent("room", createComponentMap(room.getId(), room.getName(), room.getCode()));
 
+            // Step 4: Room activity check
+            if (room.getActive() == null || !room.getActive()) {
+                if (isValid) { // Only record first failure
+                    isValid = false;
+                    firstFailedStep = "ACTIVITY_CHECK";
+                    firstErrorMessage = "Room is inactive: " + room.getName();
+                }
+            }
+        }
+
+        // Step 2 & 3: Device validation (existence + hierarchy) - continue even if room failed
         StorageDevice device = null;
         if (parsed.getDeviceCode() != null) {
-            device = storageDeviceDAO.findByCodeAndParentRoom(parsed.getDeviceCode(), room);
-            if (device == null) {
-                response.setValid(false);
-                response.setFailedStep("LOCATION_EXISTENCE");
-                response.setErrorMessage("Device not found: " + parsed.getDeviceCode() + " in room " + room.getName());
-                return response;
+            // First check: Does device code exist anywhere?
+            StorageDevice deviceAny = storageDeviceDAO.findByCode(parsed.getDeviceCode());
+            if (deviceAny == null) {
+                if (isValid) { // Only record first failure
+                    isValid = false;
+                    firstFailedStep = "LOCATION_EXISTENCE";
+                    firstErrorMessage = "Device not found: " + parsed.getDeviceCode();
+                }
+            } else if (room != null) {
+                // Second check: Does it exist with correct parent?
+                device = storageDeviceDAO.findByCodeAndParentRoom(parsed.getDeviceCode(), room);
+                if (device == null) {
+                    if (isValid) { // Only record first failure
+                        isValid = false;
+                        firstFailedStep = "HIERARCHY_VALIDATION";
+                        firstErrorMessage = "Device '" + parsed.getDeviceCode() + "' exists but parent hierarchy is incorrect (not in room '" + (room.getName() != null ? room.getName() : room.getCode()) + "')";
+                    }
+                } else {
+                    response.addValidComponent("device", createComponentMap(device.getId(), device.getName(), device.getCode()));
+
+                    // Step 4: Device activity check
+                    if (device.getActive() == null || !device.getActive()) {
+                        if (isValid) { // Only record first failure
+                            isValid = false;
+                            firstFailedStep = "ACTIVITY_CHECK";
+                            firstErrorMessage = "Device is inactive: " + device.getName();
+                        }
+                    }
+                }
             }
-            response.addValidComponent("device", createComponentMap(device.getId(), device.getName(), device.getCode()));
         }
 
+        // Step 2 & 3: Shelf validation (existence + hierarchy) - continue even if device failed
         StorageShelf shelf = null;
         if (parsed.getShelfCode() != null) {
-            if (device == null) {
-                response.setValid(false);
-                response.setFailedStep("HIERARCHY_VALIDATION");
-                response.setErrorMessage("Shelf cannot exist without device");
-                return response;
+            // First check: Does shelf label exist anywhere?
+            StorageShelf shelfAny = storageShelfDAO.findByLabel(parsed.getShelfCode());
+            if (shelfAny == null) {
+                if (isValid) { // Only record first failure
+                    isValid = false;
+                    firstFailedStep = "LOCATION_EXISTENCE";
+                    firstErrorMessage = "Shelf not found: " + parsed.getShelfCode();
+                }
+            } else if (device != null) {
+                // Second check: Does it exist with correct parent?
+                shelf = storageShelfDAO.findByLabelAndParentDevice(parsed.getShelfCode(), device);
+                if (shelf == null) {
+                    if (isValid) { // Only record first failure
+                        isValid = false;
+                        firstFailedStep = "HIERARCHY_VALIDATION";
+                        firstErrorMessage = "Shelf '" + parsed.getShelfCode() + "' exists but parent hierarchy is incorrect (not in device '" + (device.getName() != null ? device.getName() : device.getCode()) + "')";
+                    }
+                } else {
+                    response.addValidComponent("shelf", createComponentMap(shelf.getId(), shelf.getLabel(), shelf.getLabel()));
+
+                    // Step 4: Shelf activity check
+                    if (shelf.getActive() == null || !shelf.getActive()) {
+                        if (isValid) { // Only record first failure
+                            isValid = false;
+                            firstFailedStep = "ACTIVITY_CHECK";
+                            firstErrorMessage = "Shelf is inactive: " + shelf.getLabel();
+                        }
+                    }
+                }
             }
-            shelf = storageShelfDAO.findByLabelAndParentDevice(parsed.getShelfCode(), device);
-            if (shelf == null) {
-                response.setValid(false);
-                response.setFailedStep("LOCATION_EXISTENCE");
-                response.setErrorMessage("Shelf not found: " + parsed.getShelfCode() + " in device " + device.getName());
-                return response;
-            }
-            response.addValidComponent("shelf", createComponentMap(shelf.getId(), shelf.getLabel(), shelf.getLabel()));
         }
 
+        // Step 2 & 3: Rack validation (existence + hierarchy) - continue even if shelf failed
         StorageRack rack = null;
         if (parsed.getRackCode() != null) {
-            if (shelf == null) {
-                response.setValid(false);
-                response.setFailedStep("HIERARCHY_VALIDATION");
-                response.setErrorMessage("Rack cannot exist without shelf");
-                return response;
+            // First check: Does rack label exist anywhere?
+            StorageRack rackAny = storageRackDAO.findByLabel(parsed.getRackCode());
+            if (rackAny == null) {
+                if (isValid) { // Only record first failure
+                    isValid = false;
+                    firstFailedStep = "LOCATION_EXISTENCE";
+                    firstErrorMessage = "Rack not found: " + parsed.getRackCode();
+                }
+            } else if (shelf != null) {
+                // Second check: Does it exist with correct parent?
+                rack = storageRackDAO.findByLabelAndParentShelf(parsed.getRackCode(), shelf);
+                if (rack == null) {
+                    if (isValid) { // Only record first failure
+                        isValid = false;
+                        firstFailedStep = "HIERARCHY_VALIDATION";
+                        firstErrorMessage = "Rack '" + parsed.getRackCode() + "' exists but parent hierarchy is incorrect (not in shelf '" + shelf.getLabel() + "')";
+                    }
+                } else {
+                    response.addValidComponent("rack", createComponentMap(rack.getId(), rack.getLabel(), rack.getLabel()));
+
+                    // Step 4: Rack activity check
+                    if (rack.getActive() == null || !rack.getActive()) {
+                        if (isValid) { // Only record first failure
+                            isValid = false;
+                            firstFailedStep = "ACTIVITY_CHECK";
+                            firstErrorMessage = "Rack is inactive: " + rack.getLabel();
+                        }
+                    }
+                }
             }
-            rack = storageRackDAO.findByLabelAndParentShelf(parsed.getRackCode(), shelf);
-            if (rack == null) {
-                response.setValid(false);
-                response.setFailedStep("LOCATION_EXISTENCE");
-                response.setErrorMessage("Rack not found: " + parsed.getRackCode() + " in shelf " + shelf.getLabel());
-                return response;
-            }
-            response.addValidComponent("rack", createComponentMap(rack.getId(), rack.getLabel(), rack.getLabel()));
         }
 
+        // Step 2 & 3: Position validation (existence + hierarchy) - continue even if rack failed
         StoragePosition position = null;
         if (parsed.getPositionCode() != null) {
-            if (rack == null) {
-                response.setValid(false);
-                response.setFailedStep("HIERARCHY_VALIDATION");
-                response.setErrorMessage("Position cannot exist without rack");
-                return response;
+            // First check: Does position coordinate exist anywhere?
+            StoragePosition positionAny = storagePositionDAO.findByCoordinates(parsed.getPositionCode());
+            if (positionAny == null) {
+                if (isValid) { // Only record first failure
+                    isValid = false;
+                    firstFailedStep = "LOCATION_EXISTENCE";
+                    firstErrorMessage = "Position not found: " + parsed.getPositionCode();
+                }
+            } else if (rack != null) {
+                // Second check: Does it exist with correct parent?
+                position = storagePositionDAO.findByCoordinatesAndParentRack(parsed.getPositionCode(), rack);
+                if (position == null) {
+                    if (isValid) { // Only record first failure
+                        isValid = false;
+                        firstFailedStep = "HIERARCHY_VALIDATION";
+                        firstErrorMessage = "Position '" + parsed.getPositionCode() + "' exists but parent hierarchy is incorrect (not in rack '" + rack.getLabel() + "')";
+                    }
+                } else {
+                    response.addValidComponent("position", createComponentMap(position.getId(), position.getCoordinate(), position.getCoordinate()));
+
+                    // Note: StoragePosition doesn't have an active field - it inherits activity from its parent hierarchy
+                }
             }
-            position = storagePositionDAO.findByCoordinatesAndParentRack(parsed.getPositionCode(), rack);
-            if (position == null) {
-                response.setValid(false);
-                response.setFailedStep("LOCATION_EXISTENCE");
-                response.setErrorMessage("Position not found: " + parsed.getPositionCode() + " in rack " + rack.getLabel());
-                return response;
-            }
-            response.addValidComponent("position", createComponentMap(position.getId(), position.getCoordinate(), position.getCoordinate()));
         }
-
-        // Step 3: Hierarchy Validation (already done during existence checks above)
-
-        // Step 4: Activity Check
-        if (room.getActive() == null || !room.getActive()) {
-            response.setValid(false);
-            response.setFailedStep("ACTIVITY_CHECK");
-            response.setErrorMessage("Room is inactive: " + room.getName());
-            return response;
-        }
-
-        if (device != null && (device.getActive() == null || !device.getActive())) {
-            response.setValid(false);
-            response.setFailedStep("ACTIVITY_CHECK");
-            response.setErrorMessage("Device is inactive: " + device.getName());
-            return response;
-        }
-
-        if (shelf != null && (shelf.getActive() == null || !shelf.getActive())) {
-            response.setValid(false);
-            response.setFailedStep("ACTIVITY_CHECK");
-            response.setErrorMessage("Shelf is inactive: " + shelf.getLabel());
-            return response;
-        }
-
-        if (rack != null && (rack.getActive() == null || !rack.getActive())) {
-            response.setValid(false);
-            response.setFailedStep("ACTIVITY_CHECK");
-            response.setErrorMessage("Rack is inactive: " + rack.getLabel());
-            return response;
-        }
-
-        // Note: StoragePosition doesn't have an active field - it inherits activity from its parent hierarchy
 
         // Step 5: Conflict Check
         // Note: With the polymorphic location model (Phase 4), we check if the exact location
@@ -171,8 +224,13 @@ public class BarcodeValidationServiceImpl implements BarcodeValidationService {
         // For barcode validation, we're validating the barcode format and hierarchy,
         // not checking occupancy at this level (that's done during assignment)
 
-        // All validation steps passed
-        response.setValid(true);
+        // Set final response
+        response.setValid(isValid);
+        if (!isValid) {
+            response.setFailedStep(firstFailedStep);
+            response.setErrorMessage(firstErrorMessage);
+        }
+
         return response;
     }
 

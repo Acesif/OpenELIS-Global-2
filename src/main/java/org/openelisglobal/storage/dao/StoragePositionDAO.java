@@ -13,6 +13,14 @@ public interface StoragePositionDAO extends BaseDAO<StoragePosition, Integer> {
     List<StoragePosition> findByParentShelfId(Integer shelfId);
 
     /**
+     * Find position by coordinates (anywhere in database) - for existence check
+     *
+     * @param coordinates Position coordinates
+     * @return StoragePosition or null if not found
+     */
+    StoragePosition findByCoordinates(String coordinates);
+
+    /**
      * Find position by coordinates and parent rack (for barcode validation)
      *
      * @param coordinates Position coordinates
