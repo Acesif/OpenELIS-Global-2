@@ -79,4 +79,24 @@ public class StorageDeviceDAOImpl extends BaseDAOImpl<StorageDevice, Integer> im
             throw new LIMSRuntimeException("Error counting StorageDevices by room ID", e);
         }
     }
+
+    @Override
+    @Transactional(readOnly = true)
+    public StorageDevice findByCodeAndParentRoom(String code, org.openelisglobal.storage.valueholder.StorageRoom parentRoom) {
+        try {
+            if (parentRoom == null) {
+                return null;
+            }
+            String hql = "FROM StorageDevice d WHERE d.code = :code AND d.parentRoom.id = :roomId";
+            Query<StorageDevice> query = entityManager.unwrap(Session.class).createQuery(hql, StorageDevice.class);
+            query.setParameter("code", code);
+            query.setParameter("roomId", parentRoom.getId());
+            query.setMaxResults(1);
+            List<StorageDevice> results = query.list();
+            return results.isEmpty() ? null : results.get(0);
+        } catch (Exception e) {
+            logger.error("Error finding StorageDevice by code and parent room", e);
+            throw new LIMSRuntimeException("Error finding StorageDevice by code and parent room", e);
+        }
+    }
 }

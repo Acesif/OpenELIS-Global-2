@@ -159,4 +159,23 @@ public class StoragePositionDAOImpl extends BaseDAOImpl<StoragePosition, Integer
             throw new LIMSRuntimeException("Error validating hierarchy integrity for position", e);
         }
     }
+
+    @Override
+    @Transactional(readOnly = true)
+    public StoragePosition findByCoordinatesAndParentRack(String coordinates, org.openelisglobal.storage.valueholder.StorageRack parentRack) {
+        try {
+            if (parentRack == null) {
+                return null;
+            }
+            String hql = "FROM StoragePosition p WHERE p.coordinate = :coordinates AND p.parentRack.id = :rackId";
+            Query<StoragePosition> query = entityManager.unwrap(Session.class).createQuery(hql, StoragePosition.class);
+            query.setParameter("coordinates", coordinates);
+            query.setParameter("rackId", parentRack.getId());
+            query.setMaxResults(1);
+            List<StoragePosition> results = query.list();
+            return results.isEmpty() ? null : results.get(0);
+        } catch (Exception e) {
+            throw new LIMSRuntimeException("Error finding StoragePosition by coordinates and parent rack", e);
+        }
+    }
 }

@@ -47,6 +47,25 @@ public class SampleStorageAssignmentDAOImpl extends BaseDAOImpl<SampleStorageAss
         }
     }
 
+    @Override
+    @Transactional(readOnly = true)
+    public SampleStorageAssignment findByStoragePosition(org.openelisglobal.storage.valueholder.StoragePosition position) {
+        try {
+            if (position == null) {
+                return null;
+            }
+            String hql = "FROM SampleStorageAssignment ssa WHERE ssa.storagePosition.id = :positionId";
+            Query<SampleStorageAssignment> query = entityManager.unwrap(Session.class).createQuery(hql, SampleStorageAssignment.class);
+            query.setParameter("positionId", position.getId());
+            query.setMaxResults(1);
+            List<SampleStorageAssignment> results = query.list();
+            return results.isEmpty() ? null : results.get(0);
+        } catch (Exception e) {
+            logger.error("Error finding SampleStorageAssignment by storage position", e);
+            throw new LIMSRuntimeException("Error finding SampleStorageAssignment by storage position", e);
+        }
+    }
+
     // No override needed - BaseDAOImpl.getAll() uses entity fetch strategies
     // All relationships are EAGER at entity level, so they load automatically
 }

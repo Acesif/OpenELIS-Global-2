@@ -3,6 +3,7 @@ package org.openelisglobal.storage.dao;
 import java.util.List;
 import org.openelisglobal.common.dao.BaseDAO;
 import org.openelisglobal.storage.valueholder.StorageDevice;
+import org.openelisglobal.storage.valueholder.StorageRoom;
 
 public interface StorageDeviceDAO extends BaseDAO<StorageDevice, Integer> {
     List<StorageDevice> findByParentRoomId(Integer roomId);
@@ -10,8 +11,17 @@ public interface StorageDeviceDAO extends BaseDAO<StorageDevice, Integer> {
     StorageDevice findByParentRoomIdAndCode(Integer roomId, String code);
 
     /**
+     * Find device by code and parent room (for barcode validation)
+     *
+     * @param code Device code
+     * @param parentRoom Parent room entity
+     * @return StorageDevice or null if not found
+     */
+    StorageDevice findByCodeAndParentRoom(String code, StorageRoom parentRoom);
+
+    /**
      * Count devices by parent room ID (for constraint validation)
-     * 
+     *
      * @param roomId Parent room ID
      * @return Count of devices in the room
      */
