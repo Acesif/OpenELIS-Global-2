@@ -24,6 +24,7 @@ import {
   Search,
   Dropdown,
   Button,
+  Tooltip,
 } from "@carbon/react";
 import { FormattedMessage, useIntl } from "react-intl";
 import { useHistory, useLocation } from "react-router-dom";
@@ -1080,9 +1081,65 @@ const StorageDashboard = () => {
     }
     return devicesData.map((device) => {
       const occupied = device.occupiedCount || 0;
+      const capacityType = device.capacityType; // "manual", "calculated", or null
       const total = device.capacityLimit || device.totalCapacity || 0;
-      const occupancyPct = calculateOccupancy(occupied, total);
+      
+      // Determine if capacity can be displayed
+      const canDisplayCapacity = capacityType !== null && total > 0;
+      const occupancyPct = canDisplayCapacity ? calculateOccupancy(occupied, total) : 0;
       const occupancyColor = getOccupancyColor(occupancyPct);
+
+      // Format occupancy display
+      let occupancyDisplay;
+      if (!canDisplayCapacity) {
+        // Capacity cannot be determined - show "N/A" with tooltip
+        occupancyDisplay = (
+          <div>
+            <Tooltip
+              label={intl.formatMessage({
+                id: "storage.capacity.undetermined.tooltip",
+                defaultMessage: "Capacity cannot be calculated: some child locations lack defined capacities",
+              })}
+            >
+              <span>N/A</span>
+            </Tooltip>
+          </div>
+        );
+      } else {
+        // Capacity is defined - show fraction, percentage, and badge
+        const capacityBadge = capacityType === "manual" ? (
+          <Tag type="blue" size="sm" style={{ marginLeft: "8px" }}>
+            <FormattedMessage id="storage.capacity.manual" defaultMessage="Manual Limit" />
+          </Tag>
+        ) : capacityType === "calculated" ? (
+          <Tag type="cyan" size="sm" style={{ marginLeft: "8px" }}>
+            <FormattedMessage id="storage.capacity.calculated" defaultMessage="Calculated" />
+          </Tag>
+        ) : null;
+
+        occupancyDisplay = (
+          <div>
+            <div style={{ display: "flex", alignItems: "center" }}>
+              <span>
+                {occupied.toLocaleString()}/{total.toLocaleString()} ({occupancyPct}%)
+              </span>
+              {capacityBadge}
+            </div>
+            <ProgressBar
+              value={occupancyPct}
+              label=""
+              size="small"
+              status={
+                occupancyPct >= 90
+                  ? "error"
+                  : occupancyPct >= 70
+                    ? "active"
+                    : "finished"
+              }
+            />
+          </div>
+        );
+      }
 
       return {
         id: String(device.id || ""),
@@ -1102,25 +1159,7 @@ const StorageDashboard = () => {
             {device.deviceType || ""}
           </Tag>
         ),
-        occupancy: (
-          <div>
-            <div>
-              {occupied}/{total} ({occupancyPct}%)
-            </div>
-            <ProgressBar
-              value={occupancyPct}
-              label=""
-              size="small"
-              status={
-                occupancyPct >= 90
-                  ? "error"
-                  : occupancyPct >= 70
-                    ? "active"
-                    : "finished"
-              }
-            />
-          </div>
-        ),
+        occupancy: occupancyDisplay,
         status: device.active ? (
           <Tag type="green">
             <FormattedMessage id="label.active" />
@@ -1149,19 +1188,49 @@ const StorageDashboard = () => {
     }
     return shelvesData.map((shelf) => {
       const occupied = shelf.occupiedCount || 0;
+      const capacityType = shelf.capacityType; // "manual", "calculated", or null
       const total = shelf.capacityLimit || shelf.totalCapacity || 0;
-      const occupancyPct = calculateOccupancy(occupied, total);
+      
+      // Determine if capacity can be displayed
+      const canDisplayCapacity = capacityType !== null && total > 0;
+      const occupancyPct = canDisplayCapacity ? calculateOccupancy(occupied, total) : 0;
       const occupancyColor = getOccupancyColor(occupancyPct);
 
-      return {
-        id: String(shelf.id || ""),
-        label: shelf.label || "",
-        device: shelf.deviceName || shelf.parentDeviceName || "",
-        room: shelf.roomName || "",
-        occupancy: (
+      // Format occupancy display (same logic as devices)
+      let occupancyDisplay;
+      if (!canDisplayCapacity) {
+        // Capacity cannot be determined - show "N/A" with tooltip
+        occupancyDisplay = (
           <div>
-            <div>
-              {occupied}/{total} ({occupancyPct}%)
+            <Tooltip
+              label={intl.formatMessage({
+                id: "storage.capacity.undetermined.tooltip",
+                defaultMessage: "Capacity cannot be calculated: some child locations lack defined capacities",
+              })}
+            >
+              <span>N/A</span>
+            </Tooltip>
+          </div>
+        );
+      } else {
+        // Capacity is defined - show fraction, percentage, and badge
+        const capacityBadge = capacityType === "manual" ? (
+          <Tag type="blue" size="sm" style={{ marginLeft: "8px" }}>
+            <FormattedMessage id="storage.capacity.manual" defaultMessage="Manual Limit" />
+          </Tag>
+        ) : capacityType === "calculated" ? (
+          <Tag type="cyan" size="sm" style={{ marginLeft: "8px" }}>
+            <FormattedMessage id="storage.capacity.calculated" defaultMessage="Calculated" />
+          </Tag>
+        ) : null;
+
+        occupancyDisplay = (
+          <div>
+            <div style={{ display: "flex", alignItems: "center" }}>
+              <span>
+                {occupied.toLocaleString()}/{total.toLocaleString()} ({occupancyPct}%)
+              </span>
+              {capacityBadge}
             </div>
             <ProgressBar
               value={occupancyPct}
@@ -1176,7 +1245,15 @@ const StorageDashboard = () => {
               }
             />
           </div>
-        ),
+        );
+      }
+
+      return {
+        id: String(shelf.id || ""),
+        label: shelf.label || "",
+        device: shelf.deviceName || shelf.parentDeviceName || "",
+        room: shelf.roomName || "",
+        occupancy: occupancyDisplay,
         status: shelf.active ? (
           <Tag type="green">
             <FormattedMessage id="label.active" />
@@ -1199,12 +1276,15 @@ const StorageDashboard = () => {
   };
 
   // Format racks data for table
+  // Note: Racks always use calculated capacity (rows × columns per FR-017)
+  // Racks do not have a static capacity_limit field - capacity is always calculated
   const formatRacksData = (racksData) => {
     if (!racksData || racksData.length === 0) {
       return [];
     }
     return racksData.map((rack) => {
       const occupied = rack.occupiedCount || 0;
+      // Rack capacity is ALWAYS calculated as rows × columns (per FR-017)
       const total = (rack.rows || 0) * (rack.columns || 0);
       const occupancyPct = calculateOccupancy(occupied, total);
       const occupancyColor = getOccupancyColor(occupancyPct);
@@ -1279,10 +1359,15 @@ const StorageDashboard = () => {
     };
 
     return (
-      <div role="region" aria-label="Additional room details" style={{ padding: "1rem" }}>
+      <div 
+        role="region" 
+        aria-label="Additional room details" 
+        data-testid={`expanded-room-${row.id}`}
+        style={{ padding: "1rem" }}
+      >
         <Grid fullWidth>
           <Column lg={8} md={4} sm={4}>
-            <div style={{ marginBottom: "0.5rem" }}>
+            <div data-testid={`expanded-room-${row.id}-description`} style={{ marginBottom: "0.5rem" }}>
               <strong>
                 <FormattedMessage id="storage.expanded.description" defaultMessage="Description" />:
               </strong>{" "}
@@ -1292,7 +1377,7 @@ const StorageDashboard = () => {
             </div>
           </Column>
           <Column lg={8} md={4} sm={4}>
-            <div style={{ marginBottom: "0.5rem" }}>
+            <div data-testid={`expanded-room-${row.id}-created-date`} style={{ marginBottom: "0.5rem" }}>
               <strong>
                 <FormattedMessage id="storage.expanded.createdDate" defaultMessage="Created Date" />:
               </strong>{" "}
@@ -1300,7 +1385,7 @@ const StorageDashboard = () => {
             </div>
           </Column>
           <Column lg={8} md={4} sm={4}>
-            <div style={{ marginBottom: "0.5rem" }}>
+            <div data-testid={`expanded-room-${row.id}-created-by`} style={{ marginBottom: "0.5rem" }}>
               <strong>
                 <FormattedMessage id="storage.expanded.createdBy" defaultMessage="Created By" />:
               </strong>{" "}
@@ -1310,7 +1395,7 @@ const StorageDashboard = () => {
             </div>
           </Column>
           <Column lg={8} md={4} sm={4}>
-            <div style={{ marginBottom: "0.5rem" }}>
+            <div data-testid={`expanded-room-${row.id}-last-modified-date`} style={{ marginBottom: "0.5rem" }}>
               <strong>
                 <FormattedMessage
                   id="storage.expanded.lastModifiedDate"
@@ -1321,7 +1406,7 @@ const StorageDashboard = () => {
             </div>
           </Column>
           <Column lg={8} md={4} sm={4}>
-            <div style={{ marginBottom: "0.5rem" }}>
+            <div data-testid={`expanded-room-${row.id}-last-modified-by`} style={{ marginBottom: "0.5rem" }}>
               <strong>
                 <FormattedMessage
                   id="storage.expanded.lastModifiedBy"
@@ -1359,7 +1444,12 @@ const StorageDashboard = () => {
     };
 
     return (
-      <div role="region" aria-label="Additional device details" style={{ padding: "1rem" }}>
+      <div 
+        role="region" 
+        aria-label="Additional device details" 
+        data-testid={`expanded-device-${row.id}`}
+        style={{ padding: "1rem" }}
+      >
         <Grid fullWidth>
           <Column lg={8} md={4} sm={4}>
             <div style={{ marginBottom: "0.5rem" }}>
@@ -1465,7 +1555,12 @@ const StorageDashboard = () => {
     };
 
     return (
-      <div role="region" aria-label="Additional shelf details" style={{ padding: "1rem" }}>
+      <div 
+        role="region" 
+        aria-label="Additional shelf details" 
+        data-testid={`expanded-shelf-${row.id}`}
+        style={{ padding: "1rem" }}
+      >
         <Grid fullWidth>
           <Column lg={8} md={4} sm={4}>
             <div style={{ marginBottom: "0.5rem" }}>
@@ -1558,7 +1653,12 @@ const StorageDashboard = () => {
     };
 
     return (
-      <div role="region" aria-label="Additional rack details" style={{ padding: "1rem" }}>
+      <div 
+        role="region" 
+        aria-label="Additional rack details" 
+        data-testid={`expanded-rack-${row.id}`}
+        style={{ padding: "1rem" }}
+      >
         <Grid fullWidth>
           <Column lg={8} md={4} sm={4}>
             <div style={{ marginBottom: "0.5rem" }}>
@@ -2351,8 +2451,24 @@ const StorageDashboard = () => {
                                 <React.Fragment key={row.id || row.key}>
                                   <TableExpandRow
                                     data-testid={`room-row-${row.id}`}
-                                    {...getRowProps({ row })}
-                                    onExpand={() => handleRowExpand(row.id)}
+                                    {...getRowProps({ 
+                                      row,
+                                      onClick: (e) => {
+                                        // Carbon handles expansion via isExpanded in row data
+                                        // We control which row is expanded via state
+                                        const target = e.target;
+                                        
+                                        // Don't expand if clicking on action button (overflow menu)
+                                        if (target.closest('[data-testid="location-actions-overflow-menu"]') ||
+                                            target.closest('.cds--overflow-menu') ||
+                                            target.closest('button[aria-label*="Location actions"]')) {
+                                          return; // Let the action button handle its own click
+                                        }
+                                        
+                                        // Expand on click anywhere else in the row (including expand button)
+                                        handleRowExpand(row.id);
+                                      }
+                                    })}
                                   >
                                     {row.cells.map((cell) => (
                                       <TableCell key={cell.id}>
@@ -2360,9 +2476,11 @@ const StorageDashboard = () => {
                                       </TableCell>
                                     ))}
                                   </TableExpandRow>
-                                  <TableExpandedRow colSpan={headers.length + 1}>
-                                    {renderExpandedContentRoom(row)}
-                                  </TableExpandedRow>
+                                  {expandedRowId === row.id && (
+                                    <TableExpandedRow colSpan={headers.length + 1}>
+                                      {renderExpandedContentRoom(row)}
+                                    </TableExpandedRow>
+                                  )}
                                 </React.Fragment>
                               ))}
                             </TableBody>
@@ -2555,8 +2673,22 @@ const StorageDashboard = () => {
                                 <React.Fragment key={row.id || row.key}>
                                   <TableExpandRow
                                     data-testid={`device-row-${row.id}`}
-                                    {...getRowProps({ row })}
-                                    onExpand={() => handleRowExpand(row.id)}
+                                    {...getRowProps({ 
+                                      row,
+                                      onClick: (e) => {
+                                        const target = e.target;
+                                        
+                                        // Don't expand if clicking on action button (overflow menu)
+                                        if (target.closest('[data-testid="location-actions-overflow-menu"]') ||
+                                            target.closest('.cds--overflow-menu') ||
+                                            target.closest('button[aria-label*="Location actions"]')) {
+                                          return; // Let the action button handle its own click
+                                        }
+                                        
+                                        // Expand on click anywhere else in the row
+                                        handleRowExpand(row.id);
+                                      }
+                                    })}
                                   >
                                     {row.cells.map((cell) => (
                                       <TableCell key={cell.id}>
@@ -2564,9 +2696,11 @@ const StorageDashboard = () => {
                                       </TableCell>
                                     ))}
                                   </TableExpandRow>
-                                  <TableExpandedRow colSpan={headers.length + 1}>
-                                    {renderExpandedContentDevice(row)}
-                                  </TableExpandedRow>
+                                  {expandedRowId === row.id && (
+                                    <TableExpandedRow colSpan={headers.length + 1}>
+                                      {renderExpandedContentDevice(row)}
+                                    </TableExpandedRow>
+                                  )}
                                 </React.Fragment>
                               ))}
                             </TableBody>
@@ -2779,6 +2913,7 @@ const StorageDashboard = () => {
                       headers={shelvesHeaders}
                       isSortable
                       expandableRows
+                      onRowExpand={(rowId) => handleRowExpand(rowId)}
                     >
                       {({
                         rows,
@@ -2809,8 +2944,22 @@ const StorageDashboard = () => {
                                 <React.Fragment key={row.id || row.key}>
                                   <TableExpandRow
                                     data-testid={`shelf-row-${row.id}`}
-                                    {...getRowProps({ row })}
-                                    onExpand={() => handleRowExpand(row.id)}
+                                    {...getRowProps({ 
+                                      row,
+                                      onClick: (e) => {
+                                        const target = e.target;
+                                        
+                                        // Don't expand if clicking on action button (overflow menu)
+                                        if (target.closest('[data-testid="location-actions-overflow-menu"]') ||
+                                            target.closest('.cds--overflow-menu') ||
+                                            target.closest('button[aria-label*="Location actions"]')) {
+                                          return; // Let the action button handle its own click
+                                        }
+                                        
+                                        // Expand on click anywhere else in the row
+                                        handleRowExpand(row.id);
+                                      }
+                                    })}
                                   >
                                     {row.cells.map((cell) => (
                                       <TableCell key={cell.id}>
@@ -2818,9 +2967,11 @@ const StorageDashboard = () => {
                                       </TableCell>
                                     ))}
                                   </TableExpandRow>
-                                  <TableExpandedRow colSpan={headers.length + 1}>
-                                    {renderExpandedContentShelf(row)}
-                                  </TableExpandedRow>
+                                  {expandedRowId === row.id && (
+                                    <TableExpandedRow colSpan={headers.length + 1}>
+                                      {renderExpandedContentShelf(row)}
+                                    </TableExpandedRow>
+                                  )}
                                 </React.Fragment>
                               ))}
                             </TableBody>
@@ -3033,6 +3184,7 @@ const StorageDashboard = () => {
                       headers={racksHeaders}
                       isSortable
                       expandableRows
+                      onRowExpand={(rowId) => handleRowExpand(rowId)}
                     >
                       {({
                         rows,
@@ -3063,8 +3215,22 @@ const StorageDashboard = () => {
                                 <React.Fragment key={row.id || row.key}>
                                   <TableExpandRow
                                     data-testid={`rack-row-${row.id}`}
-                                    {...getRowProps({ row })}
-                                    onExpand={() => handleRowExpand(row.id)}
+                                    {...getRowProps({ 
+                                      row,
+                                      onClick: (e) => {
+                                        const target = e.target;
+                                        
+                                        // Don't expand if clicking on action button (overflow menu)
+                                        if (target.closest('[data-testid="location-actions-overflow-menu"]') ||
+                                            target.closest('.cds--overflow-menu') ||
+                                            target.closest('button[aria-label*="Location actions"]')) {
+                                          return; // Let the action button handle its own click
+                                        }
+                                        
+                                        // Expand on click anywhere else in the row
+                                        handleRowExpand(row.id);
+                                      }
+                                    })}
                                   >
                                     {row.cells.map((cell) => (
                                       <TableCell key={cell.id}>
@@ -3072,9 +3238,11 @@ const StorageDashboard = () => {
                                       </TableCell>
                                     ))}
                                   </TableExpandRow>
-                                  <TableExpandedRow colSpan={headers.length + 1}>
-                                    {renderExpandedContentRack(row)}
-                                  </TableExpandedRow>
+                                  {expandedRowId === row.id && (
+                                    <TableExpandedRow colSpan={headers.length + 1}>
+                                      {renderExpandedContentRack(row)}
+                                    </TableExpandedRow>
+                                  )}
                                 </React.Fragment>
                               ))}
                             </TableBody>

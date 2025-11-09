@@ -102,6 +102,10 @@ managers
   locations, or only active locations? → A: Only active locations - breakdown
   shows counts for active rooms/devices/shelves/racks only
 
+### Session 2025-01-15
+
+- Q: When a Device or Shelf has no capacity_limit set and cannot calculate capacity from children (because some children lack defined capacities), how should the occupancy be displayed in the dashboard? → A: Show "N/A" or "Unlimited" with a tooltip explaining why capacity cannot be determined
+
 ### Session 2025-11-05
 
 - Q: What behavior should "live-searched" use for samples? → A: Debounced
@@ -896,7 +900,8 @@ movement) are covered by unit/integration tests, not E2E tests.
 - **FR-016**: System MUST allow zero rows/columns to indicate "no grid"
   (shelf-level or rack-level assignment only)
 - **FR-017**: System MUST calculate rack capacity as rows × columns (or 0 if no
-  grid configured)
+  grid configured). Rack capacity is ALWAYS calculated (never uses static
+  `capacity_limit` field - racks do not have this field)
 - **FR-018**: Rack dimensions MUST be used for: (a) calculating total capacity,
   (b) optional grid visualization, (c) suggesting position coordinates (user can
   override)
@@ -1047,7 +1052,9 @@ operations.
 - **FR-036**: System MUST display capacity warnings at fixed thresholds: 80%,
   90%, and 100% capacity with message "[Location] is [percentage]% full.
   Consider using alternative storage." System MUST allow assignment even at or
-  above 100% capacity (no hard block)
+  above 100% capacity (no hard block). Capacity warnings apply to both manual
+  `capacity_limit` values and calculated capacities (per FR-062a). Warnings
+  MUST NOT be displayed when capacity cannot be determined (per FR-062b)
 - **FR-037**: System MUST allow assignment at shelf/rack level without
   specifying position (position field blank)
 
@@ -1297,11 +1304,36 @@ operations.
 #### Occupancy Display
 
 - **FR-061**: Devices, Shelves, Racks tabs MUST display occupancy as: Fraction
-  (occupied/total) + Percentage + Visual progress bar
+  (occupied/total) + Percentage + Visual progress bar. If capacity cannot be
+  determined (see FR-062b), display "N/A" or "Unlimited" with a tooltip
+  explaining why capacity cannot be determined (e.g., "Capacity cannot be
+  calculated: some child locations lack defined capacities")
 - **FR-062**: Occupancy calculation MUST be: (count of occupied positions /
-  total capacity) × 100
+  total capacity) × 100, where total capacity is determined per FR-062a and
+  FR-062b
+- **FR-062a**: Capacity determination MUST follow hierarchical two-tier logic:
+  - **Racks**: Capacity is ALWAYS calculated as rows × columns (per FR-017). If
+    rows=0 OR columns=0, capacity=0 (no grid, rack-level assignment only)
+  - **Devices and Shelves**: If `capacity_limit` is set (static/manual limit),
+    use that value as total capacity. Otherwise, calculate capacity from child
+    locations per FR-062b
+- **FR-062b**: When `capacity_limit` is NULL for a Device or Shelf, capacity
+  MUST be calculated from child locations using the following logic:
+  - If ALL child locations (shelves for devices, racks for shelves) have
+    defined capacities (either static `capacity_limit` set OR calculated
+    capacity from their own children), sum those capacities to determine parent
+    capacity
+  - If ANY child location lacks a defined capacity (no `capacity_limit` set AND
+    cannot calculate from its children), parent capacity cannot be determined
+    and occupancy MUST display "N/A" or "Unlimited" per FR-061
+  - Racks always have defined capacity (rows × columns), so they can always be
+    summed into parent capacity if needed
+- **FR-062c**: UI MUST visually distinguish between manual/static capacity limits
+  and calculated capacities (e.g., badge, tooltip, or icon) to help users
+  understand whether capacity is user-defined or system-calculated
 - **FR-063**: Visual progress bar MUST show proportional fill (e.g., 57% filled
-  bar for 287/500)
+  bar for 287/500). If capacity cannot be determined, progress bar MUST be
+  hidden and "N/A" or "Unlimited" text displayed instead
 
 #### Filters and Search
 

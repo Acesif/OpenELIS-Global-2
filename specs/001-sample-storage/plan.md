@@ -1,6 +1,6 @@
 # Implementation Plan: Sample Storage Management
 
-**Branch**: `001-sample-storage` | **Date**: 2025-10-30 | **Last Updated**: 2025-11-07 | **Spec**:
+**Branch**: `001-sample-storage` | **Date**: 2025-10-30 | **Last Updated**: 2025-11-22 | **Spec**:
 [spec.md](./spec.md)  
 **Input**: Feature specification from `/specs/001-sample-storage/spec.md`
 
@@ -41,6 +41,23 @@ Expansion triggered by clicking chevron icon in dedicated first column. See
 [research.md](./research.md#8-carbon-datatable-expandable-rows) for implementation
 details.
 
+**Amendment (2025-11-22)**: Add comprehensive barcode workflow implementation
+following TDD approach. Includes unified input field (scan/type-ahead), 5-step
+validation, debouncing (500ms), visual feedback, dual barcode auto-detection,
+"last-modified wins" logic, label management (short code, printing, print
+history), and error recovery. All barcode requirements from FR-023 through
+FR-027f must be implemented. See Phase 10 below for detailed TDD workflow.
+
+**Amendment (2025-01-15)**: Update capacity calculation logic to implement
+two-tier system (per FR-062a, FR-062b, FR-062c). Devices and Shelves support
+manual `capacity_limit` (static) or calculated capacity from children. If
+`capacity_limit` is NULL, calculate from child locations (sum if all
+children have defined capacities). If any child lacks defined capacity,
+parent capacity cannot be determined and UI displays "N/A" with tooltip. Racks
+always use calculated capacity (rows × columns). UI must visually distinguish
+between manual and calculated capacities (badge, tooltip, or icon). See
+updated capacity calculator implementation in Phase 2 below.
+
 ## Technical Context
 
 **Language/Version**: Java 21 LTS (backend), React 17 (frontend)  
@@ -72,11 +89,12 @@ searches/saves), no optimization required
 **Scale/Scope**:
 
 - 5 storage entity types (Room, Device, Shelf, Rack, Position)
-- 4 REST API endpoint groups (hierarchy CRUD with Edit/Delete, assignment, movement, search)
+- 6 REST API endpoint groups (hierarchy CRUD with Edit/Delete, assignment, movement, search, barcode validation, label management)
 - 1 reusable UI widget (Storage Location Selector with two-tier design)
-- 5 modal components (Consolidated Location Management, Dispose, Edit Location, Delete Location confirmation)
+- 6 modal components (Consolidated Location Management, Dispose, Edit Location, Delete Location confirmation, Label Management)
 - 2 overflow menu components (samples table row actions, location table row actions)
 - 2 integration points (SamplePatientEntry, LogbookResults)
+- Barcode workflow components (unified input field, debouncing, visual feedback, label printing)
 
 **Development Approach**: Test-Driven Development (TDD)
 
@@ -196,7 +214,10 @@ frontend/src/components/storage/
 │   ├── QuickFindSearch.jsx - Quick-find search component (type-ahead autocomplete)
 │   ├── CascadingDropdownMode.jsx - Cascading dropdowns for expanded modal
 │   ├── AutocompleteMode.jsx - Type-ahead autocomplete for expanded modal
-│   ├── BarcodeScanMode.jsx - Barcode scan input (deferred to later stage)
+│   ├── UnifiedBarcodeInput.jsx - Unified input field supporting both barcode scan and type-ahead search
+│   ├── BarcodeValidationService.js - Client-side barcode format validation and parsing
+│   ├── BarcodeDebounceHook.js - Custom hook for 500ms debouncing logic
+│   ├── BarcodeVisualFeedback.jsx - Visual feedback component (green checkmark, red X, ready state)
 │   ├── StorageLocationSelector.test.jsx
 │   └── index.js
 ├── StorageDashboard/
@@ -215,9 +236,13 @@ frontend/src/components/storage/
 │   ├── BulkMoveModal.jsx
 │   └── index.js
 ├── LocationManagement/
-│   ├── LocationActionsOverflowMenu.jsx - Overflow menu component for location table rows (Edit, Delete)
+│   ├── LocationActionsOverflowMenu.jsx - Overflow menu component for location table rows (Edit, Delete, Label Management)
 │   ├── EditLocationModal.jsx - Modal for editing location entities (Room/Device/Shelf/Rack)
 │   ├── DeleteLocationModal.jsx - Confirmation modal for deleting locations with constraint validation
+│   ├── LabelManagementModal.jsx - Modal for short code management and label printing (Devices, Shelves, Racks)
+│   ├── ShortCodeInput.jsx - Short code input with validation (max 10 chars, alphanumeric, auto-uppercase)
+│   ├── PrintLabelButton.jsx - Print label button with PDF preview in new tab
+│   ├── PrintHistoryDisplay.jsx - Read-only print history list component
 │   └── index.js
 └── hooks/
     ├── useStorageLocations.js - getFromOpenElisServer data fetching
@@ -275,7 +300,7 @@ written BEFORE implementation code.
      `SampleStorageServiceImplTest.java`, `StorageSearchServiceImplTest.java`
    - Validates: Assignment validation logic (require Room and Device minimum 2
      levels, prevent inactive location, double-occupancy)
-   - Validates: Capacity calculation and warning thresholds (80/90/100%)
+   - Validates: Capacity calculation and warning thresholds (80/90/100%) - includes two-tier capacity logic (manual vs calculated), hierarchical capacity calculation, and "N/A" handling when capacity cannot be determined
    - Validates: Hierarchical path construction
    - Validates: Bulk move auto-assignment logic
    - Validates: Audit trail creation on movements
@@ -310,7 +335,12 @@ Phase 3 learnings)
    - Validates: Quick-find search filters locations correctly
 
 - Validates: Cascading dropdown state management
-- Validates: Barcode input parsing (deferred functionality)
+- Validates: Unified barcode input field accepts both scan and type-ahead
+- Validates: Barcode format parsing (2-5 level hierarchical paths with hyphen delimiter)
+- Validates: Debouncing logic (500ms cooldown, duplicate detection, different barcode warning)
+- Validates: Visual feedback (ready state, success green checkmark, error red X)
+- Validates: "Last-modified wins" behavior when both dropdowns and input field are used
+- Validates: Pre-filling valid components when scan fails partially
 - Validates: Hierarchical path display
 - Validates: Validation requires Room and Device selection (minimum 2 levels),
   Shelf/Rack/Position optional
@@ -1102,8 +1132,7 @@ serves as the contract for:
   - Example: `GET /rest/storage/locations/search?q=freezer` returns devices
     matching "freezer" with full paths like "Main Laboratory > Freezer Unit 1"
 
-**Barcode Generation**: ⏸️ Deferred to post-POC (not in P1/P2A/P2B core
-workflows)
+**Barcode Generation**: ✅ Implemented in Phase 10 (barcode validation, label management, printing)
 
 ### Task 1.3: Generate FHIR Mappings (Test Specification)
 
@@ -1594,8 +1623,7 @@ View Storage modals):
 - **Visual Separator**: Downward-pointing arrow icon if location exists, or
   horizontal line if no location
 - **Location Selection Form** in bordered box:
-  - Barcode scan input field (Quick Assign) - deferred to later stage (field
-    present but not functional)
+  - Unified barcode input field (Quick Assign) - supports both barcode scan and type-ahead search (implemented in Phase 10)
   - Room dropdown selector (required, marked with \*)
   - Device dropdown selector
   - Shelf dropdown selector
@@ -1733,7 +1761,7 @@ editing/changing assignment in a single unified interface.
   LogbookResults (results)
 - Quick-find search only shown in results workflow (`showQuickFind={true}` prop)
 - Quick-find calls `GET /rest/storage/locations/search?q={term}` endpoint
-- Barcode scan input present but functionality deferred to later stage
+- Unified barcode input field implemented in Phase 10 (supports both barcode scan and type-ahead search)
 
 **Testing**:
 
@@ -2227,9 +2255,19 @@ Add expandable row functionality to location tables (Rooms, Devices, Shelves, Ra
    - Toggle logic: if same row clicked, collapse; if different row, expand new and collapse previous
    - Reset expanded state when switching tabs
 
-**Backend Changes**: None required - all fields already available in existing API responses
+**Backend Changes**: 
+- Update `StorageLocationServiceImpl.getDevicesForAPI()` to include:
+  - `totalCapacity` (calculated capacity when `capacityLimit` is null)
+  - `capacityType` ("manual" if `capacityLimit` set, "calculated" if from children, null if cannot determine)
+- Update `StorageLocationServiceImpl.getShelvesForAPI()` to include:
+  - `totalCapacity` (calculated capacity when `capacityLimit` is null)
+  - `capacityType` ("manual" if `capacityLimit` set, "calculated" if from children, null if cannot determine)
+- Add `calculateDeviceCapacity()` and `calculateShelfCapacity()` methods per FR-062a, FR-062b
 
-**API Changes**: None required - expanded view uses existing location data
+**API Changes**: 
+- Device API response: Add `totalCapacity` (Integer, nullable) and `capacityType` (String: "manual" | "calculated" | null)
+- Shelf API response: Add `totalCapacity` (Integer, nullable) and `capacityType` (String: "manual" | "calculated" | null)
+- Rack API response: No changes (always uses calculated capacity from rows × columns)
 
 ### Test-Driven Development Plan
 
@@ -2268,10 +2306,11 @@ Add expandable row functionality to location tables (Rooms, Devices, Shelves, Ra
 
 ### Files to Modify
 
-- `frontend/src/components/storage/StorageDashboard.jsx` - Add expandable row functionality
-- `frontend/src/components/storage/StorageDashboard/StorageDashboard.test.jsx` - Add unit tests
-- `frontend/cypress/e2e/storageLocationExpandableRows.cy.js` - Add E2E tests (new file)
-- `frontend/src/languages/en.json` - Add message keys for expanded content labels (if needed)
+- `frontend/src/components/storage/StorageDashboard.jsx` - Add expandable row functionality, update occupancy display to handle "N/A" when capacity cannot be determined, add visual distinction for manual vs calculated capacities (per FR-062c)
+- `frontend/src/components/storage/StorageDashboard/StorageDashboard.test.jsx` - Add unit tests for capacity calculation display, "N/A" handling, and capacity type badges
+- `frontend/cypress/e2e/storageLocationExpandableRows.cy.js` - Add E2E tests (new file), add tests for capacity display (manual vs calculated, "N/A" tooltip)
+- `frontend/src/languages/en.json` - Add message keys for expanded content labels, capacity type labels ("Manual Limit", "Calculated"), and "N/A" tooltip text
+- `src/main/java/org/openelisglobal/storage/service/StorageLocationServiceImpl.java` - Add `calculateDeviceCapacity()` and `calculateShelfCapacity()` methods, update `getDevicesForAPI()` and `getShelvesForAPI()` to include `totalCapacity` and `capacityType`
 
 ### Dependencies
 
@@ -2296,6 +2335,284 @@ Add expandable row functionality to location tables (Rooms, Devices, Shelves, Ra
 - [ ] All E2E tests pass
 - [ ] Accessibility verified (ARIA attributes, keyboard navigation)
 - [ ] Internationalization complete (all labels use React Intl)
+
+## Phase 10: Barcode Workflow Implementation
+
+**Note**: Research on existing OpenELIS barcode printing infrastructure completed (see `research.md` Section 9). Integration strategy documented. Some areas still need clarification during implementation (printer configuration, scanner hardware details).
+
+### Objective
+
+Implement comprehensive barcode workflow functionality per FR-023 through FR-027f:
+- Unified input field supporting both barcode scanning and type-ahead search
+- 5-step validation process (format, existence, hierarchy, activity, conflicts)
+- Debouncing with 500ms cooldown period
+- Visual feedback (ready state, success green checkmark, error red X)
+- Dual barcode auto-detection (sample vs location barcodes)
+- "Last-modified wins" logic when both dropdowns and input field are used
+- Label management (short code, printing, print history)
+- Error recovery with pre-filling valid components
+
+### TDD Approach
+
+Following strict test-first development with small, manageable iterations:
+
+1. **Write failing tests** (Red phase)
+2. **Implement minimal code to pass** (Green phase)
+3. **Refactor while keeping tests green** (Refactor phase)
+
+### Test-Driven Development Plan
+
+#### Iteration 8.1: Backend Barcode Parsing and Validation
+
+**Objective**: Implement server-side barcode parsing and 5-step validation process.
+
+**Test Order** (TDD workflow):
+
+1. **Backend Unit Tests** (Write First):
+   - Test: `BarcodeParsingServiceTest.java`
+   - Validates: Parse 2-level barcode (Room-Device format)
+   - Validates: Parse 3-level barcode (Room-Device-Shelf format)
+   - Validates: Parse 4-level barcode (Room-Device-Shelf-Rack format)
+   - Validates: Parse 5-level barcode (Room-Device-Shelf-Rack-Position format)
+   - Validates: Fixed hyphen delimiter parsing
+   - Validates: Invalid delimiter rejection
+   - Validates: Empty/null barcode handling
+
+2. **Backend Service Tests** (Write Second):
+   - Test: `BarcodeValidationServiceTest.java`
+   - Validates: Step 1 - Format validation (parseable structure)
+   - Validates: Step 2 - Location existence check (all codes exist in database)
+   - Validates: Step 3 - Hierarchy validation (Shelf is child of Device, etc.)
+   - Validates: Step 4 - Activity check (location is active, not decommissioned)
+   - Validates: Step 5 - Conflict check (position not occupied if applicable)
+   - Validates: Error messages for each failure type
+   - Validates: Partial validation (some components valid, some invalid)
+   - Validates: Pre-fill valid components in response
+
+3. **Backend Integration Tests** (Write Third):
+   - Test: `BarcodeValidationRestControllerTest.java`
+   - Validates: `POST /rest/storage/barcode/validate` endpoint
+   - Validates: Request/response format matches API contract
+   - Validates: Database persistence after validation
+   - Validates: Error responses (400, 404) for validation failures
+
+**Implementation Tasks** (After Tests Pass):
+
+1. Create `BarcodeParsingService.java` - Parse hierarchical barcode format
+2. Create `BarcodeValidationService.java` - Implement 5-step validation
+3. Create `BarcodeValidationRestController.java` - REST endpoint for validation
+4. Update API contract in `contracts/storage-api.json`
+
+#### Iteration 8.2: Frontend Unified Input Field
+
+**Objective**: Create unified input field component that accepts both barcode scan and type-ahead search.
+
+**Test Order** (TDD workflow):
+
+1. **Frontend Unit Tests** (Write First):
+   - Test: `UnifiedBarcodeInput.test.jsx`
+   - Validates: Input field accepts keyboard input (manual typing)
+   - Validates: Input field accepts rapid character input (barcode scan simulation)
+   - Validates: Format-based detection (hyphens = barcode, no hyphens = type-ahead)
+   - Validates: Enter key triggers validation
+   - Validates: Field blur triggers validation
+   - Validates: Visual feedback states (ready, success, error)
+   - Validates: Auto-clear after successful population
+
+2. **Frontend Integration Tests** (Write Second):
+   - Test: `UnifiedBarcodeInput.integration.test.jsx`
+   - Validates: API call to validation endpoint on Enter/blur
+   - Validates: Success response populates location fields
+   - Validates: Error response displays error message
+   - Validates: Partial validation pre-fills valid components
+
+**Implementation Tasks** (After Tests Pass):
+
+1. Create `UnifiedBarcodeInput.jsx` - Unified input field component
+2. Create `BarcodeVisualFeedback.jsx` - Visual feedback component
+3. Integrate into `LocationSelectorModal.jsx`
+4. Add React Intl message keys for barcode-related strings
+
+#### Iteration 8.3: Debouncing Logic
+
+**Objective**: Implement 500ms debouncing to prevent accidental double-scans.
+
+**Test Order** (TDD workflow):
+
+1. **Frontend Unit Tests** (Write First):
+   - Test: `BarcodeDebounceHook.test.js`
+   - Validates: Duplicate barcode within 500ms is ignored silently
+   - Validates: Different barcode within 500ms shows warning and is ignored
+   - Validates: Barcode after 500ms cooldown is processed normally
+   - Validates: Cooldown timer resets after each scan
+   - Validates: Multiple rapid scans handled correctly
+
+**Implementation Tasks** (After Tests Pass):
+
+1. Create `BarcodeDebounceHook.js` - Custom React hook for debouncing
+2. Integrate into `UnifiedBarcodeInput.jsx`
+3. Add warning message for different barcode within cooldown
+
+#### Iteration 8.4: "Last-Modified Wins" Logic
+
+**Objective**: Implement seamless switching between dropdown and input field modes.
+
+**Test Order** (TDD workflow):
+
+1. **Frontend Unit Tests** (Write First):
+   - Test: `LocationSelectorModal.test.jsx` (update existing)
+   - Validates: Dropdown selection then input field scan overwrites dropdowns
+   - Validates: Input field scan then dropdown selection overwrites input
+   - Validates: Visual feedback shows which method is active (highlight border/icon)
+   - Validates: No error when switching between methods
+   - Validates: Both methods visible simultaneously
+
+**Implementation Tasks** (After Tests Pass):
+
+1. Update `LocationSelectorModal.jsx` to track last-modified method
+2. Add visual feedback (highlight border/icon) for active method
+3. Implement overwrite logic based on last modification timestamp
+
+#### Iteration 8.5: Label Management (Short Code and Printing)
+
+**Objective**: Implement label management modal with short code input and print functionality.
+
+**Test Order** (TDD workflow):
+
+1. **Backend Unit Tests** (Write First):
+   - Test: `ShortCodeValidationServiceTest.java`
+   - Validates: Short code format (max 10 chars, alphanumeric, hyphen/underscore allowed)
+   - Validates: Auto-uppercase conversion
+   - Validates: Must start with letter or number (not hyphen/underscore)
+   - Validates: Uniqueness within context (device/shelf/rack)
+   - Validates: Warning when changing short code (affects printed labels)
+
+2. **Backend Integration Tests** (Write Second):
+   - Test: `LabelManagementRestControllerTest.java`
+   - Validates: `PUT /rest/storage/{type}/{id}/short-code` endpoint
+   - Validates: `POST /rest/storage/{type}/{id}/print-label` endpoint
+   - Validates: Print history tracking (who, when, what)
+   - Validates: PDF generation with system admin settings (label size, format, layout)
+
+3. **Frontend Unit Tests** (Write Third):
+   - Test: `LabelManagementModal.test.jsx`
+   - Validates: Short code input with validation
+   - Validates: Auto-uppercase on input
+   - Validates: Warning dialog before short code change
+   - Validates: Print label button opens PDF in new tab
+   - Validates: Print history display (last printed, view history link)
+
+**Implementation Tasks** (After Tests Pass):
+
+1. Create `LabelManagementModal.jsx` - Label management modal
+2. Create `ShortCodeInput.jsx` - Short code input with validation
+3. Create `PrintLabelButton.jsx` - Print label button with PDF preview
+4. Create `PrintHistoryDisplay.jsx` - Print history list component
+5. Update `LocationActionsOverflowMenu.jsx` to include "Label Management" item
+6. Create backend `ShortCodeValidationService.java`
+7. Create backend `LabelManagementService.java` - Integrate with existing BarcodeLabelMaker (see research.md Section 9)
+8. Create backend `StorageLocationLabel.java` - Extend Label class (see research.md Section 9)
+9. Create backend `LabelManagementRestController.java` - REST endpoint for printing
+10. Add database table for print history (Liquibase changeset)
+11. Add `STORAGE_LOCATION_BARCODE_HEIGHT` and `STORAGE_LOCATION_BARCODE_WIDTH` to ConfigurationProperties (see research.md Section 9)
+
+#### Iteration 8.6: E2E Tests
+
+**Objective**: Validate complete barcode workflows end-to-end.
+
+**Test Order** (TDD workflow):
+
+1. **Cypress E2E Tests** (Write Last):
+   - Test: `barcodeWorkflow.cy.js`
+   - Validates: Scan 4-level barcode populates location fields correctly
+   - Validates: Scan 2-level barcode (minimum) populates Room and Device only
+   - Validates: Scan invalid barcode shows error message with parsed components
+   - Validates: Debouncing prevents duplicate scans within 500ms
+   - Validates: "Last-modified wins" when switching between dropdown and scan
+   - Validates: Label management modal opens from overflow menu
+   - Validates: Short code change shows warning dialog
+   - Validates: Print label generates PDF and opens in new tab
+   - Validates: Print history displays after printing
+
+**Implementation Tasks** (After Tests Pass):
+
+1. Create `frontend/cypress/e2e/barcodeWorkflow.cy.js`
+2. Follow Constitution V.5 best practices:
+   - Run tests individually during development
+   - Browser console logging enabled and reviewed
+   - Video recording disabled by default
+   - Post-run review of console logs and screenshots
+
+### Files to Create/Modify
+
+**Backend**:
+- `src/main/java/org/openelisglobal/storage/service/BarcodeParsingService.java` (new)
+- `src/main/java/org/openelisglobal/storage/service/BarcodeValidationService.java` (new)
+- `src/main/java/org/openelisglobal/storage/service/ShortCodeValidationService.java` (new)
+- `src/main/java/org/openelisglobal/storage/service/LabelManagementService.java` (new)
+- `src/main/java/org/openelisglobal/storage/controller/BarcodeValidationRestController.java` (new)
+- `src/main/java/org/openelisglobal/storage/controller/LabelManagementRestController.java` (new)
+- `src/test/java/org/openelisglobal/storage/service/BarcodeParsingServiceTest.java` (new)
+- `src/test/java/org/openelisglobal/storage/service/BarcodeValidationServiceTest.java` (new)
+- `src/test/java/org/openelisglobal/storage/service/ShortCodeValidationServiceTest.java` (new)
+- `src/test/java/org/openelisglobal/storage/controller/BarcodeValidationRestControllerTest.java` (new)
+- `src/test/java/org/openelisglobal/storage/controller/LabelManagementRestControllerTest.java` (new)
+- `src/main/resources/liquibase/storage/004-create-print-history-table.xml` (new)
+
+**Frontend**:
+- `frontend/src/components/storage/StorageLocationSelector/UnifiedBarcodeInput.jsx` (new)
+- `frontend/src/components/storage/StorageLocationSelector/BarcodeValidationService.js` (new)
+- `frontend/src/components/storage/StorageLocationSelector/BarcodeDebounceHook.js` (new)
+- `frontend/src/components/storage/StorageLocationSelector/BarcodeVisualFeedback.jsx` (new)
+- `frontend/src/components/storage/LocationManagement/LabelManagementModal.jsx` (new)
+- `frontend/src/components/storage/LocationManagement/ShortCodeInput.jsx` (new)
+- `frontend/src/components/storage/LocationManagement/PrintLabelButton.jsx` (new)
+- `frontend/src/components/storage/LocationManagement/PrintHistoryDisplay.jsx` (new)
+- `frontend/src/components/storage/StorageLocationSelector/UnifiedBarcodeInput.test.jsx` (new)
+- `frontend/src/components/storage/LocationManagement/LabelManagementModal.test.jsx` (new)
+- `frontend/src/components/storage/StorageLocationSelector/LocationSelectorModal.jsx` (modify)
+- `frontend/src/components/storage/LocationManagement/LocationActionsOverflowMenu.jsx` (modify)
+- `frontend/cypress/e2e/barcodeWorkflow.cy.js` (new)
+
+**API Contracts**:
+- `specs/001-sample-storage/contracts/storage-api.json` (update with barcode endpoints)
+
+**Internationalization**:
+- `frontend/src/languages/en.json` (add barcode-related message keys)
+- `frontend/src/languages/fr.json` (add barcode-related message keys)
+- `frontend/src/languages/sw.json` (add barcode-related message keys)
+
+### Dependencies
+
+- **Carbon Design System v1.15**: `@carbon/react` TextInput, Modal, Button components
+- **React Intl**: For internationalized error messages and labels
+- **Existing OpenELIS utilities**: `getFromOpenElisServer`, `postToOpenElisServer`
+- **PDF Generation**: Reuse existing iTextPDF via BarcodeLabelMaker (see research.md Section 9)
+
+### Constitution Compliance
+
+- ✅ **Carbon Design System First**: Uses Carbon TextInput, Modal, Button exclusively
+- ✅ **Internationalization**: All barcode-related strings use React Intl message keys
+- ✅ **Layered Architecture**: Backend follows 5-layer pattern (Service → Controller)
+- ✅ **Test Coverage**: Unit + integration + E2E tests planned (>70% coverage goal)
+- ✅ **Schema Management**: Print history table via Liquibase changeset
+- ✅ **Security & Compliance**: Input validation, audit trail for print history
+
+### Success Criteria
+
+- [ ] Unified input field accepts both barcode scan and type-ahead search
+- [ ] 5-step validation process works correctly for all barcode formats (2-5 levels)
+- [ ] Debouncing prevents accidental double-scans (500ms cooldown)
+- [ ] Visual feedback displays correctly (ready, success, error states)
+- [ ] "Last-modified wins" logic works when switching between methods
+- [ ] Label management modal accessible from overflow menu
+- [ ] Short code validation and uniqueness checking works
+- [ ] Print label generates PDF with system admin settings
+- [ ] Print history tracks and displays correctly
+- [ ] All unit tests pass
+- [ ] All integration tests pass
+- [ ] All E2E tests pass
+- [ ] Internationalization complete (en, fr, sw)
 
 ## Implementation Enhancements
 
@@ -2337,13 +2654,89 @@ public String buildHierarchicalPath(StoragePosition position) {
 
 **2. Capacity Calculator with Warnings**
 
+**Capacity Determination Logic (per FR-062a, FR-062b)**:
+
+- **Racks**: Capacity is ALWAYS calculated as `rows × columns` (per FR-017). If rows=0 OR columns=0, capacity=0 (no grid, rack-level assignment only)
+- **Devices and Shelves**: Two-tier system:
+  - If `capacity_limit` is set (static/manual limit), use that value as total capacity
+  - If `capacity_limit` is NULL, calculate capacity from child locations:
+    - If ALL child locations have defined capacities (either static `capacity_limit` set OR calculated capacity from their own children), sum those capacities
+    - If ANY child location lacks a defined capacity, parent capacity cannot be determined (return null, UI shows "N/A")
+
 ```java
+// In StorageLocationService
+/**
+ * Calculate total capacity for a device using two-tier logic (per FR-062a, FR-062b).
+ * Returns null if capacity cannot be determined.
+ */
+public Integer calculateDeviceCapacity(StorageDevice device) {
+    // Tier 1: Check if static capacity_limit is set
+    if (device.getCapacityLimit() != null && device.getCapacityLimit() > 0) {
+        return device.getCapacityLimit();
+    }
+    
+    // Tier 2: Calculate from child shelves
+    List<StorageShelf> shelves = storageShelfDAO.findByParentDeviceId(device.getId());
+    if (shelves == null || shelves.isEmpty()) {
+        return null; // No children, cannot determine capacity
+    }
+    
+    int totalCapacity = 0;
+    for (StorageShelf shelf : shelves) {
+        Integer shelfCapacity = calculateShelfCapacity(shelf);
+        if (shelfCapacity == null) {
+            // Any child lacks defined capacity - cannot determine parent capacity
+            return null;
+        }
+        totalCapacity += shelfCapacity;
+    }
+    
+    return totalCapacity;
+}
+
+/**
+ * Calculate total capacity for a shelf using two-tier logic (per FR-062a, FR-062b).
+ * Returns null if capacity cannot be determined.
+ */
+public Integer calculateShelfCapacity(StorageShelf shelf) {
+    // Tier 1: Check if static capacity_limit is set
+    if (shelf.getCapacityLimit() != null && shelf.getCapacityLimit() > 0) {
+        return shelf.getCapacityLimit();
+    }
+    
+    // Tier 2: Calculate from child racks (racks always have defined capacity)
+    List<StorageRack> racks = storageRackDAO.findByParentShelfId(shelf.getId());
+    if (racks == null || racks.isEmpty()) {
+        return null; // No children, cannot determine capacity
+    }
+    
+    int totalCapacity = 0;
+    for (StorageRack rack : racks) {
+        // Racks always have defined capacity (rows × columns)
+        int rackCapacity = rack.getRows() * rack.getColumns();
+        totalCapacity += rackCapacity;
+    }
+    
+    return totalCapacity;
+}
+
+/**
+ * Calculate rack capacity (always rows × columns, per FR-017).
+ */
+public int calculateRackCapacity(StorageRack rack) {
+    return rack.getRows() * rack.getColumns();
+}
+
 // In SampleStorageService
+/**
+ * Calculate capacity warning for a rack (per FR-036).
+ * Racks always have defined capacity (rows × columns).
+ */
 public CapacityWarning calculateCapacity(StorageRack rack) {
     int totalCapacity = rack.getRows() * rack.getColumns();
     if (totalCapacity == 0) return null; // No grid
 
-    int occupied = positionDAO.countOccupied(rack.getId());
+    int occupied = storageLocationService.countOccupied(rack.getId());
     int percentage = (occupied * 100) / totalCapacity;
 
     String warningMessage = null;
@@ -2358,6 +2751,59 @@ public CapacityWarning calculateCapacity(StorageRack rack) {
             rack.getLabel(), percentage);
     }
 
+    return new CapacityWarning(occupied, totalCapacity, percentage, warningMessage);
+}
+
+/**
+ * Calculate capacity warning for a device or shelf (per FR-036).
+ * Returns null if capacity cannot be determined (per FR-062b).
+ */
+public CapacityWarning calculateCapacity(StorageDevice device) {
+    Integer totalCapacity = storageLocationService.calculateDeviceCapacity(device);
+    if (totalCapacity == null) {
+        return null; // Capacity cannot be determined - UI will show "N/A"
+    }
+    
+    int occupied = storageLocationService.countOccupiedInDevice(device.getId());
+    int percentage = (occupied * 100) / totalCapacity;
+    
+    // Only show warnings if capacity is defined (per FR-036)
+    String warningMessage = null;
+    if (percentage >= 100) {
+        warningMessage = String.format("Device %s is %d%% full. Consider using alternative storage.",
+            device.getName(), percentage);
+    } else if (percentage >= 90) {
+        warningMessage = String.format("Device %s is %d%% full. Consider using alternative storage.",
+            device.getName(), percentage);
+    } else if (percentage >= 80) {
+        warningMessage = String.format("Device %s is %d%% full. Consider using alternative storage.",
+            device.getName(), percentage);
+    }
+    
+    return new CapacityWarning(occupied, totalCapacity, percentage, warningMessage);
+}
+
+public CapacityWarning calculateCapacity(StorageShelf shelf) {
+    Integer totalCapacity = storageLocationService.calculateShelfCapacity(shelf);
+    if (totalCapacity == null) {
+        return null; // Capacity cannot be determined - UI will show "N/A"
+    }
+    
+    int occupied = storageLocationService.countOccupiedInShelf(shelf.getId());
+    int percentage = (occupied * 100) / totalCapacity;
+    
+    String warningMessage = null;
+    if (percentage >= 100) {
+        warningMessage = String.format("Shelf %s is %d%% full. Consider using alternative storage.",
+            shelf.getLabel(), percentage);
+    } else if (percentage >= 90) {
+        warningMessage = String.format("Shelf %s is %d%% full. Consider using alternative storage.",
+            shelf.getLabel(), percentage);
+    } else if (percentage >= 80) {
+        warningMessage = String.format("Shelf %s is %d%% full. Consider using alternative storage.",
+            shelf.getLabel(), percentage);
+    }
+    
     return new CapacityWarning(occupied, totalCapacity, percentage, warningMessage);
 }
 ```

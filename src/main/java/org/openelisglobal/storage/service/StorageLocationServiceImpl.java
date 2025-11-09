@@ -10,6 +10,8 @@ import org.openelisglobal.storage.valueholder.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.PersistenceContext;
 
 @Service
 @Transactional
@@ -32,6 +34,12 @@ public class StorageLocationServiceImpl implements StorageLocationService {
 
     @Autowired
     private StorageSearchService storageSearchService;
+
+    @Autowired
+    private SampleStorageAssignmentDAO sampleStorageAssignmentDAO;
+
+    @PersistenceContext
+    private EntityManager entityManager;
 
     @Override
     public List<StorageRoom> getRooms() {
@@ -285,6 +293,79 @@ public class StorageLocationServiceImpl implements StorageLocationService {
         throw new LIMSRuntimeException("Unsupported entity type for update");
     }
 
+    /**
+     * Calculate total capacity for a device using two-tier logic (per FR-062a, FR-062b).
+     * Returns null if capacity cannot be determined.
+     * 
+     * Tier 1: If capacity_limit is set, use that value (manual/static limit)
+     * Tier 2: If capacity_limit is NULL, calculate from child shelves:
+     *   - If ALL shelves have defined capacities (either static capacity_limit OR calculated from their own children), sum those capacities
+     *   - If ANY shelf lacks defined capacity, return null (capacity cannot be determined)
+     * 
+     * @param device The device to calculate capacity for
+     * @return Integer capacity value, or null if capacity cannot be determined
+     */
+    @Transactional(readOnly = true)
+    public Integer calculateDeviceCapacity(StorageDevice device) {
+        // Tier 1: Check if static capacity_limit is set
+        if (device.getCapacityLimit() != null && device.getCapacityLimit() > 0) {
+            return device.getCapacityLimit();
+        }
+        
+        // Tier 2: Calculate from child shelves
+        List<StorageShelf> shelves = storageShelfDAO.findByParentDeviceId(device.getId());
+        if (shelves == null || shelves.isEmpty()) {
+            return null; // No children, cannot determine capacity
+        }
+        
+        int totalCapacity = 0;
+        for (StorageShelf shelf : shelves) {
+            Integer shelfCapacity = calculateShelfCapacity(shelf);
+            if (shelfCapacity == null) {
+                // Any child lacks defined capacity - cannot determine parent capacity
+                return null;
+            }
+            totalCapacity += shelfCapacity;
+        }
+        
+        return totalCapacity;
+    }
+
+    /**
+     * Calculate total capacity for a shelf using two-tier logic (per FR-062a, FR-062b).
+     * Returns null if capacity cannot be determined.
+     * 
+     * Tier 1: If capacity_limit is set, use that value (manual/static limit)
+     * Tier 2: If capacity_limit is NULL, calculate from child racks:
+     *   - Racks always have defined capacity (rows × columns per FR-017)
+     *   - Sum all rack capacities
+     * 
+     * @param shelf The shelf to calculate capacity for
+     * @return Integer capacity value, or null if capacity cannot be determined
+     */
+    @Transactional(readOnly = true)
+    public Integer calculateShelfCapacity(StorageShelf shelf) {
+        // Tier 1: Check if static capacity_limit is set
+        if (shelf.getCapacityLimit() != null && shelf.getCapacityLimit() > 0) {
+            return shelf.getCapacityLimit();
+        }
+        
+        // Tier 2: Calculate from child racks (racks always have defined capacity)
+        List<StorageRack> racks = storageRackDAO.findByParentShelfId(shelf.getId());
+        if (racks == null || racks.isEmpty()) {
+            return null; // No children, cannot determine capacity
+        }
+        
+        int totalCapacity = 0;
+        for (StorageRack rack : racks) {
+            // Racks always have defined capacity (rows × columns)
+            int rackCapacity = (rack.getRows() != null ? rack.getRows() : 0) * (rack.getColumns() != null ? rack.getColumns() : 0);
+            totalCapacity += rackCapacity;
+        }
+        
+        return totalCapacity;
+    }
+
     @Override
     public void delete(Object entity) {
         // Note: Constraint validation is done in the controller before calling this method
@@ -453,28 +534,9 @@ public class StorageLocationServiceImpl implements StorageLocationService {
                 List<StorageDevice> devices = storageDeviceDAO.findByParentRoomId(room.getId());
                 map.put("deviceCount", devices != null ? devices.size() : 0);
 
-                int sampleCount = 0;
-                if (devices != null) {
-                    for (StorageDevice device : devices) {
-                        if (device != null && device.getId() != null) {
-                            List<StorageShelf> shelves = storageShelfDAO.findByParentDeviceId(device.getId());
-                            if (shelves != null) {
-                                for (StorageShelf shelf : shelves) {
-                                    if (shelf != null && shelf.getId() != null) {
-                                        List<StorageRack> racks = storageRackDAO.findByParentShelfId(shelf.getId());
-                                        if (racks != null) {
-                                            for (StorageRack rack : racks) {
-                                                if (rack != null && rack.getId() != null) {
-                                                    sampleCount += storagePositionDAO.countOccupied(rack.getId());
-                                                }
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
+                // Count unique samples assigned to locations within this room
+                // This counts distinct samples from sample_storage_assignment, not occupied positions
+                int sampleCount = countUniqueSamplesInRoom(room.getId(), devices);
                 map.put("sampleCount", sampleCount);
             } catch (Exception e) {
                 map.put("deviceCount", 0);
@@ -516,6 +578,22 @@ public class StorageLocationServiceImpl implements StorageLocationService {
             map.put("capacityLimit", device.getCapacityLimit());
             map.put("active", device.getActive());
             map.put("fhirUuid", device.getFhirUuidAsString());
+
+            // Add capacity calculation (per FR-062a, FR-062b, FR-062c)
+            if (device.getCapacityLimit() != null) {
+                // Tier 1: Manual capacity limit set
+                map.put("capacityType", "manual");
+            } else {
+                // Tier 2: Calculate from children
+                Integer calculatedCapacity = calculateDeviceCapacity(device);
+                if (calculatedCapacity != null) {
+                    map.put("totalCapacity", calculatedCapacity);
+                    map.put("capacityType", "calculated");
+                } else {
+                    // Capacity cannot be determined
+                    map.put("capacityType", null);
+                }
+            }
 
             // Add relationship data - all accessed within transaction
             if (parentRoom != null) {
@@ -569,6 +647,22 @@ public class StorageLocationServiceImpl implements StorageLocationService {
             map.put("active", shelf.getActive());
             map.put("fhirUuid", shelf.getFhirUuidAsString());
 
+            // Add capacity calculation (per FR-062a, FR-062b, FR-062c)
+            if (shelf.getCapacityLimit() != null) {
+                // Tier 1: Manual capacity limit set
+                map.put("capacityType", "manual");
+            } else {
+                // Tier 2: Calculate from children
+                Integer calculatedCapacity = calculateShelfCapacity(shelf);
+                if (calculatedCapacity != null) {
+                    map.put("totalCapacity", calculatedCapacity);
+                    map.put("capacityType", "calculated");
+                } else {
+                    // Capacity cannot be determined
+                    map.put("capacityType", null);
+                }
+            }
+
             // Add relationship data - all accessed within transaction
             if (parentDevice != null) {
                 map.put("parentDeviceId", parentDevice.getId());
@@ -584,18 +678,12 @@ public class StorageLocationServiceImpl implements StorageLocationService {
             // Set type for consistency with searchLocations
             map.put("type", "shelf");
 
-            // Count occupied positions
+            // Count occupied positions using dedicated method
+            // This handles positions directly under shelf AND positions in racks under shelf
             try {
                 int occupiedCount = 0;
                 if (shelf.getId() != null) {
-                    List<StorageRack> racks = storageRackDAO.findByParentShelfId(shelf.getId());
-                    if (racks != null) {
-                        for (StorageRack rack : racks) {
-                            if (rack != null && rack.getId() != null) {
-                                occupiedCount += storagePositionDAO.countOccupied(rack.getId());
-                            }
-                        }
-                    }
+                    occupiedCount = storagePositionDAO.countOccupiedInShelf(shelf.getId());
                 }
                 map.put("occupiedCount", occupiedCount);
             } catch (Exception e) {
@@ -985,5 +1073,77 @@ public class StorageLocationServiceImpl implements StorageLocationService {
         }
 
         return "Cannot delete location: unknown type";
+    }
+
+    /**
+     * Count unique samples assigned to locations within a room.
+     * This counts distinct samples from sample_storage_assignment table,
+     * not occupied positions, to get accurate sample counts.
+     * 
+     * @param roomId The room ID
+     * @param devices List of devices in the room (can be null)
+     * @return Count of unique samples assigned to locations in this room
+     */
+    @Transactional(readOnly = true)
+    private int countUniqueSamplesInRoom(Integer roomId, List<StorageDevice> devices) {
+        try {
+            // Build list of location IDs to check
+            List<Integer> locationIds = new ArrayList<>();
+            locationIds.add(roomId); // Room itself
+            
+            if (devices != null) {
+                for (StorageDevice device : devices) {
+                    if (device != null && device.getId() != null) {
+                        locationIds.add(device.getId());
+                        
+                        // Get shelves in this device
+                        List<StorageShelf> shelves = storageShelfDAO.findByParentDeviceId(device.getId());
+                        if (shelves != null) {
+                            for (StorageShelf shelf : shelves) {
+                                if (shelf != null && shelf.getId() != null) {
+                                    locationIds.add(shelf.getId());
+                                    
+                                    // Get racks in this shelf
+                                    List<StorageRack> racks = storageRackDAO.findByParentShelfId(shelf.getId());
+                                    if (racks != null) {
+                                        for (StorageRack rack : racks) {
+                                            if (rack != null && rack.getId() != null) {
+                                                locationIds.add(rack.getId());
+                                                
+                                                // Get positions in this rack
+                                                List<StoragePosition> positions = storagePositionDAO.findByParentRackId(rack.getId());
+                                                if (positions != null) {
+                                                    for (StoragePosition position : positions) {
+                                                        if (position != null && position.getId() != null) {
+                                                            locationIds.add(position.getId());
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            
+            if (locationIds.isEmpty()) {
+                return 0;
+            }
+            
+            // Count distinct samples from assignments where location matches
+            // Use HQL to count distinct sample IDs
+            String hql = "SELECT COUNT(DISTINCT ssa.sample.id) FROM SampleStorageAssignment ssa "
+                    + "WHERE ssa.locationId IN :locationIds";
+            jakarta.persistence.Query query = entityManager.createQuery(hql);
+            query.setParameter("locationIds", locationIds);
+            Long count = (Long) query.getSingleResult();
+            return count != null ? count.intValue() : 0;
+        } catch (Exception e) {
+            // If query fails, return 0 (data will show but sample count will be 0)
+            return 0;
+        }
     }
 }

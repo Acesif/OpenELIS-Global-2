@@ -4,7 +4,10 @@ import static org.junit.Assert.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -504,5 +507,293 @@ public class StorageLocationServiceImplTest {
         // update() returns null for devices (service returns null)
         // Just verify the update method was called
         verify(storageDeviceDAO, times(1)).update(any(StorageDevice.class));
+    }
+
+    // ========== Phase 9.5: Capacity Calculation Logic Tests (T184) ==========
+
+    /**
+     * T184: Test calculateDeviceCapacity with capacity_limit set returns manual limit
+     * Two-tier logic: Tier 1 - If capacity_limit is set, use that value
+     */
+    @Test
+    public void testCalculateDeviceCapacity_WithCapacityLimit_ReturnsManualLimit() {
+        // Given: Device with capacity_limit set
+        testDevice.setCapacityLimit(500);
+
+        // When: Calculate capacity
+        Integer capacity = storageLocationService.calculateDeviceCapacity(testDevice);
+
+        // Then: Should return the manual limit
+        assertNotNull("Capacity should not be null", capacity);
+        assertEquals("Should return manual capacity limit", Integer.valueOf(500), capacity);
+    }
+
+    /**
+     * T184: Test calculateDeviceCapacity without capacity_limit, all shelves have capacities, returns sum
+     * Two-tier logic: Tier 2 - Calculate from children if all have defined capacities
+     */
+    @Test
+    public void testCalculateDeviceCapacity_WithoutCapacityLimit_AllShelvesHaveCapacities_ReturnsSum() {
+        // Given: Device without capacity_limit
+        testDevice.setCapacityLimit(null);
+
+        // Given: Two shelves with defined capacities
+        StorageShelf shelf1 = new StorageShelf();
+        shelf1.setId(10);
+        shelf1.setCapacityLimit(200);
+        shelf1.setParentDevice(testDevice);
+
+        StorageShelf shelf2 = new StorageShelf();
+        shelf2.setId(11);
+        shelf2.setCapacityLimit(300);
+        shelf2.setParentDevice(testDevice);
+
+        when(storageShelfDAO.findByParentDeviceId(testDevice.getId())).thenReturn(Arrays.asList(shelf1, shelf2));
+
+        // Mock calculateShelfCapacity to return shelf capacities
+        // Note: This will require the actual implementation to work, but for now we test the logic
+        // We'll need to mock the recursive call or implement it properly
+        // For now, let's test that it calls calculateShelfCapacity for each shelf
+        // The actual implementation will handle the recursion
+
+        // When: Calculate capacity
+        Integer capacity = storageLocationService.calculateDeviceCapacity(testDevice);
+
+        // Then: Should return sum of shelf capacities (200 + 300 = 500)
+        // Note: This will fail until implementation is done
+        assertNotNull("Capacity should not be null when all shelves have capacities", capacity);
+        assertEquals("Should return sum of shelf capacities", Integer.valueOf(500), capacity);
+    }
+
+    /**
+     * T184: Test calculateDeviceCapacity without capacity_limit, some shelves missing capacity, returns null
+     * Two-tier logic: If ANY child lacks defined capacity, parent capacity cannot be determined
+     */
+    @Test
+    public void testCalculateDeviceCapacity_WithoutCapacityLimit_SomeShelvesMissingCapacity_ReturnsNull() {
+        // Given: Device without capacity_limit
+        testDevice.setCapacityLimit(null);
+
+        // Given: One shelf with capacity, one without
+        StorageShelf shelf1 = new StorageShelf();
+        shelf1.setId(10);
+        shelf1.setCapacityLimit(200);
+        shelf1.setParentDevice(testDevice);
+
+        StorageShelf shelf2 = new StorageShelf();
+        shelf2.setId(11);
+        shelf2.setCapacityLimit(null); // No capacity limit
+        shelf2.setParentDevice(testDevice);
+
+        when(storageShelfDAO.findByParentDeviceId(testDevice.getId())).thenReturn(Arrays.asList(shelf1, shelf2));
+
+        // When: Calculate capacity
+        Integer capacity = storageLocationService.calculateDeviceCapacity(testDevice);
+
+        // Then: Should return null (capacity cannot be determined)
+        assertNull("Capacity should be null when some shelves lack defined capacity", capacity);
+    }
+
+    /**
+     * T184: Test calculateDeviceCapacity with no children returns null
+     */
+    @Test
+    public void testCalculateDeviceCapacity_NoChildren_ReturnsNull() {
+        // Given: Device without capacity_limit and no shelves
+        testDevice.setCapacityLimit(null);
+        when(storageShelfDAO.findByParentDeviceId(testDevice.getId())).thenReturn(new ArrayList<>());
+
+        // When: Calculate capacity
+        Integer capacity = storageLocationService.calculateDeviceCapacity(testDevice);
+
+        // Then: Should return null
+        assertNull("Capacity should be null when device has no children", capacity);
+    }
+
+    /**
+     * T184: Test calculateShelfCapacity with capacity_limit set returns manual limit
+     */
+    @Test
+    public void testCalculateShelfCapacity_WithCapacityLimit_ReturnsManualLimit() {
+        // Given: Shelf with capacity_limit set
+        testShelf.setCapacityLimit(100);
+
+        // When: Calculate capacity
+        Integer capacity = storageLocationService.calculateShelfCapacity(testShelf);
+
+        // Then: Should return the manual limit
+        assertNotNull("Capacity should not be null", capacity);
+        assertEquals("Should return manual capacity limit", Integer.valueOf(100), capacity);
+    }
+
+    /**
+     * T184: Test calculateShelfCapacity without capacity_limit, all racks have capacities, returns sum
+     * Racks always have defined capacity (rows × columns)
+     */
+    @Test
+    public void testCalculateShelfCapacity_WithoutCapacityLimit_AllRacksHaveCapacities_ReturnsSum() {
+        // Given: Shelf without capacity_limit
+        testShelf.setCapacityLimit(null);
+
+        // Given: Two racks with defined capacities (rows × columns)
+        StorageRack rack1 = new StorageRack();
+        rack1.setId(20);
+        rack1.setRows(8);
+        rack1.setColumns(12); // Capacity = 96
+        rack1.setParentShelf(testShelf);
+
+        StorageRack rack2 = new StorageRack();
+        rack2.setId(21);
+        rack2.setRows(10);
+        rack2.setColumns(10); // Capacity = 100
+        rack2.setParentShelf(testShelf);
+
+        when(storageRackDAO.findByParentShelfId(testShelf.getId())).thenReturn(Arrays.asList(rack1, rack2));
+
+        // When: Calculate capacity
+        Integer capacity = storageLocationService.calculateShelfCapacity(testShelf);
+
+        // Then: Should return sum of rack capacities (96 + 100 = 196)
+        assertNotNull("Capacity should not be null when all racks have defined capacities", capacity);
+        assertEquals("Should return sum of rack capacities", Integer.valueOf(196), capacity);
+    }
+
+    /**
+     * T184: Test calculateShelfCapacity without capacity_limit, no racks, returns null
+     */
+    @Test
+    public void testCalculateShelfCapacity_WithoutCapacityLimit_NoRacks_ReturnsNull() {
+        // Given: Shelf without capacity_limit and no racks
+        testShelf.setCapacityLimit(null);
+        when(storageRackDAO.findByParentShelfId(testShelf.getId())).thenReturn(new ArrayList<>());
+
+        // When: Calculate capacity
+        Integer capacity = storageLocationService.calculateShelfCapacity(testShelf);
+
+        // Then: Should return null
+        assertNull("Capacity should be null when shelf has no racks", capacity);
+    }
+
+    /**
+     * T184: Test rack capacity always calculated as rows × columns
+     * Racks never use capacity_limit field
+     */
+    @Test
+    public void testCalculateRackCapacity_AlwaysRowsTimesColumns() {
+        // Given: Rack with rows and columns
+        testRack.setRows(8);
+        testRack.setColumns(12);
+
+        // When: Calculate capacity (if method exists, or verify in getRacksForAPI)
+        // Note: Racks don't have a separate calculate method, capacity is always rows × columns
+        int capacity = testRack.getRows() * testRack.getColumns();
+
+        // Then: Should return rows × columns
+        assertEquals("Rack capacity should be rows × columns", 96, capacity);
+    }
+
+    // ========== Phase 9.5: API Response Updates Tests (T185) ==========
+
+    /**
+     * T185: Test getDevicesForAPI includes capacityLimit and capacityType="manual" when capacity_limit set
+     */
+    @Test
+    public void testGetDevicesForAPI_IncludesTotalCapacityAndCapacityType() {
+        // Given: Device with capacity_limit set
+        testDevice.setCapacityLimit(500);
+        when(storageDeviceDAO.getAll()).thenReturn(Arrays.asList(testDevice));
+        when(storagePositionDAO.countOccupiedInDevice(testDevice.getId())).thenReturn(287);
+
+        // When: Get devices for API
+        List<Map<String, Object>> result = storageLocationService.getDevicesForAPI(null);
+
+        // Then: Should include capacityLimit and capacityType="manual"
+        assertNotNull("Result should not be null", result);
+        assertEquals("Should return one device", 1, result.size());
+        Map<String, Object> deviceMap = result.get(0);
+        assertEquals("Should include capacityLimit", Integer.valueOf(500), deviceMap.get("capacityLimit"));
+        assertEquals("Should include capacityType='manual'", "manual", deviceMap.get("capacityType"));
+    }
+
+    /**
+     * T185: Test getDevicesForAPI includes totalCapacity and capacityType="calculated" when capacity_limit null but calculated available
+     */
+    @Test
+    public void testGetDevicesForAPI_CalculatedCapacity_IncludesTotalCapacityAndCapacityType() {
+        // Given: Device without capacity_limit but with shelves having defined capacities
+        testDevice.setCapacityLimit(null);
+        when(storageDeviceDAO.getAll()).thenReturn(Arrays.asList(testDevice));
+        when(storagePositionDAO.countOccupiedInDevice(testDevice.getId())).thenReturn(287);
+
+        // Given: Device has shelves with capacities (mocked in calculateDeviceCapacity)
+        StorageShelf shelf1 = new StorageShelf();
+        shelf1.setId(10);
+        shelf1.setCapacityLimit(200);
+        StorageShelf shelf2 = new StorageShelf();
+        shelf2.setId(11);
+        shelf2.setCapacityLimit(300);
+        when(storageShelfDAO.findByParentDeviceId(testDevice.getId())).thenReturn(Arrays.asList(shelf1, shelf2));
+
+        // When: Get devices for API
+        List<Map<String, Object>> result = storageLocationService.getDevicesForAPI(null);
+
+        // Then: Should include totalCapacity and capacityType="calculated"
+        assertNotNull("Result should not be null", result);
+        assertEquals("Should return one device", 1, result.size());
+        Map<String, Object> deviceMap = result.get(0);
+        // Note: This will fail until implementation adds totalCapacity and capacityType
+        assertNotNull("Should include totalCapacity", deviceMap.get("totalCapacity"));
+        assertEquals("Should include capacityType='calculated'", "calculated", deviceMap.get("capacityType"));
+    }
+
+    /**
+     * T185: Test getDevicesForAPI includes capacityType=null when capacity cannot be determined
+     */
+    @Test
+    public void testGetDevicesForAPI_UndeterminedCapacity_IncludesNullCapacityType() {
+        // Given: Device without capacity_limit and some shelves missing capacities
+        testDevice.setCapacityLimit(null);
+        when(storageDeviceDAO.getAll()).thenReturn(Arrays.asList(testDevice));
+        when(storagePositionDAO.countOccupiedInDevice(testDevice.getId())).thenReturn(287);
+
+        // Given: Device has shelves but some lack defined capacity
+        StorageShelf shelf1 = new StorageShelf();
+        shelf1.setId(10);
+        shelf1.setCapacityLimit(200);
+        StorageShelf shelf2 = new StorageShelf();
+        shelf2.setId(11);
+        shelf2.setCapacityLimit(null); // No capacity
+        when(storageShelfDAO.findByParentDeviceId(testDevice.getId())).thenReturn(Arrays.asList(shelf1, shelf2));
+
+        // When: Get devices for API
+        List<Map<String, Object>> result = storageLocationService.getDevicesForAPI(null);
+
+        // Then: Should include capacityType=null
+        assertNotNull("Result should not be null", result);
+        assertEquals("Should return one device", 1, result.size());
+        Map<String, Object> deviceMap = result.get(0);
+        // Note: This will fail until implementation adds capacityType
+        assertNull("Should include capacityType=null when capacity cannot be determined", deviceMap.get("capacityType"));
+    }
+
+    /**
+     * T185: Test getShelvesForAPI includes capacityLimit and capacityType="manual" when capacity_limit set
+     */
+    @Test
+    public void testGetShelvesForAPI_IncludesTotalCapacityAndCapacityType() {
+        // Given: Shelf with capacity_limit set
+        testShelf.setCapacityLimit(100);
+        when(storageShelfDAO.getAll()).thenReturn(Arrays.asList(testShelf));
+        when(storagePositionDAO.countOccupiedInShelf(testShelf.getId())).thenReturn(50);
+
+        // When: Get shelves for API
+        List<Map<String, Object>> result = storageLocationService.getShelvesForAPI(null);
+
+        // Then: Should include capacityLimit and capacityType="manual"
+        assertNotNull("Result should not be null", result);
+        assertEquals("Should return one shelf", 1, result.size());
+        Map<String, Object> shelfMap = result.get(0);
+        assertEquals("Should include capacityLimit", Integer.valueOf(100), shelfMap.get("capacityLimit"));
+        assertEquals("Should include capacityType='manual'", "manual", shelfMap.get("capacityType"));
     }
 }

@@ -1057,6 +1057,201 @@ const formatField = (value, formatter) => {
 
 ---
 
+## 9. Existing OpenELIS Barcode Printing Infrastructure
+
+**Date**: 2025-11-22  
+**Feature**: Integration with existing barcode label printing system
+
+### Research Questions
+
+#### Q1: What barcode printing infrastructure already exists in OpenELIS?
+
+**Decision**: OpenELIS has a complete barcode printing system using iTextPDF library.
+
+**Existing Infrastructure**:
+
+1. **BarcodeLabelMaker.java** (`src/main/java/org/openelisglobal/barcode/BarcodeLabelMaker.java`):
+   - Uses `com.itextpdf.text.pdf.Barcode128` for Code 128 barcodes
+   - Uses `com.google.zxing` for QR codes
+   - Generates PDF streams via `createLabelsAsStream()` method
+   - Supports multiple label types: OrderLabel, SpecimenLabel, BlankLabel, BlockLabel, SlideLabel
+   - Label dimensions configurable via `ConfigurationProperties`
+
+2. **LabelMakerServlet.java** (`src/main/java/org/openelisglobal/common/servlet/barcode/LabelMakerServlet.java`):
+   - Servlet endpoint: `/LabelMakerServlet`
+   - Query parameters: `labNo`, `type`, `quantity`, `override`
+   - Returns PDF stream with `Content-Type: application/pdf`
+   - Frontend usage: `<iframe src="/LabelMakerServlet?labNo=...&type=...&quantity=..."/>`
+
+3. **BarcodeConfigurationForm.java** (`src/main/java/org/openelisglobal/barcode/form/BarcodeConfigurationForm.java`):
+   - System administration form for barcode settings
+   - Configurable properties:
+     - Label dimensions (height/width for each label type)
+     - Maximum print limits (numMaxOrderLabels, numMaxSpecimenLabels, etc.)
+     - Default print quantities
+   - Stored in `SiteInformation` table via `BarcodeInformationService`
+
+4. **BarcodeLabelInfo.java** (`src/main/java/org/openelisglobal/barcode/valueholder/BarcodeLabelInfo.java`):
+   - Entity for tracking print history
+   - Fields: `id`, `numPrinted`, `code`, `type`
+   - Tracks how many times a label has been printed
+   - Used for enforcing maximum print limits
+
+5. **ConfigurationProperties.java** (`src/main/java/org/openelisglobal/common/util/ConfigurationProperties.java`):
+   - Property enum values for barcode configuration:
+     - `ORDER_BARCODE_HEIGHT`, `ORDER_BARCODE_WIDTH`
+     - `SPECIMEN_BARCODE_HEIGHT`, `SPECIMEN_BARCODE_WIDTH`
+     - `BLOCK_BARCODE_HEIGHT`, `BLOCK_BARCODE_WIDTH`
+     - `SLIDE_BARCODE_HEIGHT`, `SLIDE_BARCODE_WIDTH`
+     - `MAX_ORDER_PRINTED`, `MAX_SPECIMEN_PRINTED`
+   - Properties stored in database (`site_information` table) or `SystemConfiguration.properties` file
+
+**Pattern for Creating New Label Types**:
+
+```java
+// Example: OrderLabel extends Label
+public class StorageLocationLabel extends Label {
+    public StorageLocationLabel(StorageDevice device, String shortCode) {
+        // Set dimensions from ConfigurationProperties
+        width = Float.parseFloat(ConfigurationProperties.getInstance()
+            .getPropertyValue(Property.STORAGE_LOCATION_BARCODE_WIDTH));
+        height = Float.parseFloat(ConfigurationProperties.getInstance()
+            .getPropertyValue(Property.STORAGE_LOCATION_BARCODE_HEIGHT));
+        
+        // Set barcode code (hierarchical path or short code)
+        setCode(shortCode != null ? shortCode : buildHierarchicalPath(device));
+        
+        // Add fields above/below barcode
+        aboveFields = new ArrayList<>();
+        aboveFields.add(new LabelField("Location", device.getName(), 12));
+        // ... more fields
+    }
+}
+```
+
+**Integration Strategy**:
+
+1. **Create StorageLocationLabel class** extending `Label`:
+   - Use hierarchical path (`ROOM-DEVICE-SHELF-RACK`) or short code for barcode value
+   - Read dimensions from `ConfigurationProperties` (add new properties: `STORAGE_LOCATION_BARCODE_HEIGHT`, `STORAGE_LOCATION_BARCODE_WIDTH`)
+   - Display location name, code, hierarchical path on label
+
+2. **Extend LabelMakerServlet** or create new endpoint:
+   - Option A: Extend existing servlet with new `type=storage-location` parameter
+   - Option B: Create REST endpoint `/rest/storage/{type}/{id}/print-label` (preferred for consistency with REST API pattern)
+   - Return PDF stream same as existing servlet
+
+3. **Add Configuration Properties**:
+   - Add `STORAGE_LOCATION_BARCODE_HEIGHT` and `STORAGE_LOCATION_BARCODE_WIDTH` to `ConfigurationProperties.Property` enum
+   - Add to `BarcodeConfigurationForm` for system admin UI
+   - Store in `site_information` table via `BarcodeInformationService`
+
+4. **Print History Tracking**:
+   - Reuse existing `BarcodeLabelInfo` entity or create new `StorageLocationPrintHistory` entity
+   - Track: location entity ID, short code (if used), printed by (user ID), printed date, print count
+   - Store in database for audit trail
+
+**Rationale**: Leveraging existing infrastructure reduces development effort and maintains consistency with OpenELIS patterns. iTextPDF is already in dependencies, label configuration system exists, and print history pattern is established.
+
+**Alternatives Considered**:
+- ❌ Custom PDF generation library: Would duplicate existing functionality
+- ❌ Separate label printing system: Would create inconsistency and maintenance overhead
+- ❌ Third-party label printing service: Would add external dependency and cost
+
+#### Q2: How to configure default printer for label printing?
+
+**Decision**: NEEDS CLARIFICATION - Research required on printer configuration in OpenELIS.
+
+**Research Needed**:
+- Does OpenELIS have system-wide default printer configuration?
+- How do existing label printing workflows handle printer selection?
+- Is printer selection handled by browser (user selects printer when PDF opens)?
+- Or is there server-side printer configuration?
+
+**Current Understanding**:
+- LabelMakerServlet returns PDF stream to browser
+- Browser PDF viewer handles printing (user selects printer)
+- No evidence of server-side printer configuration in existing code
+
+**Action Required**: Research printer configuration options:
+1. Check if `ConfigurationProperties` has printer-related settings
+2. Check if there's a printer selection dialog in frontend
+3. Determine if "default printer" means browser default or system default
+4. Document findings for implementation
+
+#### Q3: What are the detailed requirements for USB HID barcode scanner integration?
+
+**Decision**: Basic keyboard event handling is documented, but hardware-specific details need research.
+
+**Current Research** (from Section 4):
+- USB HID scanners emit rapid keyboard events (30-50ms between characters)
+- Detection via character buffer with timeout
+- Enter key indicates scan completion
+
+**Additional Research Needed**:
+
+1. **Scanner Configuration**:
+   - Do scanners need any configuration (prefix/suffix characters)?
+   - How to handle scanners that add Enter automatically vs manual Enter?
+   - What happens if user types manually vs scans (detection method)?
+
+2. **Browser Compatibility**:
+   - Do all browsers handle USB HID scanners identically?
+   - Any browser-specific quirks or limitations?
+   - Mobile browser support (if applicable)?
+
+3. **Error Handling**:
+   - What if scanner malfunctions (partial scans, corrupted data)?
+   - How to distinguish scanner input from normal typing?
+   - Should we detect scan speed vs typing speed?
+
+**Action Required**: Document hardware testing results and browser compatibility findings.
+
+**Reference**: Existing research in Section 4 provides basic implementation pattern. Additional hardware testing recommended during implementation phase.
+
+### Technical Decisions Summary
+
+| Decision | Choice | Rationale |
+|----------|--------|-----------|
+| PDF Generation | Reuse existing iTextPDF via BarcodeLabelMaker | Already in dependencies, proven pattern |
+| Label Type | Create StorageLocationLabel extending Label | Follows existing pattern, maintains consistency |
+| Print Endpoint | REST endpoint `/rest/storage/{type}/{id}/print-label` | Consistent with REST API architecture |
+| Configuration | Extend ConfigurationProperties and BarcodeConfigurationForm | Leverages existing system admin infrastructure |
+| Print History | Create StorageLocationPrintHistory entity | Separate from sample labels, storage-specific audit trail |
+| Printer Selection | Browser PDF viewer (user selects) | Matches existing pattern, no server-side printer config needed |
+
+### Dependencies
+
+- **iTextPDF**: Already in OpenELIS dependencies (`com.itextpdf:itextpdf`)
+- **ZXing**: Already in dependencies for QR code support (`com.google.zxing:core`)
+- **BarcodeLabelMaker**: Existing class, extend for storage locations
+- **ConfigurationProperties**: Existing utility, add new properties
+
+### Implementation Notes
+
+1. **Backend Changes**:
+   - Create `StorageLocationLabel.java` extending `Label`
+   - Add `STORAGE_LOCATION_BARCODE_HEIGHT` and `STORAGE_LOCATION_BARCODE_WIDTH` to `ConfigurationProperties.Property` enum
+   - Extend `BarcodeConfigurationForm` with storage location label dimensions
+   - Create REST endpoint for label printing (or extend LabelMakerServlet)
+   - Create `StorageLocationPrintHistory` entity and DAO/Service
+
+2. **Frontend Changes**:
+   - Label Management modal calls REST endpoint
+   - PDF opens in new tab (browser handles printing)
+   - Display print history from `StorageLocationPrintHistory` entity
+
+3. **Database Changes**:
+   - Add `storage_location_print_history` table (Liquibase changeset)
+   - Add configuration properties to `site_information` table (via system admin UI)
+
+4. **Testing**:
+   - Unit tests for `StorageLocationLabel` class
+   - Integration tests for print endpoint
+   - E2E tests for label printing workflow
+
+---
+
 ## Summary of Research Findings
 
 | Question                    | Answer                                                                                                                                                                                                                        | Source                                                          |
@@ -1065,10 +1260,12 @@ const formatField = (value, formatter) => {
 | FHIR Location Structure     | R4 Location resource with partOf hierarchy, physicalType codes (ro/ve/co), IHE mCSD compliance                                                                                                                                | FHIR R4 spec + IHE mCSD                                         |
 | Carbon Dropdown Cascading   | Controlled components, useEffect for child data fetching, disabled until parent selected                                                                                                                                      | @carbon/react Dropdown API                                      |
 | Barcode Scanner Integration | USB HID keyboard events, character buffer with 50ms timeout, detect Enter key                                                                                                                                                 | Browser keyboard event handling                                 |
+| Barcode Printing Infrastructure | Reuse existing iTextPDF/BarcodeLabelMaker, create StorageLocationLabel extending Label, REST endpoint for printing, extend ConfigurationProperties | Existing OpenELIS barcode printing system (BarcodeLabelMaker.java, LabelMakerServlet.java) |
 | Frontend Data Fetching      | Custom `getFromOpenElisServer` utility with useState/useEffect (NOT SWR)                                                                                                                                                      | Existing OpenELIS hooks                                         |
 | Cypress E2E Setup           | Use existing Cypress 12.17.3 framework, follow patientEntry.cy.js pattern                                                                                                                                                     | Existing OpenELIS E2E tests                                     |
 | Certificate Architecture    | Self-signed certs via certgen container, distributed via Docker volumes to nginx/proxy and Java services. Let's Encrypt setup requires Certbot container, nginx ACME challenge handling, and subdomain-specific server blocks | dev.docker-compose.yml, nginx.conf, certificate-setup-report.md |
 | Carbon DataTable Expandable Rows | Carbon DataTable expandableRows prop with TableExpandHeader/TableExpandRow/TableExpandedRow, React useState for single-row expansion, key-value pairs in Grid layout | Carbon DataTable docs, EOrder.js implementation |
+| Capacity Calculation Logic | Two-tier system: manual `capacity_limit` (if set) OR calculated from children (sum if all children have defined capacities). Racks always use rows × columns. Show "N/A" if capacity cannot be determined. | Spec FR-062a, FR-062b, FR-062c, laboratory workflow analysis |
 
 **Decisions Made**:
 
@@ -1082,6 +1279,52 @@ const formatField = (value, formatter) => {
 7. Set up Let's Encrypt for `storage.openelis-global.org` subdomain
    incrementally, keeping self-signed certs for other services during
    development phase
+8. Reuse existing OpenELIS barcode printing infrastructure (iTextPDF, BarcodeLabelMaker) for storage location labels
+9. Implement two-tier capacity system: manual `capacity_limit` takes precedence, otherwise calculate from children (sum if all children have defined capacities). Display "N/A" with tooltip when capacity cannot be determined. Visually distinguish manual vs calculated capacities.
 
 **Next Steps**: Proceed to Phase 1 design artifacts (data-model.md, contracts/,
 quickstart.md)
+
+---
+
+## 9. Capacity Calculation Logic (2025-01-15)
+
+**Question**: How should capacity be calculated for Devices and Shelves when `capacity_limit` is not set? How should the system handle cases where some children have defined capacities and others don't?
+
+**Research Context**: 
+- Spec requires occupancy display (FR-061, FR-062) showing fraction, percentage, and progress bar
+- Devices and Shelves have optional `capacity_limit` field
+- Racks always use calculated capacity (rows × columns per FR-017)
+- Need to support both manual planning limits and dynamic calculation from hierarchy
+
+**Decision**: Two-tier capacity system with hierarchical fallback
+
+**Rationale**:
+1. **Manual limits for planning**: Labs need to set capacity limits for procurement planning (e.g., "Freezer Unit 1 can hold 500 samples")
+2. **Dynamic calculation for flexibility**: When limits aren't set, calculate from actual storage structure (sum of child capacities)
+3. **Consistency requirement**: If ANY child lacks defined capacity, cannot reliably calculate parent (would show misleading data)
+4. **User transparency**: Users must understand whether capacity is manual or calculated (visual distinction required)
+
+**Implementation Pattern**:
+- **Tier 1**: If `capacity_limit` is set, use that value (manual/static limit)
+- **Tier 2**: If `capacity_limit` is NULL:
+  - Calculate from child locations (shelves for devices, racks for shelves)
+  - If ALL children have defined capacities (either static `capacity_limit` OR calculated from their own children), sum those capacities
+  - If ANY child lacks defined capacity, return null (capacity cannot be determined)
+- **Racks**: Always calculated (rows × columns), never use `capacity_limit` field
+
+**UI Display**:
+- When capacity is defined: Show "287/500 (57%)" with progress bar
+- When capacity cannot be determined: Show "N/A" or "Unlimited" with tooltip explaining why
+- Visual distinction: Badge, tooltip, or icon to indicate "Manual Limit" vs "Calculated"
+
+**Alternatives Considered**:
+- **Option B (Simplified)**: Only show occupancy when `capacity_limit` is set, otherwise show "Unlimited" - **Rejected**: Too restrictive, doesn't leverage rack capacity data
+- **Option C (Always Calculate)**: Remove `capacity_limit` field, always calculate from children - **Rejected**: Labs need manual limits for planning purposes
+
+**Dependencies**:
+- Backend: `StorageLocationService` must implement `calculateDeviceCapacity()` and `calculateShelfCapacity()` methods
+- API: Device/Shelf responses must include `totalCapacity` and `capacityType` fields
+- Frontend: Occupancy display must handle null capacity and show visual distinction
+
+**Reference**: Spec FR-062a, FR-062b, FR-062c, FR-061, FR-063

@@ -9,12 +9,9 @@ before("Setup storage tests", () => {
 });
 
 after("Cleanup storage tests", () => {
-  // Only cleanup if explicitly requested (default: keep fixtures for fast iteration)
-  if (Cypress.env("CLEANUP_FIXTURES") === true) {
-    cy.cleanupStorageTests();
-  } else {
-    cy.log("Skipping cleanup - fixtures preserved for next run");
-  }
+  // Cleanup only if CLEANUP_FIXTURES=true (default: false for faster iteration)
+  // The cleanupStorageTests command handles the env var check
+  cy.cleanupStorageTests();
 });
 
 describe("Location CRUD Operations", function () {

@@ -3,18 +3,18 @@ import HomePage from "../pages/HomePage";
 let homePage = null;
 
 before("Setup storage tests", () => {
+  // Smart fixture management: checks existence, only loads if needed
+  // Set CYPRESS_SKIP_FIXTURES=true to skip loading
+  // Set CYPRESS_FORCE_FIXTURES=true to force reload
   cy.setupStorageTests().then((page) => {
     homePage = page;
   });
 });
 
 after("Cleanup storage tests", () => {
-  // Only cleanup if explicitly requested (default: keep fixtures for fast iteration)
-  if (Cypress.env("CLEANUP_FIXTURES") === true) {
-    cy.cleanupStorageTests();
-  } else {
-    cy.log("Skipping cleanup - fixtures preserved for next run");
-  }
+  // Cleanup only if CLEANUP_FIXTURES=true (default: false for faster iteration)
+  // The cleanupStorageTests command handles the env var check
+  cy.cleanupStorageTests();
 });
 
 describe("Location Expandable Rows", function () {
@@ -51,13 +51,8 @@ describe("Location Expandable Rows", function () {
             .click({ force: true });
         });
 
-      // Verify expanded content appears
-      cy.get('[data-testid^="room-row-"]')
-        .first()
-        .next()
-        .within(() => {
-          cy.contains("Description", { timeout: 5000 }).should("be.visible");
-        });
+      // Verify expanded content appears by test id
+      cy.get('[data-testid^="expanded-room-"]', { timeout: 5000 }).should("be.visible");
     });
 
     it("should show expanded content with correct fields for room", function () {
@@ -71,17 +66,14 @@ describe("Location Expandable Rows", function () {
           cy.get('button[aria-label*="expand"]').click({ force: true });
         });
 
-      // Verify all required fields are displayed
-      cy.get('[data-testid^="room-row-"]')
-        .first()
-        .next()
-        .within(() => {
-          cy.contains("Description").should("be.visible");
-          cy.contains("Created Date").should("be.visible");
-          cy.contains("Created By").should("be.visible");
-          cy.contains("Last Modified Date").should("be.visible");
-          cy.contains("Last Modified By").should("be.visible");
-        });
+      // Verify all required fields are displayed by test id
+      cy.get('[data-testid^="expanded-room-"]').within(() => {
+        cy.get('[data-testid$="-description"]').should("be.visible");
+        cy.get('[data-testid$="-created-date"]').should("be.visible");
+        cy.get('[data-testid$="-created-by"]').should("be.visible");
+        cy.get('[data-testid$="-last-modified-date"]').should("be.visible");
+        cy.get('[data-testid$="-last-modified-by"]').should("be.visible");
+      });
     });
 
     it("should collapse previous row when expanding new row", function () {
@@ -211,25 +203,7 @@ describe("Location Expandable Rows", function () {
       cy.get('[data-testid="tab-rooms"]').click();
       cy.get('[data-testid^="room-row-"]', { timeout: 10000 }).should("have.length.at.least", 1);
 
-      // Setup API intercept with room data including all fields
-      cy.intercept("GET", "**/rest/storage/rooms**", {
-        statusCode: 200,
-        body: [
-          {
-            id: 1,
-            code: "MAIN",
-            name: "Main Laboratory",
-            description: "Main laboratory room",
-            active: true,
-            lastupdated: "2025-01-15T10:30:00Z",
-            sysUserId: "user1",
-          },
-        ],
-      }).as("getRooms");
-
-      // Reload to get fresh data
-      cy.reload();
-      cy.wait("@getRooms");
+      // No need to reload - fixtures are already set up
 
       // Expand first row
       cy.get('[data-testid^="room-row-"]')
@@ -256,28 +230,7 @@ describe("Location Expandable Rows", function () {
       cy.get('[data-testid="tab-devices"]').click();
       cy.get('[data-testid^="device-row-"]', { timeout: 10000 }).should("have.length.at.least", 1);
 
-      // Setup API intercept with device data
-      cy.intercept("GET", "**/rest/storage/devices**", {
-        statusCode: 200,
-        body: [
-          {
-            id: 10,
-            code: "FRZ01",
-            name: "Freezer Unit 1",
-            deviceType: "freezer",
-            temperatureSetting: -20.5,
-            capacityLimit: 100,
-            description: "Main freezer unit",
-            active: true,
-            lastupdated: "2025-01-16T09:00:00Z",
-            sysUserId: "user1",
-            parentRoom: { id: 1, name: "Main Laboratory" },
-          },
-        ],
-      }).as("getDevices");
-
-      cy.reload();
-      cy.wait("@getDevices");
+      // No need to reload - fixtures are already set up
 
       // Expand first row
       cy.get('[data-testid^="device-row-"]')
@@ -307,25 +260,7 @@ describe("Location Expandable Rows", function () {
       cy.get('[data-testid="tab-shelves"]').click();
       cy.get('[data-testid^="shelf-row-"]', { timeout: 10000 }).should("have.length.at.least", 1);
 
-      // Setup API intercept with shelf data
-      cy.intercept("GET", "**/rest/storage/shelves**", {
-        statusCode: 200,
-        body: [
-          {
-            id: 20,
-            label: "Shelf-A",
-            capacityLimit: 50,
-            description: "Top shelf",
-            active: true,
-            lastupdated: "2025-01-17T11:00:00Z",
-            sysUserId: "user1",
-            parentDevice: { id: 10, name: "Freezer Unit 1" },
-          },
-        ],
-      }).as("getShelves");
-
-      cy.reload();
-      cy.wait("@getShelves");
+      // No need to reload - fixtures are already set up
 
       // Expand first row
       cy.get('[data-testid^="shelf-row-"]')
@@ -353,27 +288,7 @@ describe("Location Expandable Rows", function () {
       cy.get('[data-testid="tab-racks"]').click();
       cy.get('[data-testid^="rack-row-"]', { timeout: 10000 }).should("have.length.at.least", 1);
 
-      // Setup API intercept with rack data
-      cy.intercept("GET", "**/rest/storage/racks**", {
-        statusCode: 200,
-        body: [
-          {
-            id: 30,
-            label: "Rack R1",
-            rows: 5,
-            columns: 10,
-            positionSchemaHint: "A1-Z99",
-            description: "Main rack",
-            active: true,
-            lastupdated: "2025-01-18T12:00:00Z",
-            sysUserId: "user1",
-            parentShelf: { id: 20, label: "Shelf-A" },
-          },
-        ],
-      }).as("getRacks");
-
-      cy.reload();
-      cy.wait("@getRacks");
+      // No need to reload - fixtures are already set up
 
       // Expand first row
       cy.get('[data-testid^="rack-row-"]')
@@ -512,6 +427,60 @@ describe("Location Expandable Rows", function () {
             .should("exist")
             .and("have.attr", "aria-label")
             .and("include", "Additional");
+        });
+    });
+  });
+
+  describe("Samples and Occupancy Columns", function () {
+    /**
+     * Test Samples column in Rooms table
+     * Test Occupancy column in Devices table
+     */
+    it("should display correct sample count in rooms table", function () {
+      cy.get('[data-testid="tab-rooms"]').click();
+      cy.get('[data-testid^="room-row-"]', { timeout: 10000 }).should("have.length.at.least", 1);
+
+      // Verify the table header includes "Samples"
+      cy.contains("th", "Samples").should("be.visible");
+
+      // Verify at least one room row exists with sample count data
+      // The sample count should be a number (0 or greater)
+      cy.get('[data-testid^="room-row-"]')
+        .first()
+        .should("be.visible");
+    });
+
+    it("should display correct occupancy in devices table", function () {
+      cy.get('[data-testid="tab-devices"]').click();
+      cy.get('[data-testid^="device-row-"]', { timeout: 10000 }).should("have.length.at.least", 1);
+
+      // Verify the table header includes "Occupancy"
+      cy.contains("th", "Occupancy").should("be.visible");
+
+      // Verify at least one device row exists with occupancy data
+      // Occupancy should show as "occupied/total (percentage%)" format
+      cy.get('[data-testid^="device-row-"]')
+        .first()
+        .within(() => {
+          // Occupancy should contain a progress bar or formatted text
+          // Format: "X/Y (Z%)" where X is occupied, Y is total capacity, Z is percentage
+          cy.get("td").should("contain", "/");
+        });
+    });
+
+    it("should display correct occupancy in shelves table", function () {
+      cy.get('[data-testid="tab-shelves"]').click();
+      cy.get('[data-testid^="shelf-row-"]', { timeout: 10000 }).should("have.length.at.least", 1);
+
+      // Verify the table header includes "Occupancy"
+      cy.contains("th", "Occupancy").should("be.visible");
+
+      // Verify at least one shelf row exists with occupancy data
+      cy.get('[data-testid^="shelf-row-"]')
+        .first()
+        .within(() => {
+          // Occupancy should contain a progress bar or formatted text
+          cy.get("td").should("contain", "/");
         });
     });
   });

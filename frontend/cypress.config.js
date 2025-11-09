@@ -15,8 +15,18 @@ module.exports = defineConfig({
   env: {
     // Control whether test fixtures are cleaned up after tests
     // Set CYPRESS_CLEANUP_FIXTURES=false to keep fixtures for manual testing/debugging
-    // Default: true (cleanup enabled)
-    CLEANUP_FIXTURES: process.env.CYPRESS_CLEANUP_FIXTURES !== "false",
+    // Default: false (cleanup disabled for faster iteration)
+    CLEANUP_FIXTURES: process.env.CYPRESS_CLEANUP_FIXTURES === "true",
+    
+    // Skip fixture loading entirely (assumes fixtures already exist)
+    // Set CYPRESS_SKIP_FIXTURES=true to skip loading (fastest iteration)
+    // Default: false (check and load if needed)
+    SKIP_FIXTURES: process.env.CYPRESS_SKIP_FIXTURES === "true",
+    
+    // Force reload fixtures even if they already exist
+    // Set CYPRESS_FORCE_FIXTURES=true to always reload
+    // Default: false (check existence first)
+    FORCE_FIXTURES: process.env.CYPRESS_FORCE_FIXTURES === "true",
   },
   e2e: {
     setupNodeEvents(on, config) {

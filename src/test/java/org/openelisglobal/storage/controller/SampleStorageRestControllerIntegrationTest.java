@@ -108,9 +108,11 @@ public class SampleStorageRestControllerIntegrationTest extends BaseWebContextSe
         Integer rackId = baseId;
 
         // Create position directly via JDBC
+        // Note: parent_device_id is required (NOT NULL constraint)
+        // If parent_rack_id is set, parent_shelf_id is also required (check constraint)
         jdbcTemplate.update(
-                "INSERT INTO storage_position (id, coordinate, parent_rack_id, occupied, sys_user_id, last_updated, fhir_uuid) VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP, gen_random_uuid())",
-                baseId, "A1", rackId, false, 1);
+                "INSERT INTO storage_position (id, coordinate, parent_rack_id, parent_shelf_id, parent_device_id, occupied, sys_user_id, last_updated, fhir_uuid) VALUES (?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, gen_random_uuid())",
+                baseId, "A1", rackId, shelfId, deviceId, false, 1);
         Integer positionId = baseId;
 
         // Create sample with unique ID
@@ -119,15 +121,28 @@ public class SampleStorageRestControllerIntegrationTest extends BaseWebContextSe
                 "INSERT INTO sample (id, accession_number, entered_date, received_date, lastupdated) VALUES (?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)",
                 sampleId, "TEST-SAMPLE-" + timestamp);
 
-        // Assign sample to position
-        String assignmentResponse = mockMvc
+        // Assign sample to position using flexible assignment API
+        // API expects locationId (rack ID) and locationType="rack", with positionCoordinate
+        // Positions are coordinates within a rack, not separate entities
+        MvcResult assignmentResult = mockMvc
                 .perform(post("/rest/storage/samples/assign").contentType(MediaType.APPLICATION_JSON)
                         .content(String.format(
-                                "{\"sampleId\":\"%d\",\"positionId\":\"%d\",\"notes\":\"Integration test assignment\"}",
-                                sampleId, positionId)))
-                .andExpect(status().isCreated()).andReturn().getResponse().getContentAsString();
-
-        assertNotNull("Assignment should succeed", assignmentResponse);
+                                "{\"sampleId\":\"%d\",\"locationId\":\"%d\",\"locationType\":\"rack\",\"positionCoordinate\":\"A1\",\"notes\":\"Integration test assignment\"}",
+                                sampleId, rackId)))
+                .andReturn();
+        
+        int status = assignmentResult.getResponse().getStatus();
+        String responseBody = assignmentResult.getResponse().getContentAsString();
+        
+        if (status != 201) {
+            System.err.println("Assignment failed with status " + status);
+            System.err.println("Response body: " + responseBody);
+            System.err.println("Sample ID: " + sampleId);
+            System.err.println("Position ID: " + positionId);
+        }
+        
+        assertEquals("Assignment should succeed", 201, status);
+        assertNotNull("Assignment response should not be null", responseBody);
     }
 
     /**
