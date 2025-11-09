@@ -1679,5 +1679,15 @@
   "storage.expanded.positionSchemaHint": "Position Schema Hint",
   "storage.expanded.notAvailable": "N/A",
   "banner.menu.storage": "Storage",
-  "banner.menu.storage.tooltip": "Sample Storage Management"
+  "banner.menu.storage.tooltip": "Sample Storage Management",
+  "barcode.scanOrType": "Scan barcode or type location",
+  "barcode.ready": "Ready to scan",
+  "barcode.success": "Location found",
+  "barcode.error": "Invalid barcode",
+  "barcode.invalidFormat": "Invalid barcode format. Expected: ROOM-DEVICE or ROOM-DEVICE-SHELF-RACK-POSITION",
+  "barcode.validationFailed": "Barcode validation failed",
+  "barcode.locationNotFound": "Location not found",
+  "barcode.partialMatch": "Partial match - some components valid",
+  "barcode.scanning": "Scanning...",
+  "barcode.debounce.warning": "Please wait before scanning another barcode"
 }

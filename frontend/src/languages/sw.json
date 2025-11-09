@@ -45,5 +45,15 @@
   "banner.menu.storage.tooltip": "Usimamizi wa Uhifadhi wa Sampuli",
   "banner.menu.billing": "Ankara",
   "banner.menu.billing.tooltip": "Ankara",
-  "banner.menu.help": "Msaada"
+  "banner.menu.help": "Msaada",
+  "barcode.scanOrType": "Changanua barcode au andika mahali",
+  "barcode.ready": "Tayari kuchanganua",
+  "barcode.success": "Mahali limepatikana",
+  "barcode.error": "Barcode si sahihi",
+  "barcode.invalidFormat": "Muundo wa barcode si sahihi. Inatarajiwa: CHUMBA-KIFAA au CHUMBA-KIFAA-RAFU-RAFU-NAFASI",
+  "barcode.validationFailed": "Uthibitisho wa barcode umeshindwa",
+  "barcode.locationNotFound": "Mahali halijapatikana",
+  "barcode.partialMatch": "Mechi ya sehemu - baadhi ya vipengele ni sahihi",
+  "barcode.scanning": "Inachanganua...",
+  "barcode.debounce.warning": "Tafadhali subiri kabla ya kuchanganua barcode nyingine"
 }

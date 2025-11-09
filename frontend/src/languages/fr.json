@@ -1621,5 +1621,15 @@
   "storage.expanded.temperatureSetting": "Réglage de température",
   "storage.expanded.capacityLimit": "Limite de capacité",
   "storage.expanded.positionSchemaHint": "Indice de schéma de position",
-  "storage.expanded.notAvailable": "N/D"
+  "storage.expanded.notAvailable": "N/D",
+  "barcode.scanOrType": "Scanner le code-barres ou saisir l'emplacement",
+  "barcode.ready": "Prêt à scanner",
+  "barcode.success": "Emplacement trouvé",
+  "barcode.error": "Code-barres invalide",
+  "barcode.invalidFormat": "Format de code-barres invalide. Attendu: SALLE-APPAREIL ou SALLE-APPAREIL-ÉTAGÈRE-RACK-POSITION",
+  "barcode.validationFailed": "Échec de la validation du code-barres",
+  "barcode.locationNotFound": "Emplacement non trouvé",
+  "barcode.partialMatch": "Correspondance partielle - certains composants valides",
+  "barcode.scanning": "Numérisation...",
+  "barcode.debounce.warning": "Veuillez attendre avant de scanner un autre code-barres"
 }
