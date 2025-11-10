@@ -1,4 +1,10 @@
-import React, { useState, useEffect, useRef, useContext } from "react";
+import React, {
+  useState,
+  useEffect,
+  useRef,
+  useContext,
+  useCallback,
+} from "react";
 import {
   Tile,
   Grid,
@@ -49,7 +55,11 @@ const StorageDashboard = () => {
   const componentMounted = useRef(true);
   const { notificationVisible, setNotificationVisible, addNotification } =
     useContext(NotificationContext);
-  const { assignSample, moveSample, isSubmitting: isMovingSample } = useSampleStorage();
+  const {
+    assignSample,
+    moveSample,
+    isSubmitting: isMovingSample,
+  } = useSampleStorage();
 
   // Metric cards state
   const [metrics, setMetrics] = useState({
@@ -91,17 +101,21 @@ const StorageDashboard = () => {
   const [selectedLocation, setSelectedLocation] = useState(null);
   const [selectedLocationType, setSelectedLocationType] = useState(null);
 
-  // Expandable row state
-  const [expandedRowId, setExpandedRowId] = useState(null);
+  // Expandable row state - Object mapping row IDs to expanded state (allows multiple rows to be expanded)
+  const [expandedRowIds, setExpandedRowIds] = useState({});
 
   // Handle row expand/collapse for expandable rows
   const handleRowExpand = (rowId) => {
-    setExpandedRowId(expandedRowId === rowId ? null : rowId);
+    const rowIdStr = String(rowId || "");
+    setExpandedRowIds((prevExpanded) => ({
+      ...prevExpanded,
+      [rowIdStr]: !prevExpanded[rowIdStr],
+    }));
   };
 
   // Reset expanded state when tab changes
   useEffect(() => {
-    setExpandedRowId(null);
+    setExpandedRowIds({});
   }, [selectedTab]);
 
   // Handle Edit location
@@ -1070,7 +1084,7 @@ const StorageDashboard = () => {
           onDelete={handleDeleteLocation}
         />
       ),
-      isExpanded: expandedRowId === String(room.id || ""),
+      isExpanded: !!expandedRowIds[String(room.id || "")],
     }));
   };
 
@@ -1083,10 +1097,12 @@ const StorageDashboard = () => {
       const occupied = device.occupiedCount || 0;
       const capacityType = device.capacityType; // "manual", "calculated", or null
       const total = device.capacityLimit || device.totalCapacity || 0;
-      
+
       // Determine if capacity can be displayed
       const canDisplayCapacity = capacityType !== null && total > 0;
-      const occupancyPct = canDisplayCapacity ? calculateOccupancy(occupied, total) : 0;
+      const occupancyPct = canDisplayCapacity
+        ? calculateOccupancy(occupied, total)
+        : 0;
       const occupancyColor = getOccupancyColor(occupancyPct);
 
       // Format occupancy display
@@ -1098,7 +1114,8 @@ const StorageDashboard = () => {
             <Tooltip
               label={intl.formatMessage({
                 id: "storage.capacity.undetermined.tooltip",
-                defaultMessage: "Capacity cannot be calculated: some child locations lack defined capacities",
+                defaultMessage:
+                  "Capacity cannot be calculated: some child locations lack defined capacities",
               })}
             >
               <span>N/A</span>
@@ -1107,21 +1124,29 @@ const StorageDashboard = () => {
         );
       } else {
         // Capacity is defined - show fraction, percentage, and badge
-        const capacityBadge = capacityType === "manual" ? (
-          <Tag type="blue" size="sm" style={{ marginLeft: "8px" }}>
-            <FormattedMessage id="storage.capacity.manual" defaultMessage="Manual Limit" />
-          </Tag>
-        ) : capacityType === "calculated" ? (
-          <Tag type="cyan" size="sm" style={{ marginLeft: "8px" }}>
-            <FormattedMessage id="storage.capacity.calculated" defaultMessage="Calculated" />
-          </Tag>
-        ) : null;
+        const capacityBadge =
+          capacityType === "manual" ? (
+            <Tag type="blue" size="sm" style={{ marginLeft: "8px" }}>
+              <FormattedMessage
+                id="storage.capacity.manual"
+                defaultMessage="Manual Limit"
+              />
+            </Tag>
+          ) : capacityType === "calculated" ? (
+            <Tag type="cyan" size="sm" style={{ marginLeft: "8px" }}>
+              <FormattedMessage
+                id="storage.capacity.calculated"
+                defaultMessage="Calculated"
+              />
+            </Tag>
+          ) : null;
 
         occupancyDisplay = (
           <div>
             <div style={{ display: "flex", alignItems: "center" }}>
               <span>
-                {occupied.toLocaleString()}/{total.toLocaleString()} ({occupancyPct}%)
+                {occupied.toLocaleString()}/{total.toLocaleString()} (
+                {occupancyPct}%)
               </span>
               {capacityBadge}
             </div>
@@ -1176,7 +1201,7 @@ const StorageDashboard = () => {
             onDelete={handleDeleteLocation}
           />
         ),
-        isExpanded: expandedRowId === String(device.id || ""),
+        isExpanded: !!expandedRowIds[String(device.id || "")],
       };
     });
   };
@@ -1190,10 +1215,12 @@ const StorageDashboard = () => {
       const occupied = shelf.occupiedCount || 0;
       const capacityType = shelf.capacityType; // "manual", "calculated", or null
       const total = shelf.capacityLimit || shelf.totalCapacity || 0;
-      
+
       // Determine if capacity can be displayed
       const canDisplayCapacity = capacityType !== null && total > 0;
-      const occupancyPct = canDisplayCapacity ? calculateOccupancy(occupied, total) : 0;
+      const occupancyPct = canDisplayCapacity
+        ? calculateOccupancy(occupied, total)
+        : 0;
       const occupancyColor = getOccupancyColor(occupancyPct);
 
       // Format occupancy display (same logic as devices)
@@ -1205,7 +1232,8 @@ const StorageDashboard = () => {
             <Tooltip
               label={intl.formatMessage({
                 id: "storage.capacity.undetermined.tooltip",
-                defaultMessage: "Capacity cannot be calculated: some child locations lack defined capacities",
+                defaultMessage:
+                  "Capacity cannot be calculated: some child locations lack defined capacities",
               })}
             >
               <span>N/A</span>
@@ -1214,21 +1242,29 @@ const StorageDashboard = () => {
         );
       } else {
         // Capacity is defined - show fraction, percentage, and badge
-        const capacityBadge = capacityType === "manual" ? (
-          <Tag type="blue" size="sm" style={{ marginLeft: "8px" }}>
-            <FormattedMessage id="storage.capacity.manual" defaultMessage="Manual Limit" />
-          </Tag>
-        ) : capacityType === "calculated" ? (
-          <Tag type="cyan" size="sm" style={{ marginLeft: "8px" }}>
-            <FormattedMessage id="storage.capacity.calculated" defaultMessage="Calculated" />
-          </Tag>
-        ) : null;
+        const capacityBadge =
+          capacityType === "manual" ? (
+            <Tag type="blue" size="sm" style={{ marginLeft: "8px" }}>
+              <FormattedMessage
+                id="storage.capacity.manual"
+                defaultMessage="Manual Limit"
+              />
+            </Tag>
+          ) : capacityType === "calculated" ? (
+            <Tag type="cyan" size="sm" style={{ marginLeft: "8px" }}>
+              <FormattedMessage
+                id="storage.capacity.calculated"
+                defaultMessage="Calculated"
+              />
+            </Tag>
+          ) : null;
 
         occupancyDisplay = (
           <div>
             <div style={{ display: "flex", alignItems: "center" }}>
               <span>
-                {occupied.toLocaleString()}/{total.toLocaleString()} ({occupancyPct}%)
+                {occupied.toLocaleString()}/{total.toLocaleString()} (
+                {occupancyPct}%)
               </span>
               {capacityBadge}
             </div>
@@ -1270,7 +1306,7 @@ const StorageDashboard = () => {
             onDelete={handleDeleteLocation}
           />
         ),
-        isExpanded: expandedRowId === String(shelf.id || ""),
+        isExpanded: !!expandedRowIds[String(shelf.id || "")],
       };
     });
   };
@@ -1332,7 +1368,7 @@ const StorageDashboard = () => {
             onDelete={handleDeleteLocation}
           />
         ),
-        isExpanded: expandedRowId === String(rack.id || ""),
+        isExpanded: !!expandedRowIds[String(rack.id || "")],
       };
     });
   };
@@ -1359,62 +1395,100 @@ const StorageDashboard = () => {
     };
 
     return (
-      <div 
-        role="region" 
-        aria-label="Additional room details" 
+      <div
+        role="region"
+        aria-label="Additional room details"
         data-testid={`expanded-room-${row.id}`}
         style={{ padding: "1rem" }}
       >
         <Grid fullWidth>
           <Column lg={8} md={4} sm={4}>
-            <div data-testid={`expanded-room-${row.id}-description`} style={{ marginBottom: "0.5rem" }}>
+            <div
+              data-testid={`expanded-room-${row.id}-description`}
+              style={{ marginBottom: "0.5rem" }}
+            >
               <strong>
-                <FormattedMessage id="storage.expanded.description" defaultMessage="Description" />:
+                <FormattedMessage
+                  id="storage.expanded.description"
+                  defaultMessage="Description"
+                />
+                :
               </strong>{" "}
               {room.description || (
-                <FormattedMessage id="storage.expanded.notAvailable" defaultMessage="N/A" />
+                <FormattedMessage
+                  id="storage.expanded.notAvailable"
+                  defaultMessage="N/A"
+                />
               )}
             </div>
           </Column>
           <Column lg={8} md={4} sm={4}>
-            <div data-testid={`expanded-room-${row.id}-created-date`} style={{ marginBottom: "0.5rem" }}>
+            <div
+              data-testid={`expanded-room-${row.id}-created-date`}
+              style={{ marginBottom: "0.5rem" }}
+            >
               <strong>
-                <FormattedMessage id="storage.expanded.createdDate" defaultMessage="Created Date" />:
+                <FormattedMessage
+                  id="storage.expanded.createdDate"
+                  defaultMessage="Created Date"
+                />
+                :
               </strong>{" "}
               {formatDate(room.lastupdated)}
             </div>
           </Column>
           <Column lg={8} md={4} sm={4}>
-            <div data-testid={`expanded-room-${row.id}-created-by`} style={{ marginBottom: "0.5rem" }}>
+            <div
+              data-testid={`expanded-room-${row.id}-created-by`}
+              style={{ marginBottom: "0.5rem" }}
+            >
               <strong>
-                <FormattedMessage id="storage.expanded.createdBy" defaultMessage="Created By" />:
+                <FormattedMessage
+                  id="storage.expanded.createdBy"
+                  defaultMessage="Created By"
+                />
+                :
               </strong>{" "}
               {room.sysUserId || (
-                <FormattedMessage id="storage.expanded.notAvailable" defaultMessage="N/A" />
+                <FormattedMessage
+                  id="storage.expanded.notAvailable"
+                  defaultMessage="N/A"
+                />
               )}
             </div>
           </Column>
           <Column lg={8} md={4} sm={4}>
-            <div data-testid={`expanded-room-${row.id}-last-modified-date`} style={{ marginBottom: "0.5rem" }}>
+            <div
+              data-testid={`expanded-room-${row.id}-last-modified-date`}
+              style={{ marginBottom: "0.5rem" }}
+            >
               <strong>
                 <FormattedMessage
                   id="storage.expanded.lastModifiedDate"
                   defaultMessage="Last Modified Date"
-                />:
+                />
+                :
               </strong>{" "}
               {formatDate(room.lastupdated)}
             </div>
           </Column>
           <Column lg={8} md={4} sm={4}>
-            <div data-testid={`expanded-room-${row.id}-last-modified-by`} style={{ marginBottom: "0.5rem" }}>
+            <div
+              data-testid={`expanded-room-${row.id}-last-modified-by`}
+              style={{ marginBottom: "0.5rem" }}
+            >
               <strong>
                 <FormattedMessage
                   id="storage.expanded.lastModifiedBy"
                   defaultMessage="Last Modified By"
-                />:
+                />
+                :
               </strong>{" "}
               {room.sysUserId || (
-                <FormattedMessage id="storage.expanded.notAvailable" defaultMessage="N/A" />
+                <FormattedMessage
+                  id="storage.expanded.notAvailable"
+                  defaultMessage="N/A"
+                />
               )}
             </div>
           </Column>
@@ -1444,9 +1518,9 @@ const StorageDashboard = () => {
     };
 
     return (
-      <div 
-        role="region" 
-        aria-label="Additional device details" 
+      <div
+        role="region"
+        aria-label="Additional device details"
         data-testid={`expanded-device-${row.id}`}
         style={{ padding: "1rem" }}
       >
@@ -1457,11 +1531,17 @@ const StorageDashboard = () => {
                 <FormattedMessage
                   id="storage.expanded.temperatureSetting"
                   defaultMessage="Temperature Setting"
-                />:
+                />
+                :
               </strong>{" "}
-              {device.temperatureSetting != null
-                ? `${device.temperatureSetting}°C`
-                : <FormattedMessage id="storage.expanded.notAvailable" defaultMessage="N/A" />}
+              {device.temperatureSetting != null ? (
+                `${device.temperatureSetting}°C`
+              ) : (
+                <FormattedMessage
+                  id="storage.expanded.notAvailable"
+                  defaultMessage="N/A"
+                />
+              )}
             </div>
           </Column>
           <Column lg={8} md={4} sm={4}>
@@ -1470,27 +1550,44 @@ const StorageDashboard = () => {
                 <FormattedMessage
                   id="storage.expanded.capacityLimit"
                   defaultMessage="Capacity Limit"
-                />:
+                />
+                :
               </strong>{" "}
-              {device.capacityLimit != null
-                ? device.capacityLimit
-                : <FormattedMessage id="storage.expanded.notAvailable" defaultMessage="N/A" />}
-            </div>
-          </Column>
-          <Column lg={8} md={4} sm={4}>
-            <div style={{ marginBottom: "0.5rem" }}>
-              <strong>
-                <FormattedMessage id="storage.expanded.description" defaultMessage="Description" />:
-              </strong>{" "}
-              {device.description || (
-                <FormattedMessage id="storage.expanded.notAvailable" defaultMessage="N/A" />
+              {device.capacityLimit != null ? (
+                device.capacityLimit
+              ) : (
+                <FormattedMessage
+                  id="storage.expanded.notAvailable"
+                  defaultMessage="N/A"
+                />
               )}
             </div>
           </Column>
           <Column lg={8} md={4} sm={4}>
             <div style={{ marginBottom: "0.5rem" }}>
               <strong>
-                <FormattedMessage id="storage.expanded.createdDate" defaultMessage="Created Date" />:
+                <FormattedMessage
+                  id="storage.expanded.description"
+                  defaultMessage="Description"
+                />
+                :
+              </strong>{" "}
+              {device.description || (
+                <FormattedMessage
+                  id="storage.expanded.notAvailable"
+                  defaultMessage="N/A"
+                />
+              )}
+            </div>
+          </Column>
+          <Column lg={8} md={4} sm={4}>
+            <div style={{ marginBottom: "0.5rem" }}>
+              <strong>
+                <FormattedMessage
+                  id="storage.expanded.createdDate"
+                  defaultMessage="Created Date"
+                />
+                :
               </strong>{" "}
               {formatDate(device.lastupdated)}
             </div>
@@ -1498,10 +1595,17 @@ const StorageDashboard = () => {
           <Column lg={8} md={4} sm={4}>
             <div style={{ marginBottom: "0.5rem" }}>
               <strong>
-                <FormattedMessage id="storage.expanded.createdBy" defaultMessage="Created By" />:
+                <FormattedMessage
+                  id="storage.expanded.createdBy"
+                  defaultMessage="Created By"
+                />
+                :
               </strong>{" "}
               {device.sysUserId || (
-                <FormattedMessage id="storage.expanded.notAvailable" defaultMessage="N/A" />
+                <FormattedMessage
+                  id="storage.expanded.notAvailable"
+                  defaultMessage="N/A"
+                />
               )}
             </div>
           </Column>
@@ -1511,7 +1615,8 @@ const StorageDashboard = () => {
                 <FormattedMessage
                   id="storage.expanded.lastModifiedDate"
                   defaultMessage="Last Modified Date"
-                />:
+                />
+                :
               </strong>{" "}
               {formatDate(device.lastupdated)}
             </div>
@@ -1522,10 +1627,14 @@ const StorageDashboard = () => {
                 <FormattedMessage
                   id="storage.expanded.lastModifiedBy"
                   defaultMessage="Last Modified By"
-                />:
+                />
+                :
               </strong>{" "}
               {device.sysUserId || (
-                <FormattedMessage id="storage.expanded.notAvailable" defaultMessage="N/A" />
+                <FormattedMessage
+                  id="storage.expanded.notAvailable"
+                  defaultMessage="N/A"
+                />
               )}
             </div>
           </Column>
@@ -1555,9 +1664,9 @@ const StorageDashboard = () => {
     };
 
     return (
-      <div 
-        role="region" 
-        aria-label="Additional shelf details" 
+      <div
+        role="region"
+        aria-label="Additional shelf details"
         data-testid={`expanded-shelf-${row.id}`}
         style={{ padding: "1rem" }}
       >
@@ -1568,27 +1677,44 @@ const StorageDashboard = () => {
                 <FormattedMessage
                   id="storage.expanded.capacityLimit"
                   defaultMessage="Capacity Limit"
-                />:
+                />
+                :
               </strong>{" "}
-              {shelf.capacityLimit != null
-                ? shelf.capacityLimit
-                : <FormattedMessage id="storage.expanded.notAvailable" defaultMessage="N/A" />}
-            </div>
-          </Column>
-          <Column lg={8} md={4} sm={4}>
-            <div style={{ marginBottom: "0.5rem" }}>
-              <strong>
-                <FormattedMessage id="storage.expanded.description" defaultMessage="Description" />:
-              </strong>{" "}
-              {shelf.description || (
-                <FormattedMessage id="storage.expanded.notAvailable" defaultMessage="N/A" />
+              {shelf.capacityLimit != null ? (
+                shelf.capacityLimit
+              ) : (
+                <FormattedMessage
+                  id="storage.expanded.notAvailable"
+                  defaultMessage="N/A"
+                />
               )}
             </div>
           </Column>
           <Column lg={8} md={4} sm={4}>
             <div style={{ marginBottom: "0.5rem" }}>
               <strong>
-                <FormattedMessage id="storage.expanded.createdDate" defaultMessage="Created Date" />:
+                <FormattedMessage
+                  id="storage.expanded.description"
+                  defaultMessage="Description"
+                />
+                :
+              </strong>{" "}
+              {shelf.description || (
+                <FormattedMessage
+                  id="storage.expanded.notAvailable"
+                  defaultMessage="N/A"
+                />
+              )}
+            </div>
+          </Column>
+          <Column lg={8} md={4} sm={4}>
+            <div style={{ marginBottom: "0.5rem" }}>
+              <strong>
+                <FormattedMessage
+                  id="storage.expanded.createdDate"
+                  defaultMessage="Created Date"
+                />
+                :
               </strong>{" "}
               {formatDate(shelf.lastupdated)}
             </div>
@@ -1596,10 +1722,17 @@ const StorageDashboard = () => {
           <Column lg={8} md={4} sm={4}>
             <div style={{ marginBottom: "0.5rem" }}>
               <strong>
-                <FormattedMessage id="storage.expanded.createdBy" defaultMessage="Created By" />:
+                <FormattedMessage
+                  id="storage.expanded.createdBy"
+                  defaultMessage="Created By"
+                />
+                :
               </strong>{" "}
               {shelf.sysUserId || (
-                <FormattedMessage id="storage.expanded.notAvailable" defaultMessage="N/A" />
+                <FormattedMessage
+                  id="storage.expanded.notAvailable"
+                  defaultMessage="N/A"
+                />
               )}
             </div>
           </Column>
@@ -1609,7 +1742,8 @@ const StorageDashboard = () => {
                 <FormattedMessage
                   id="storage.expanded.lastModifiedDate"
                   defaultMessage="Last Modified Date"
-                />:
+                />
+                :
               </strong>{" "}
               {formatDate(shelf.lastupdated)}
             </div>
@@ -1620,10 +1754,14 @@ const StorageDashboard = () => {
                 <FormattedMessage
                   id="storage.expanded.lastModifiedBy"
                   defaultMessage="Last Modified By"
-                />:
+                />
+                :
               </strong>{" "}
               {shelf.sysUserId || (
-                <FormattedMessage id="storage.expanded.notAvailable" defaultMessage="N/A" />
+                <FormattedMessage
+                  id="storage.expanded.notAvailable"
+                  defaultMessage="N/A"
+                />
               )}
             </div>
           </Column>
@@ -1653,9 +1791,9 @@ const StorageDashboard = () => {
     };
 
     return (
-      <div 
-        role="region" 
-        aria-label="Additional rack details" 
+      <div
+        role="region"
+        aria-label="Additional rack details"
         data-testid={`expanded-rack-${row.id}`}
         style={{ padding: "1rem" }}
       >
@@ -1666,27 +1804,42 @@ const StorageDashboard = () => {
                 <FormattedMessage
                   id="storage.expanded.positionSchemaHint"
                   defaultMessage="Position Schema Hint"
-                />:
+                />
+                :
               </strong>{" "}
               {rack.positionSchemaHint || (
-                <FormattedMessage id="storage.expanded.notAvailable" defaultMessage="N/A" />
+                <FormattedMessage
+                  id="storage.expanded.notAvailable"
+                  defaultMessage="N/A"
+                />
               )}
             </div>
           </Column>
           <Column lg={8} md={4} sm={4}>
             <div style={{ marginBottom: "0.5rem" }}>
               <strong>
-                <FormattedMessage id="storage.expanded.description" defaultMessage="Description" />:
+                <FormattedMessage
+                  id="storage.expanded.description"
+                  defaultMessage="Description"
+                />
+                :
               </strong>{" "}
               {rack.description || (
-                <FormattedMessage id="storage.expanded.notAvailable" defaultMessage="N/A" />
+                <FormattedMessage
+                  id="storage.expanded.notAvailable"
+                  defaultMessage="N/A"
+                />
               )}
             </div>
           </Column>
           <Column lg={8} md={4} sm={4}>
             <div style={{ marginBottom: "0.5rem" }}>
               <strong>
-                <FormattedMessage id="storage.expanded.createdDate" defaultMessage="Created Date" />:
+                <FormattedMessage
+                  id="storage.expanded.createdDate"
+                  defaultMessage="Created Date"
+                />
+                :
               </strong>{" "}
               {formatDate(rack.lastupdated)}
             </div>
@@ -1694,10 +1847,17 @@ const StorageDashboard = () => {
           <Column lg={8} md={4} sm={4}>
             <div style={{ marginBottom: "0.5rem" }}>
               <strong>
-                <FormattedMessage id="storage.expanded.createdBy" defaultMessage="Created By" />:
+                <FormattedMessage
+                  id="storage.expanded.createdBy"
+                  defaultMessage="Created By"
+                />
+                :
               </strong>{" "}
               {rack.sysUserId || (
-                <FormattedMessage id="storage.expanded.notAvailable" defaultMessage="N/A" />
+                <FormattedMessage
+                  id="storage.expanded.notAvailable"
+                  defaultMessage="N/A"
+                />
               )}
             </div>
           </Column>
@@ -1707,7 +1867,8 @@ const StorageDashboard = () => {
                 <FormattedMessage
                   id="storage.expanded.lastModifiedDate"
                   defaultMessage="Last Modified Date"
-                />:
+                />
+                :
               </strong>{" "}
               {formatDate(rack.lastupdated)}
             </div>
@@ -1718,10 +1879,14 @@ const StorageDashboard = () => {
                 <FormattedMessage
                   id="storage.expanded.lastModifiedBy"
                   defaultMessage="Last Modified By"
-                />:
+                />
+                :
               </strong>{" "}
               {rack.sysUserId || (
-                <FormattedMessage id="storage.expanded.notAvailable" defaultMessage="N/A" />
+                <FormattedMessage
+                  id="storage.expanded.notAvailable"
+                  defaultMessage="N/A"
+                />
               )}
             </div>
           </Column>
@@ -1767,9 +1932,19 @@ const StorageDashboard = () => {
             // 1. Direct positionCoordinate field in locationData (from LocationManagementModal)
             // 2. newLocation.positionCoordinate (from location object)
             // 3. newLocation.position?.coordinate (from nested position object)
-            const { sample, newLocation, reason, conditionNotes, positionCoordinate: directPositionCoordinate } = locationData;
-            const positionCoordinate = directPositionCoordinate || newLocation?.positionCoordinate || newLocation?.position?.coordinate || null;
-            
+            const {
+              sample,
+              newLocation,
+              reason,
+              conditionNotes,
+              positionCoordinate: directPositionCoordinate,
+            } = locationData;
+            const positionCoordinate =
+              directPositionCoordinate ||
+              newLocation?.positionCoordinate ||
+              newLocation?.position?.coordinate ||
+              null;
+
             // Determine if this is assignment (no current location) or movement (location exists)
             const isAssignment = !sample.location || !sample.location.trim();
 
@@ -1791,21 +1966,24 @@ const StorageDashboard = () => {
                 locationId = newLocation.rack.id;
                 locationType = "rack";
                 // Use positionCoordinate from locationData if available, otherwise try newLocation
-                finalPositionCoordinate = positionCoordinate ||
+                finalPositionCoordinate =
+                  positionCoordinate ||
                   newLocation.position?.coordinate ||
                   newLocation.positionCoordinate ||
                   null;
               } else if (newLocation.shelf && newLocation.shelf.id) {
                 locationId = newLocation.shelf.id;
                 locationType = "shelf";
-                finalPositionCoordinate = positionCoordinate ||
+                finalPositionCoordinate =
+                  positionCoordinate ||
                   newLocation.position?.coordinate ||
                   newLocation.positionCoordinate ||
                   null;
               } else if (newLocation.device && newLocation.device.id) {
                 locationId = newLocation.device.id;
                 locationType = "device";
-                finalPositionCoordinate = positionCoordinate ||
+                finalPositionCoordinate =
+                  positionCoordinate ||
                   newLocation.position?.coordinate ||
                   newLocation.positionCoordinate ||
                   null;
@@ -1818,7 +1996,10 @@ const StorageDashboard = () => {
                 ) {
                   locationId = newLocation.id;
                   locationType = newLocation.type;
-                  finalPositionCoordinate = positionCoordinate || newLocation.positionCoordinate || null;
+                  finalPositionCoordinate =
+                    positionCoordinate ||
+                    newLocation.positionCoordinate ||
+                    null;
                 } else if (newLocation.type === "room") {
                   // Room alone is not sufficient - need at least device
                   throw new Error(
@@ -1847,7 +2028,8 @@ const StorageDashboard = () => {
                 // If we have room+device but no specific shelf/rack, use device level
                 locationId = newLocation.device.id;
                 locationType = "device";
-                finalPositionCoordinate = positionCoordinate ||
+                finalPositionCoordinate =
+                  positionCoordinate ||
                   newLocation.position?.coordinate ||
                   newLocation.positionCoordinate ||
                   null;
@@ -1872,7 +2054,7 @@ const StorageDashboard = () => {
                   notes: conditionNotes || null, // Assignment form uses "notes" field
                 };
                 const response = await assignSample(locationPayload);
-                
+
                 // Refresh samples table and metrics after successful assignment
                 loadSamples();
                 loadMetrics();
@@ -1936,13 +2118,20 @@ const StorageDashboard = () => {
                 }
               }
             } catch (error) {
-              console.error(`Failed to ${isAssignment ? 'assign' : 'move'} sample:`, error);
+              console.error(
+                `Failed to ${isAssignment ? "assign" : "move"} sample:`,
+                error,
+              );
               addNotification({
                 title: intl.formatMessage({ id: "notification.title" }),
                 message:
                   intl.formatMessage({
-                    id: isAssignment ? "storage.assign.error" : "storage.move.error",
-                    defaultMessage: isAssignment ? "Failed to assign storage location" : "Failed to move sample",
+                    id: isAssignment
+                      ? "storage.assign.error"
+                      : "storage.move.error",
+                    defaultMessage: isAssignment
+                      ? "Failed to assign storage location"
+                      : "Failed to move sample",
                   }) + (error.message ? `: ${error.message}` : ""),
                 kind: "error",
               });
@@ -2451,23 +2640,30 @@ const StorageDashboard = () => {
                                 <React.Fragment key={row.id || row.key}>
                                   <TableExpandRow
                                     data-testid={`room-row-${row.id}`}
-                                    {...getRowProps({ 
+                                    isExpanded={!!expandedRowIds[String(row.id)]}
+                                    {...getRowProps({
                                       row,
                                       onClick: (e) => {
-                                        // Carbon handles expansion via isExpanded in row data
-                                        // We control which row is expanded via state
                                         const target = e.target;
                                         
                                         // Don't expand if clicking on action button (overflow menu)
-                                        if (target.closest('[data-testid="location-actions-overflow-menu"]') ||
-                                            target.closest('.cds--overflow-menu') ||
-                                            target.closest('button[aria-label*="Location actions"]')) {
+                                        if (
+                                          target.closest(
+                                            '[data-testid="location-actions-overflow-menu"]',
+                                          ) ||
+                                          target.closest(
+                                            ".cds--overflow-menu",
+                                          ) ||
+                                          target.closest(
+                                            'button[aria-label*="Location actions"]',
+                                          )
+                                        ) {
                                           return; // Let the action button handle its own click
                                         }
                                         
                                         // Expand on click anywhere else in the row (including expand button)
                                         handleRowExpand(row.id);
-                                      }
+                                      },
                                     })}
                                   >
                                     {row.cells.map((cell) => (
@@ -2476,8 +2672,11 @@ const StorageDashboard = () => {
                                       </TableCell>
                                     ))}
                                   </TableExpandRow>
-                                  {expandedRowId === row.id && (
-                                    <TableExpandedRow colSpan={headers.length + 1}>
+                                  {expandedRowIds[String(row.id)] && (
+                                    <TableExpandedRow
+                                      data-testid={`expanded-room-${row.id}`}
+                                      colSpan={headers.length + 1}
+                                    >
                                       {renderExpandedContentRoom(row)}
                                     </TableExpandedRow>
                                   )}
@@ -2673,21 +2872,43 @@ const StorageDashboard = () => {
                                 <React.Fragment key={row.id || row.key}>
                                   <TableExpandRow
                                     data-testid={`device-row-${row.id}`}
-                                    {...getRowProps({ 
+                                    isExpanded={row.isExpanded}
+                                    onExpand={() => handleRowExpand(row.id)}
+                                    ariaLabel={
+                                      row.isExpanded
+                                        ? intl.formatMessage({
+                                            id: "carbon.table.row.collapse",
+                                            defaultMessage: "Collapse current row",
+                                          })
+                                        : intl.formatMessage({
+                                            id: "carbon.table.row.expand",
+                                            defaultMessage: "Expand current row",
+                                          })
+                                    }
+                                    {...getRowProps({
                                       row,
                                       onClick: (e) => {
                                         const target = e.target;
-                                        
+
                                         // Don't expand if clicking on action button (overflow menu)
-                                        if (target.closest('[data-testid="location-actions-overflow-menu"]') ||
-                                            target.closest('.cds--overflow-menu') ||
-                                            target.closest('button[aria-label*="Location actions"]')) {
-                                          return; // Let the action button handle its own click
+                                        if (
+                                          target.closest(
+                                            '[data-testid="location-actions-overflow-menu"]',
+                                          ) ||
+                                          target.closest(
+                                            ".cds--overflow-menu",
+                                          ) ||
+                                          target.closest(
+                                            'button[aria-label*="Location actions"]',
+                                          )
+                                        ) {
+                                          e.stopPropagation();
+                                          return;
                                         }
-                                        
-                                        // Expand on click anywhere else in the row
+
+                                        // Expand on click anywhere else in the row (including expand button)
                                         handleRowExpand(row.id);
-                                      }
+                                      },
                                     })}
                                   >
                                     {row.cells.map((cell) => (
@@ -2696,8 +2917,11 @@ const StorageDashboard = () => {
                                       </TableCell>
                                     ))}
                                   </TableExpandRow>
-                                  {expandedRowId === row.id && (
-                                    <TableExpandedRow colSpan={headers.length + 1}>
+                                  {expandedRowIds[String(row.id)] && (
+                                    <TableExpandedRow
+                                      data-testid={`expanded-device-${row.id}`}
+                                      colSpan={headers.length + 1}
+                                    >
                                       {renderExpandedContentDevice(row)}
                                     </TableExpandedRow>
                                   )}
@@ -2913,7 +3137,6 @@ const StorageDashboard = () => {
                       headers={shelvesHeaders}
                       isSortable
                       expandableRows
-                      onRowExpand={(rowId) => handleRowExpand(rowId)}
                     >
                       {({
                         rows,
@@ -2944,21 +3167,43 @@ const StorageDashboard = () => {
                                 <React.Fragment key={row.id || row.key}>
                                   <TableExpandRow
                                     data-testid={`shelf-row-${row.id}`}
-                                    {...getRowProps({ 
+                                    isExpanded={row.isExpanded}
+                                    onExpand={() => handleRowExpand(row.id)}
+                                    ariaLabel={
+                                      row.isExpanded
+                                        ? intl.formatMessage({
+                                            id: "carbon.table.row.collapse",
+                                            defaultMessage: "Collapse current row",
+                                          })
+                                        : intl.formatMessage({
+                                            id: "carbon.table.row.expand",
+                                            defaultMessage: "Expand current row",
+                                          })
+                                    }
+                                    {...getRowProps({
                                       row,
                                       onClick: (e) => {
                                         const target = e.target;
-                                        
+
                                         // Don't expand if clicking on action button (overflow menu)
-                                        if (target.closest('[data-testid="location-actions-overflow-menu"]') ||
-                                            target.closest('.cds--overflow-menu') ||
-                                            target.closest('button[aria-label*="Location actions"]')) {
-                                          return; // Let the action button handle its own click
+                                        if (
+                                          target.closest(
+                                            '[data-testid="location-actions-overflow-menu"]',
+                                          ) ||
+                                          target.closest(
+                                            ".cds--overflow-menu",
+                                          ) ||
+                                          target.closest(
+                                            'button[aria-label*="Location actions"]',
+                                          )
+                                        ) {
+                                          e.stopPropagation();
+                                          return;
                                         }
-                                        
-                                        // Expand on click anywhere else in the row
+
+                                        // Expand on click anywhere else in the row (including expand button)
                                         handleRowExpand(row.id);
-                                      }
+                                      },
                                     })}
                                   >
                                     {row.cells.map((cell) => (
@@ -2967,8 +3212,11 @@ const StorageDashboard = () => {
                                       </TableCell>
                                     ))}
                                   </TableExpandRow>
-                                  {expandedRowId === row.id && (
-                                    <TableExpandedRow colSpan={headers.length + 1}>
+                                  {expandedRowIds[String(row.id)] && (
+                                    <TableExpandedRow
+                                      data-testid={`expanded-shelf-${row.id}`}
+                                      colSpan={headers.length + 1}
+                                    >
                                       {renderExpandedContentShelf(row)}
                                     </TableExpandedRow>
                                   )}
@@ -3184,7 +3432,6 @@ const StorageDashboard = () => {
                       headers={racksHeaders}
                       isSortable
                       expandableRows
-                      onRowExpand={(rowId) => handleRowExpand(rowId)}
                     >
                       {({
                         rows,
@@ -3215,21 +3462,43 @@ const StorageDashboard = () => {
                                 <React.Fragment key={row.id || row.key}>
                                   <TableExpandRow
                                     data-testid={`rack-row-${row.id}`}
-                                    {...getRowProps({ 
+                                    isExpanded={row.isExpanded}
+                                    onExpand={() => handleRowExpand(row.id)}
+                                    ariaLabel={
+                                      row.isExpanded
+                                        ? intl.formatMessage({
+                                            id: "carbon.table.row.collapse",
+                                            defaultMessage: "Collapse current row",
+                                          })
+                                        : intl.formatMessage({
+                                            id: "carbon.table.row.expand",
+                                            defaultMessage: "Expand current row",
+                                          })
+                                    }
+                                    {...getRowProps({
                                       row,
                                       onClick: (e) => {
                                         const target = e.target;
-                                        
+
                                         // Don't expand if clicking on action button (overflow menu)
-                                        if (target.closest('[data-testid="location-actions-overflow-menu"]') ||
-                                            target.closest('.cds--overflow-menu') ||
-                                            target.closest('button[aria-label*="Location actions"]')) {
-                                          return; // Let the action button handle its own click
+                                        if (
+                                          target.closest(
+                                            '[data-testid="location-actions-overflow-menu"]',
+                                          ) ||
+                                          target.closest(
+                                            ".cds--overflow-menu",
+                                          ) ||
+                                          target.closest(
+                                            'button[aria-label*="Location actions"]',
+                                          )
+                                        ) {
+                                          e.stopPropagation();
+                                          return;
                                         }
-                                        
-                                        // Expand on click anywhere else in the row
+
+                                        // Expand on click anywhere else in the row (including expand button)
                                         handleRowExpand(row.id);
-                                      }
+                                      },
                                     })}
                                   >
                                     {row.cells.map((cell) => (
@@ -3238,8 +3507,11 @@ const StorageDashboard = () => {
                                       </TableCell>
                                     ))}
                                   </TableExpandRow>
-                                  {expandedRowId === row.id && (
-                                    <TableExpandedRow colSpan={headers.length + 1}>
+                                  {expandedRowIds[String(row.id)] && (
+                                    <TableExpandedRow
+                                      data-testid={`expanded-rack-${row.id}`}
+                                      colSpan={headers.length + 1}
+                                    >
                                       {renderExpandedContentRack(row)}
                                     </TableExpandedRow>
                                   )}

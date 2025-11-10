@@ -1,5 +1,11 @@
 import React from "react";
-import { render, screen, fireEvent, within } from "@testing-library/react";
+import {
+  render,
+  screen,
+  fireEvent,
+  within,
+  waitFor,
+} from "@testing-library/react";
 import "@testing-library/jest-dom";
 import { IntlProvider } from "react-intl";
 import { BrowserRouter } from "react-router-dom";
@@ -63,7 +69,7 @@ const setupApiMocks = (overrides = {}) => {
     locationCounts: { rooms: 0, devices: 0, shelves: 0, racks: 0 },
   };
   const data = { ...defaults, ...overrides };
-  
+
   getFromOpenElisServer.mockImplementation((url, callback) => {
     if (url.includes("/rest/storage/dashboard/metrics")) {
       callback(data.metrics);
@@ -116,9 +122,9 @@ describe("StorageDashboard Filter UI", () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
-    jest.spyOn(require("react-router-dom"), "useLocation").mockReturnValue(
-      createMockLocation("/Storage/samples"),
-    );
+    jest
+      .spyOn(require("react-router-dom"), "useLocation")
+      .mockReturnValue(createMockLocation("/Storage/samples"));
     setupApiMocks({
       metrics: mockMetrics,
       rooms: mockRooms,
@@ -133,9 +139,9 @@ describe("StorageDashboard Filter UI", () => {
    * Samples tab should have single LocationFilterDropdown (not separate room/device dropdowns)
    */
   test("testSamplesTab_ShowsSingleLocationDropdownAndStatusFilter", async () => {
-    jest.spyOn(require("react-router-dom"), "useLocation").mockReturnValue(
-      createMockLocation("/Storage/samples"),
-    );
+    jest
+      .spyOn(require("react-router-dom"), "useLocation")
+      .mockReturnValue(createMockLocation("/Storage/samples"));
     renderWithIntl(<StorageDashboard />);
 
     // Wait for dashboard to load
@@ -155,15 +161,19 @@ describe("StorageDashboard Filter UI", () => {
    * Rooms tab should only have status filter
    */
   test("testRoomsTab_ShowsStatusFilter", async () => {
-    jest.spyOn(require("react-router-dom"), "useLocation").mockReturnValue(
-      createMockLocation("/Storage/rooms"),
-    );
+    jest
+      .spyOn(require("react-router-dom"), "useLocation")
+      .mockReturnValue(createMockLocation("/Storage/rooms"));
     renderWithIntl(<StorageDashboard />);
 
     await screen.findByText(/Storage Management Dashboard/i);
 
     // Verify status filter is visible (wait for it to render)
-    const statusFilters = await screen.findAllByTestId("status-filter", {}, { timeout: 2000 });
+    const statusFilters = await screen.findAllByTestId(
+      "status-filter",
+      {},
+      { timeout: 2000 },
+    );
     expect(statusFilters.length).toBeGreaterThan(0);
   });
 
@@ -172,9 +182,9 @@ describe("StorageDashboard Filter UI", () => {
    * Devices tab should have type, room, and status filters
    */
   test("testDevicesTab_ShowsTypeRoomStatusFilters", async () => {
-    jest.spyOn(require("react-router-dom"), "useLocation").mockReturnValue(
-      createMockLocation("/Storage/devices"),
-    );
+    jest
+      .spyOn(require("react-router-dom"), "useLocation")
+      .mockReturnValue(createMockLocation("/Storage/devices"));
     renderWithIntl(<StorageDashboard />);
 
     await screen.findByText(/Storage Management Dashboard/i);
@@ -200,17 +210,29 @@ describe("StorageDashboard Filter UI", () => {
    * T062i3: Test Shelves tab shows device, room, and status filters
    */
   test("testShelvesTab_ShowsDeviceRoomStatusFilters", async () => {
-    jest.spyOn(require("react-router-dom"), "useLocation").mockReturnValue(
-      createMockLocation("/Storage/shelves"),
-    );
+    jest
+      .spyOn(require("react-router-dom"), "useLocation")
+      .mockReturnValue(createMockLocation("/Storage/shelves"));
     renderWithIntl(<StorageDashboard />);
 
     await screen.findByText(/Storage Management Dashboard/i);
 
     // Verify filters are visible (wait for them to render)
-    const deviceFilters = await screen.findAllByTestId("device-filter", {}, { timeout: 2000 });
-    const roomFilters = await screen.findAllByTestId("room-filter", {}, { timeout: 2000 });
-    const statusFilters = await screen.findAllByTestId("status-filter", {}, { timeout: 2000 });
+    const deviceFilters = await screen.findAllByTestId(
+      "device-filter",
+      {},
+      { timeout: 2000 },
+    );
+    const roomFilters = await screen.findAllByTestId(
+      "room-filter",
+      {},
+      { timeout: 2000 },
+    );
+    const statusFilters = await screen.findAllByTestId(
+      "status-filter",
+      {},
+      { timeout: 2000 },
+    );
     expect(deviceFilters.length).toBeGreaterThan(0);
     expect(roomFilters.length).toBeGreaterThan(0);
     expect(statusFilters.length).toBeGreaterThan(0);
@@ -220,9 +242,9 @@ describe("StorageDashboard Filter UI", () => {
    * T062i3: Test Racks tab shows room, shelf, device, and status filters
    */
   test("testRacksTab_ShowsRoomShelfDeviceStatusFilters", async () => {
-    jest.spyOn(require("react-router-dom"), "useLocation").mockReturnValue(
-      createMockLocation("/Storage/racks"),
-    );
+    jest
+      .spyOn(require("react-router-dom"), "useLocation")
+      .mockReturnValue(createMockLocation("/Storage/racks"));
     renderWithIntl(<StorageDashboard />);
 
     await screen.findByText(/Storage Management Dashboard/i);
@@ -253,9 +275,9 @@ describe("StorageDashboard Filter UI", () => {
    * Racks table should include a "Room" column showing room name
    */
   test("testRacksTab_DisplaysRoomColumn", async () => {
-    jest.spyOn(require("react-router-dom"), "useLocation").mockReturnValue(
-      createMockLocation("/Storage/racks"),
-    );
+    jest
+      .spyOn(require("react-router-dom"), "useLocation")
+      .mockReturnValue(createMockLocation("/Storage/racks"));
 
     const mockRacks = [
       {
@@ -291,9 +313,9 @@ describe("StorageDashboard Filter UI", () => {
    * Clear Filters button should reset all active filters
    */
   test("testClearFilters_ResetsAllFilters", async () => {
-    jest.spyOn(require("react-router-dom"), "useLocation").mockReturnValue(
-      createMockLocation("/Storage/samples"),
-    );
+    jest
+      .spyOn(require("react-router-dom"), "useLocation")
+      .mockReturnValue(createMockLocation("/Storage/samples"));
     renderWithIntl(<StorageDashboard />);
 
     await screen.findByText(/Storage Management Dashboard/i);
@@ -311,7 +333,9 @@ describe("StorageDashboard Filter UI", () => {
     fireEvent.click(clearButtons[0]);
 
     // Verify filter is reset - wait for it to clear
-    const resetFilters = await screen.findAllByTestId("location-filter-dropdown");
+    const resetFilters = await screen.findAllByTestId(
+      "location-filter-dropdown",
+    );
     expect(resetFilters.length).toBeGreaterThan(0);
   });
 
@@ -322,10 +346,10 @@ describe("StorageDashboard Filter UI", () => {
    * The actual location selection UI is tested in LocationFilterDropdown component tests.
    */
   test("testLocationFilter_DownwardInclusive_ShowsAllSamplesInHierarchy", async () => {
-    jest.spyOn(require("react-router-dom"), "useLocation").mockReturnValue(
-      createMockLocation("/Storage/samples"),
-    );
-    
+    jest
+      .spyOn(require("react-router-dom"), "useLocation")
+      .mockReturnValue(createMockLocation("/Storage/samples"));
+
     const mockSamplesInHierarchy = [
       {
         id: "sample-1",
@@ -355,7 +379,7 @@ describe("StorageDashboard Filter UI", () => {
     // The actual filtering behavior is tested in LocationFilterDropdown component tests
     const locationFilters = screen.getAllByTestId("location-filter-dropdown");
     expect(locationFilters.length).toBeGreaterThan(0);
-    
+
     // Verify API was called to load initial data
     expect(getFromOpenElisServer).toHaveBeenCalled();
   });
@@ -381,9 +405,9 @@ describe("StorageDashboard Notifications", () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
-    jest.spyOn(require("react-router-dom"), "useLocation").mockReturnValue(
-      createMockLocation("/Storage/samples"),
-    );
+    jest
+      .spyOn(require("react-router-dom"), "useLocation")
+      .mockReturnValue(createMockLocation("/Storage/samples"));
     setupApiMocks({
       metrics: mockMetrics,
       samples: mockSamples,
@@ -395,9 +419,9 @@ describe("StorageDashboard Notifications", () => {
    * Test: AlertDialog is rendered when notificationVisible is true
    */
   test("testAlertDialog_RenderedWhenNotificationVisible", async () => {
-    jest.spyOn(require("react-router-dom"), "useLocation").mockReturnValue(
-      createMockLocation("/Storage/samples"),
-    );
+    jest
+      .spyOn(require("react-router-dom"), "useLocation")
+      .mockReturnValue(createMockLocation("/Storage/samples"));
     const mockNotificationContext = {
       notificationVisible: true,
       setNotificationVisible: jest.fn(),
@@ -429,9 +453,9 @@ describe("StorageDashboard Notifications", () => {
    * Test: AlertDialog is not rendered when notificationVisible is false
    */
   test("testAlertDialog_NotRenderedWhenNotificationVisibleFalse", async () => {
-    jest.spyOn(require("react-router-dom"), "useLocation").mockReturnValue(
-      createMockLocation("/Storage/samples"),
-    );
+    jest
+      .spyOn(require("react-router-dom"), "useLocation")
+      .mockReturnValue(createMockLocation("/Storage/samples"));
     const mockNotificationContext = {
       notificationVisible: false,
       setNotificationVisible: jest.fn(),
@@ -461,9 +485,9 @@ describe("StorageDashboard Notifications", () => {
    * NEW: Verifies flexible assignment architecture (locationId + locationType + positionCoordinate)
    */
   test("testMoveSample_Success_ShowsNotification", async () => {
-    jest.spyOn(require("react-router-dom"), "useLocation").mockReturnValue(
-      createMockLocation("/Storage/samples"),
-    );
+    jest
+      .spyOn(require("react-router-dom"), "useLocation")
+      .mockReturnValue(createMockLocation("/Storage/samples"));
     const mockSetNotificationVisible = jest.fn();
     const mockAddNotification = jest.fn();
     const mockNotificationContext = {
@@ -511,9 +535,9 @@ describe("StorageDashboard Notifications", () => {
    * NEW: Verifies flexible assignment architecture implementation
    */
   test("testOnMoveConfirm_ExtractsFlexibleAssignmentFields", async () => {
-    jest.spyOn(require("react-router-dom"), "useLocation").mockReturnValue(
-      createMockLocation("/Storage/samples"),
-    );
+    jest
+      .spyOn(require("react-router-dom"), "useLocation")
+      .mockReturnValue(createMockLocation("/Storage/samples"));
     const mockSetNotificationVisible = jest.fn();
     const mockAddNotification = jest.fn();
     const mockNotificationContext = {
@@ -632,9 +656,9 @@ describe("StorageDashboard Expandable Rows", () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
-    jest.spyOn(require("react-router-dom"), "useLocation").mockReturnValue(
-      createMockLocation("/Storage/rooms"),
-    );
+    jest
+      .spyOn(require("react-router-dom"), "useLocation")
+      .mockReturnValue(createMockLocation("/Storage/rooms"));
     setupApiMocks({
       metrics: mockMetrics,
       rooms: mockRooms,
@@ -652,9 +676,9 @@ describe("StorageDashboard Expandable Rows", () => {
    * testTabSwitch_ResetsExpandedState: switching tabs resets expanded state to null
    */
   test("testHandleRowExpand_TogglesExpandedState", async () => {
-    jest.spyOn(require("react-router-dom"), "useLocation").mockReturnValue(
-      createMockLocation("/Storage/rooms"),
-    );
+    jest
+      .spyOn(require("react-router-dom"), "useLocation")
+      .mockReturnValue(createMockLocation("/Storage/rooms"));
 
     renderWithIntl(<StorageDashboard />);
 
@@ -664,34 +688,39 @@ describe("StorageDashboard Expandable Rows", () => {
     // Wait for table to render
     await screen.findByText("Main Laboratory");
 
-    // Find first room row by test id (getByTestId throws if not found)
+    // Find first room row by test id
     const firstRow = screen.getByTestId("room-row-1");
-    
-    // Use within() to scope queries to this specific row
-    const rowScope = within(firstRow);
-    
-    // Find expand button by role and accessible name (Carbon uses aria-label="Expand current row")
-    const expandButton = rowScope.getByRole("button", { name: /expand current row/i });
-    
+
+    // Find expand button - Carbon creates it with aria-label from our ariaLabel prop
+    const expandButton = within(firstRow).getByRole("button", {
+      name: /expand current row/i,
+    });
+
     // Click to expand
     fireEvent.click(expandButton);
 
     // Verify expanded content appears by test id
-    await screen.findByTestId("expanded-room-1", { timeout: 3000 });
+    const expandedElements = await screen.findAllByTestId("expanded-room-1", {}, { timeout: 3000 });
+    expect(expandedElements.length).toBeGreaterThan(0);
 
-    // Click same button again to collapse
-    fireEvent.click(expandButton);
+    // Find the button again (it should now say "Collapse")
+    const collapseButton = within(firstRow).getByRole("button", {
+      name: /collapse current row/i,
+    });
 
-    // Wait for state update and re-render - check that expanded content is removed
-    // Use a small delay to allow React state updates
+    // Click to collapse
+    fireEvent.click(collapseButton);
+
+    // Wait for state update - expanded content should be removed
     await new Promise((resolve) => setTimeout(resolve, 100));
-    expect(screen.queryByTestId("expanded-room-1")).toBeNull();
+    const expandedElementsAfterCollapse = screen.queryAllByTestId("expanded-room-1");
+    expect(expandedElementsAfterCollapse.length).toBe(0);
   });
 
-  test("testHandleRowExpand_OnlyOneRowExpanded", async () => {
-    jest.spyOn(require("react-router-dom"), "useLocation").mockReturnValue(
-      createMockLocation("/Storage/rooms"),
-    );
+  test("testHandleRowExpand_MultipleRowsCanBeExpanded", async () => {
+    jest
+      .spyOn(require("react-router-dom"), "useLocation")
+      .mockReturnValue(createMockLocation("/Storage/rooms"));
 
     renderWithIntl(<StorageDashboard />);
 
@@ -700,32 +729,108 @@ describe("StorageDashboard Expandable Rows", () => {
     // Find rows by test id
     const firstRow = screen.getByTestId("room-row-1");
     const secondRow = screen.getByTestId("room-row-2");
-    
+
     // Get expand buttons scoped to each row
     const firstRowScope = within(firstRow);
     const secondRowScope = within(secondRow);
-    
-    const firstExpandButton = firstRowScope.getByRole("button", { name: /expand current row/i });
-    const secondExpandButton = secondRowScope.getByRole("button", { name: /expand current row/i });
+
+    const firstExpandButton = firstRowScope.getByRole("button", {
+      name: /expand current row/i,
+    });
+    const secondExpandButton = secondRowScope.getByRole("button", {
+      name: /expand current row/i,
+    });
 
     // Expand first row
     fireEvent.click(firstExpandButton);
-    await screen.findByTestId("expanded-room-1");
+    const expandedElements1 = await screen.findAllByTestId("expanded-room-1", {}, { timeout: 3000 });
+    expect(expandedElements1.length).toBeGreaterThan(0);
 
-    // Expand second row (should collapse first)
+    // Expand second row (both should remain expanded)
     fireEvent.click(secondExpandButton);
+    const expandedElements2 = await screen.findAllByTestId("expanded-room-2", {}, { timeout: 3000 });
+    expect(expandedElements2.length).toBeGreaterThan(0);
 
-    // Verify first row content is no longer visible (only one expanded at a time)
-    await screen.findByTestId("expanded-room-2");
-    // Wait for state update to collapse first row
+    // Verify both rows are expanded
+    const expandedElements1Check = screen.queryAllByTestId("expanded-room-1");
+    const expandedElements2Check = screen.queryAllByTestId("expanded-room-2");
+    expect(expandedElements1Check.length).toBeGreaterThan(0);
+    expect(expandedElements2Check.length).toBeGreaterThan(0);
+  });
+
+  /**
+   * Test that each row can be expanded and collapsed independently
+   */
+  test("testHandleRowExpand_RowsExpandIndependently", async () => {
+    jest
+      .spyOn(require("react-router-dom"), "useLocation")
+      .mockReturnValue(createMockLocation("/Storage/rooms"));
+
+    renderWithIntl(<StorageDashboard />);
+
+    await screen.findByText("Main Laboratory");
+
+    // Find rows by test id
+    const firstRow = screen.getByTestId("room-row-1");
+    const secondRow = screen.getByTestId("room-row-2");
+
+    // Get expand buttons scoped to each row
+    const firstRowScope = within(firstRow);
+    const secondRowScope = within(secondRow);
+
+    const firstExpandButton = firstRowScope.getByRole("button", {
+      name: /expand current row/i,
+    });
+    const secondExpandButton = secondRowScope.getByRole("button", {
+      name: /expand current row/i,
+    });
+
+    // Expand first row
+    fireEvent.click(firstExpandButton);
+    const expandedElements1Initial = await screen.findAllByTestId("expanded-room-1", {}, { timeout: 3000 });
+    expect(expandedElements1Initial.length).toBeGreaterThan(0);
+
+    // Verify first row's expand button now says "Collapse"
+    firstRowScope.getByRole("button", {
+      name: /collapse current row/i,
+    });
+
+    // Expand second row (both should remain expanded)
+    fireEvent.click(secondExpandButton);
+    const expandedElements2Initial = await screen.findAllByTestId("expanded-room-2", {}, { timeout: 3000 });
+    expect(expandedElements2Initial.length).toBeGreaterThan(0);
+
+    // Verify both rows are expanded
+    const expandedElements1Check = screen.queryAllByTestId("expanded-room-1");
+    const expandedElements2Check = screen.queryAllByTestId("expanded-room-2");
+    expect(expandedElements1Check.length).toBeGreaterThan(0);
+    expect(expandedElements2Check.length).toBeGreaterThan(0);
+
+    // Verify both buttons say "Collapse"
+    firstRowScope.getByRole("button", {
+      name: /collapse current row/i,
+    });
+    secondRowScope.getByRole("button", {
+      name: /collapse current row/i,
+    });
+
+    // Collapse first row
+    fireEvent.click(firstRowScope.getByRole("button", {
+      name: /collapse current row/i,
+    }));
+
+    // Verify first row is collapsed but second remains expanded
     await new Promise((resolve) => setTimeout(resolve, 100));
-    expect(screen.queryByTestId("expanded-room-1")).toBeNull();
+    const expandedElements1Final = screen.queryAllByTestId("expanded-room-1");
+    const expandedElements2Final = screen.queryAllByTestId("expanded-room-2");
+    expect(expandedElements1Final.length).toBe(0);
+    expect(expandedElements2Final.length).toBeGreaterThan(0);
   });
 
   test("testTabSwitch_ResetsExpandedState", async () => {
-    jest.spyOn(require("react-router-dom"), "useLocation").mockReturnValue(
-      createMockLocation("/Storage/rooms"),
-    );
+    jest
+      .spyOn(require("react-router-dom"), "useLocation")
+      .mockReturnValue(createMockLocation("/Storage/rooms"));
 
     renderWithIntl(<StorageDashboard />);
 
@@ -734,9 +839,11 @@ describe("StorageDashboard Expandable Rows", () => {
     // Find first row by test id
     const firstRow = screen.getByTestId("room-row-1");
     const rowScope = within(firstRow);
-    
+
     // Expand a row
-    const expandButton = rowScope.getByRole("button", { name: /expand current row/i });
+    const expandButton = rowScope.getByRole("button", {
+      name: /expand current row/i,
+    });
     fireEvent.click(expandButton);
 
     await screen.findByText(/Description/i);
@@ -760,9 +867,9 @@ describe("StorageDashboard Expandable Rows", () => {
    * testRenderExpandedContent_Rack: renders Position Schema Hint, Description, Created Date, Created By, Last Modified Date, Last Modified By for rack
    */
   test("testRenderExpandedContent_Room", async () => {
-    jest.spyOn(require("react-router-dom"), "useLocation").mockReturnValue(
-      createMockLocation("/Storage/rooms"),
-    );
+    jest
+      .spyOn(require("react-router-dom"), "useLocation")
+      .mockReturnValue(createMockLocation("/Storage/rooms"));
 
     renderWithIntl(<StorageDashboard />);
 
@@ -771,12 +878,15 @@ describe("StorageDashboard Expandable Rows", () => {
     // Find first row by test id
     const firstRow = screen.getByTestId("room-row-1");
     const rowScope = within(firstRow);
-    const expandButton = rowScope.getByRole("button", { name: /expand current row/i });
+    const expandButton = rowScope.getByRole("button", {
+      name: /expand current row/i,
+    });
 
     fireEvent.click(expandButton);
 
-    // Verify all required fields are displayed by test id (findByTestId throws if not found)
-    const expandedContent = await screen.findByTestId("expanded-room-1");
+    // Verify all required fields are displayed by test id
+    const expandedContentElements = await screen.findAllByTestId("expanded-room-1", {}, { timeout: 3000 });
+    const expandedContent = expandedContentElements[0];
     // Verify all field test ids exist (getByTestId throws if not found)
     screen.getByTestId("expanded-room-1-description");
     screen.getByTestId("expanded-room-1-created-date");
@@ -788,9 +898,9 @@ describe("StorageDashboard Expandable Rows", () => {
   });
 
   test("testRenderExpandedContent_Device", async () => {
-    jest.spyOn(require("react-router-dom"), "useLocation").mockReturnValue(
-      createMockLocation("/Storage/devices"),
-    );
+    jest
+      .spyOn(require("react-router-dom"), "useLocation")
+      .mockReturnValue(createMockLocation("/Storage/devices"));
 
     renderWithIntl(<StorageDashboard />);
 
@@ -799,12 +909,15 @@ describe("StorageDashboard Expandable Rows", () => {
     // Find first device row by test id
     const firstRow = screen.getByTestId("device-row-10");
     const rowScope = within(firstRow);
-    const expandButton = rowScope.getByRole("button", { name: /expand current row/i });
+    const expandButton = rowScope.getByRole("button", {
+      name: /expand current row/i,
+    });
 
     fireEvent.click(expandButton);
 
-    // Verify all required fields are displayed by test id (findByTestId throws if not found)
-    const expandedContent = await screen.findByTestId("expanded-device-10");
+    // Verify all required fields are displayed by test id
+    const expandedContentElements = await screen.findAllByTestId("expanded-device-10", {}, { timeout: 3000 });
+    const expandedContent = expandedContentElements[0];
     // Verify actual values
     expect(expandedContent.textContent).toContain("-20.5");
     expect(expandedContent.textContent).toContain("100");
@@ -812,9 +925,9 @@ describe("StorageDashboard Expandable Rows", () => {
   });
 
   test("testRenderExpandedContent_Shelf", async () => {
-    jest.spyOn(require("react-router-dom"), "useLocation").mockReturnValue(
-      createMockLocation("/Storage/shelves"),
-    );
+    jest
+      .spyOn(require("react-router-dom"), "useLocation")
+      .mockReturnValue(createMockLocation("/Storage/shelves"));
 
     renderWithIntl(<StorageDashboard />);
 
@@ -823,21 +936,24 @@ describe("StorageDashboard Expandable Rows", () => {
     // Find first shelf row by test id (mock data has id "20")
     const firstRow = screen.getByTestId("shelf-row-20");
     const rowScope = within(firstRow);
-    const expandButton = rowScope.getByRole("button", { name: /expand current row/i });
+    const expandButton = rowScope.getByRole("button", {
+      name: /expand current row/i,
+    });
 
     fireEvent.click(expandButton);
 
-    // Verify all required fields are displayed by test id (findByTestId throws if not found)
-    const expandedContent = await screen.findByTestId("expanded-shelf-20");
+    // Verify all required fields are displayed by test id
+    const expandedContentElements = await screen.findAllByTestId("expanded-shelf-20", {}, { timeout: 3000 });
+    const expandedContent = expandedContentElements[0];
     // Verify actual values
     expect(expandedContent.textContent).toContain("50");
     expect(expandedContent.textContent).toContain("Top shelf");
   });
 
   test("testRenderExpandedContent_Rack", async () => {
-    jest.spyOn(require("react-router-dom"), "useLocation").mockReturnValue(
-      createMockLocation("/Storage/racks"),
-    );
+    jest
+      .spyOn(require("react-router-dom"), "useLocation")
+      .mockReturnValue(createMockLocation("/Storage/racks"));
 
     renderWithIntl(<StorageDashboard />);
 
@@ -846,12 +962,15 @@ describe("StorageDashboard Expandable Rows", () => {
     // Find first rack row by test id (mock data has id "30")
     const firstRow = screen.getByTestId("rack-row-30");
     const rowScope = within(firstRow);
-    const expandButton = rowScope.getByRole("button", { name: /expand current row/i });
+    const expandButton = rowScope.getByRole("button", {
+      name: /expand current row/i,
+    });
 
     fireEvent.click(expandButton);
 
-    // Verify all required fields are displayed by test id (findByTestId throws if not found)
-    const expandedContent = await screen.findByTestId("expanded-rack-30");
+    // Verify all required fields are displayed by test id
+    const expandedContentElements = await screen.findAllByTestId("expanded-rack-30", {}, { timeout: 3000 });
+    const expandedContent = expandedContentElements[0];
     // Verify actual values
     expect(expandedContent.textContent).toContain("A1-Z99");
     expect(expandedContent.textContent).toContain("Main rack");
@@ -864,9 +983,9 @@ describe("StorageDashboard Expandable Rows", () => {
    * testRenderExpandedContent_ReadOnly: expanded content contains no input fields, only read-only display
    */
   test("testRenderExpandedContent_MissingFields_ShowsNA", async () => {
-    jest.spyOn(require("react-router-dom"), "useLocation").mockReturnValue(
-      createMockLocation("/Storage/rooms"),
-    );
+    jest
+      .spyOn(require("react-router-dom"), "useLocation")
+      .mockReturnValue(createMockLocation("/Storage/rooms"));
 
     renderWithIntl(<StorageDashboard />);
 
@@ -875,20 +994,23 @@ describe("StorageDashboard Expandable Rows", () => {
     // Find second row by test id (which has null description)
     const secondRow = screen.getByTestId("room-row-2");
     const rowScope = within(secondRow);
-    const expandButton = rowScope.getByRole("button", { name: /expand current row/i });
+    const expandButton = rowScope.getByRole("button", {
+      name: /expand current row/i,
+    });
 
     // Expand second row (Storage Room with null description)
     fireEvent.click(expandButton);
 
     // Verify "N/A" is displayed for missing description by test id
-    const expandedContent = await screen.findByTestId("expanded-room-2");
+    const expandedContentElements = await screen.findAllByTestId("expanded-room-2", {}, { timeout: 3000 });
+    const expandedContent = expandedContentElements[0];
     expect(expandedContent.textContent).toContain("N/A");
   });
 
   test("testRenderExpandedContent_DateFormatting", async () => {
-    jest.spyOn(require("react-router-dom"), "useLocation").mockReturnValue(
-      createMockLocation("/Storage/rooms"),
-    );
+    jest
+      .spyOn(require("react-router-dom"), "useLocation")
+      .mockReturnValue(createMockLocation("/Storage/rooms"));
 
     renderWithIntl(<StorageDashboard />);
 
@@ -897,12 +1019,15 @@ describe("StorageDashboard Expandable Rows", () => {
     // Find first row by test id
     const firstRow = screen.getByTestId("room-row-1");
     const rowScope = within(firstRow);
-    const expandButton = rowScope.getByRole("button", { name: /expand current row/i });
+    const expandButton = rowScope.getByRole("button", {
+      name: /expand current row/i,
+    });
 
     fireEvent.click(expandButton);
 
     // Verify date is formatted (should not be raw ISO string) by test id
-    const expandedContent = await screen.findByTestId("expanded-room-1");
+    const expandedContentElements = await screen.findAllByTestId("expanded-room-1", {}, { timeout: 3000 });
+    const expandedContent = expandedContentElements[0];
     const dateField = screen.getByTestId("expanded-room-1-created-date");
     // Date should be formatted, not raw ISO string like "2025-01-15T10:30:00Z"
     expect(dateField.textContent).not.toContain("T");
@@ -910,9 +1035,9 @@ describe("StorageDashboard Expandable Rows", () => {
   });
 
   test("testRenderExpandedContent_ReadOnly", async () => {
-    jest.spyOn(require("react-router-dom"), "useLocation").mockReturnValue(
-      createMockLocation("/Storage/rooms"),
-    );
+    jest
+      .spyOn(require("react-router-dom"), "useLocation")
+      .mockReturnValue(createMockLocation("/Storage/rooms"));
 
     renderWithIntl(<StorageDashboard />);
 
@@ -921,13 +1046,16 @@ describe("StorageDashboard Expandable Rows", () => {
     // Find first row by test id
     const firstRow = screen.getByTestId("room-row-1");
     const rowScope = within(firstRow);
-    const expandButton = rowScope.getByRole("button", { name: /expand current row/i });
+    const expandButton = rowScope.getByRole("button", {
+      name: /expand current row/i,
+    });
 
     fireEvent.click(expandButton);
 
     // Verify expanded content appears by test id
-    const expandedContent = await screen.findByTestId("expanded-room-1");
-    
+    const expandedContentElements = await screen.findAllByTestId("expanded-room-1", {}, { timeout: 3000 });
+    const expandedContent = expandedContentElements[0];
+
     // Verify no input fields in expanded content (should be read-only)
     // Check within expanded content only using within()
     const expandedScope = within(expandedContent);
@@ -958,9 +1086,9 @@ describe("StorageDashboard Capacity Display", () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
-    jest.spyOn(require("react-router-dom"), "useLocation").mockReturnValue(
-      createMockLocation("/Storage/samples"),
-    );
+    jest
+      .spyOn(require("react-router-dom"), "useLocation")
+      .mockReturnValue(createMockLocation("/Storage/samples"));
     setupApiMocks({
       metrics: mockMetrics,
       rooms: mockRooms,
@@ -972,9 +1100,9 @@ describe("StorageDashboard Capacity Display", () => {
    * T189: Test occupancy display with manual capacity shows fraction, percentage, and "Manual Limit" badge
    */
   test("testOccupancyDisplay_ManualCapacity_ShowsFractionAndPercentage", async () => {
-    jest.spyOn(require("react-router-dom"), "useLocation").mockReturnValue(
-      createMockLocation("/Storage/devices"),
-    );
+    jest
+      .spyOn(require("react-router-dom"), "useLocation")
+      .mockReturnValue(createMockLocation("/Storage/devices"));
     const mockDevices = [
       {
         id: "10",
@@ -1012,9 +1140,9 @@ describe("StorageDashboard Capacity Display", () => {
    * T189: Test occupancy display with calculated capacity shows fraction, percentage, and "Calculated" badge
    */
   test("testOccupancyDisplay_CalculatedCapacity_ShowsFractionAndPercentage", async () => {
-    jest.spyOn(require("react-router-dom"), "useLocation").mockReturnValue(
-      createMockLocation("/Storage/devices"),
-    );
+    jest
+      .spyOn(require("react-router-dom"), "useLocation")
+      .mockReturnValue(createMockLocation("/Storage/devices"));
     const mockDevices = [
       {
         id: "10",
@@ -1053,9 +1181,9 @@ describe("StorageDashboard Capacity Display", () => {
    * T189: Test occupancy display with undetermined capacity shows "N/A" with tooltip
    */
   test("testOccupancyDisplay_UndeterminedCapacity_ShowsNA", async () => {
-    jest.spyOn(require("react-router-dom"), "useLocation").mockReturnValue(
-      createMockLocation("/Storage/devices"),
-    );
+    jest
+      .spyOn(require("react-router-dom"), "useLocation")
+      .mockReturnValue(createMockLocation("/Storage/devices"));
     const mockDevices = [
       {
         id: "10",
@@ -1094,9 +1222,9 @@ describe("StorageDashboard Capacity Display", () => {
    * T189: Test progress bar is hidden when capacity cannot be determined
    */
   test("testOccupancyDisplay_UndeterminedCapacity_HidesProgressBar", async () => {
-    jest.spyOn(require("react-router-dom"), "useLocation").mockReturnValue(
-      createMockLocation("/Storage/devices"),
-    );
+    jest
+      .spyOn(require("react-router-dom"), "useLocation")
+      .mockReturnValue(createMockLocation("/Storage/devices"));
     const mockDevices = [
       {
         id: "10",
@@ -1136,9 +1264,9 @@ describe("StorageDashboard Capacity Display", () => {
    * T189: Test progress bar is visible when capacity is manual
    */
   test("testOccupancyDisplay_ManualCapacity_ShowsProgressBar", async () => {
-    jest.spyOn(require("react-router-dom"), "useLocation").mockReturnValue(
-      createMockLocation("/Storage/devices"),
-    );
+    jest
+      .spyOn(require("react-router-dom"), "useLocation")
+      .mockReturnValue(createMockLocation("/Storage/devices"));
     const mockDevices = [
       {
         id: "10",
@@ -1176,9 +1304,9 @@ describe("StorageDashboard Capacity Display", () => {
    * T189: Test progress bar is visible when capacity is calculated
    */
   test("testOccupancyDisplay_CalculatedCapacity_ShowsProgressBar", async () => {
-    jest.spyOn(require("react-router-dom"), "useLocation").mockReturnValue(
-      createMockLocation("/Storage/devices"),
-    );
+    jest
+      .spyOn(require("react-router-dom"), "useLocation")
+      .mockReturnValue(createMockLocation("/Storage/devices"));
     const mockDevices = [
       {
         id: "10",
