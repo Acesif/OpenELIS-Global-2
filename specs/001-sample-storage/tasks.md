@@ -9,6 +9,36 @@
 **Test Approach**: Test-Driven Development (TDD) - Tests written BEFORE
 implementation
 
+## Implementation Status Overview
+
+This document breaks down the implementation phases from `plan.md` into actionable tasks. Each phase corresponds to an implementation phase in `plan.md`.
+
+**Status Legend**:
+- `[COMPLETE]` - All tasks checked, verified working
+- `[IN PROGRESS]` - Some tasks complete, some remaining
+- `[NOT STARTED]` - No tasks complete
+
+### Phase Status Summary
+
+| Phase | Status | Description | Tasks Complete | Tasks Remaining |
+|-------|--------|-------------|----------------|-----------------|
+| Phase 1 | [COMPLETE] | Setup & Database Schema | 7/7 | 0 |
+| Phase 2 | [COMPLETE] | Foundational - Core Entities & FHIR Transform | All | 0 |
+| Phase 3 | [COMPLETE] | Position Hierarchy Structure Update | All | 0 |
+| Phase 4 | [COMPLETE] | Flexible Assignment Architecture | All | 0 |
+| Phase 5 | [IN PROGRESS] | User Story 1 - Basic Storage Assignment | Partial | Dashboard features |
+| Phase 6 | [NOT STARTED] | User Story 2A - SampleItem Search and Retrieval | 0 | All |
+| Phase 7 | [NOT STARTED] | User Story 2B - SampleItem Movement | 0 | All |
+| Phase 7.5 | [COMPLETE] | Modal Consolidation | All | 0 |
+| Phase 8 | [COMPLETE] | Location CRUD Operations | All | 0 |
+| Phase 9 | [COMPLETE] | Expandable Row Functionality | All | 0 |
+| Phase 9.5 | [COMPLETE] | Capacity Calculation Logic | All | 0 |
+| Phase 10 | [IN PROGRESS] | Barcode Workflow Implementation | Partial | Some iterations |
+| Phase 11 | [NOT STARTED] | Polish & Cross-Cutting Concerns | 0 | All |
+| Phase 12 | [NOT STARTED] | Constitution Compliance Verification | 0 | All |
+
+---
+
 ## Format: `[ID] [P?] [Story] Description`
 
 - **[P]**: Can run in parallel (different files, no dependencies)
@@ -17,7 +47,7 @@ implementation
 
 ---
 
-## Phase 1: Setup & Database Schema
+## Phase 1: Setup & Database Schema [COMPLETE]
 
 **Purpose**: Initialize storage module structure and database foundation
 
@@ -47,7 +77,7 @@ ready
 
 ---
 
-## Phase 2: Foundational - Core Entities & FHIR Transform (Blocks All User Stories)
+## Phase 2: Foundational - Core Entities & FHIR Transform [COMPLETE] (Blocks All User Stories)
 
 **Purpose**: Create storage entities and FHIR mapping infrastructure required by
 ALL user stories
@@ -134,7 +164,7 @@ service working and validated
 
 ---
 
-## Phase 3: Position Hierarchy Structure Update (2-5 Level Support)
+## Phase 3: Position Hierarchy Structure Update (2-5 Level Support) [COMPLETE]
 
 **Purpose**: Update StoragePosition entity structure to support flexible
 hierarchy (2-5 levels) per updated specification. Positions can have
@@ -275,7 +305,7 @@ optional parents, FHIR transform supports flexible hierarchy levels.
 
 ---
 
-## Phase 4: Flexible Assignment Architecture (Simplified Polymorphic Location)
+## Phase 4: Flexible Assignment Architecture (Simplified Polymorphic Location) [COMPLETE]
 
 **Purpose**: Simplify sample assignment to use a single polymorphic location
 relationship (`location_id` + `location_type`) instead of requiring
@@ -471,7 +501,7 @@ compatibility - this is a new feature.
 
 ---
 
-## Phase 5: User Story 1 - Basic Storage Assignment (Priority: P1) 🎯 MVP
+## Phase 5: User Story 1 - Basic Storage Assignment (Priority: P1) 🎯 MVP [IN PROGRESS]
 
 **Goal**: Reception clerks can assign samples to storage locations during sample
 entry using cascading dropdowns, type-ahead search, or barcode scanning
@@ -1027,13 +1057,13 @@ metric card with color-coding implemented with TDD.
 
 ---
 
-## Phase 6: User Story 2A - Sample Search and Retrieval (Priority: P2)
+## Phase 6: User Story 2A - SampleItem Search and Retrieval (Priority: P2) [NOT STARTED]
 
-**Goal**: Lab technicians can search for samples by ID and retrieve storage
-location to physically find samples
+**Goal**: Lab technicians can search for SampleItems by ID/External ID or parent Sample accession number and retrieve storage location to physically find SampleItems
 
-**Independent Test**: Assign sample to location (using US1), then search by
-sample ID, verify hierarchical location path displays correctly
+**Note**: Storage tracking is at the SampleItem level (physical specimens), not Sample level (orders). Search supports both SampleItem ID/External ID and parent Sample accession number for flexibility. Dashboard displays SampleItem information with parent Sample context and is sortable by Sample.
+
+**Independent Test**: Assign SampleItem to location (using US1), then search by SampleItem ID or parent Sample accession number, verify hierarchical location path displays correctly
 
 ### Tests First (Write BEFORE implementation)
 
@@ -1123,14 +1153,13 @@ ID, view hierarchical location path, filter by room/device/status.
 
 ---
 
-## Phase 7: User Story 2B - Sample Movement (Priority: P2)
+## Phase 7: User Story 2B - SampleItem Movement (Priority: P2) [NOT STARTED]
 
-**Goal**: Lab technicians can move samples between storage locations (single and
-bulk), with audit trail tracking previous/new locations
+**Goal**: Lab technicians can move SampleItems between storage locations (single and bulk), with audit trail tracking previous/new locations
 
-**Independent Test**: Assign sample to location A, move to location B, verify
-previous position freed (occupied=false), new position occupied (occupied=true),
-audit log records movement
+**Note**: Movement operations work at the SampleItem level (physical specimens), not Sample level. Each SampleItem can be moved independently, even if multiple SampleItems belong to the same Sample.
+
+**Independent Test**: Assign SampleItem to location A, move to location B, verify previous position freed (occupied=false), new position occupied (occupied=true), audit log records movement
 
 ### Tests First (Write BEFORE implementation)
 
@@ -1334,7 +1363,7 @@ previous positions freed, audit trail tracks all movements.
 
 ---
 
-## Phase 7.5: Modal Consolidation - Immediate Priority
+## Phase 7.5: Modal Consolidation - Immediate Priority [COMPLETE]
 
 **Purpose**: Consolidate MoveSampleModal and ViewStorageModal into a single
 LocationManagementModal that handles both assignment and movement workflows. This
@@ -1523,7 +1552,7 @@ separate "Move" and "View Storage" items.
 
 ---
 
-## Phase 8: Location CRUD Operations Implementation
+## Phase 8: Location CRUD Operations Implementation [COMPLETE]
 
 **Purpose**: Implement full CRUD operations for location tabs (Rooms, Devices, Shelves, Racks) with overflow menu actions (Edit, Delete) per FR-037f through FR-037v. Each location entity can be edited via modal dialog and deleted with validation constraints.
 
@@ -1672,7 +1701,7 @@ separate "Move" and "View Storage" items.
 
 ---
 
-## Phase 9: Expandable Row Functionality Implementation
+## Phase 9: Expandable Row Functionality Implementation [COMPLETE]
 
 **Purpose**: Add expandable row functionality to location tables (Rooms, Devices, Shelves, Racks) in StorageDashboard component. Expanded rows display additional entity fields not visible in table columns, formatted as key-value pairs in read-only format. Only one row can be expanded at a time. Expansion triggered by clicking chevron icon in dedicated first column (Carbon DataTable standard pattern).
 
@@ -1743,7 +1772,7 @@ separate "Move" and "View Storage" items.
 
 ---
 
-## Phase 9.5: Capacity Calculation Logic Implementation
+## Phase 9.5: Capacity Calculation Logic Implementation [COMPLETE]
 
 **Purpose**: Implement two-tier capacity calculation system (per FR-062a, FR-062b, FR-062c) for Devices and Shelves. Supports manual `capacity_limit` (static) or calculated capacity from children. When `capacity_limit` is NULL, calculate from child locations (sum if all children have defined capacities). If any child lacks defined capacity, parent capacity cannot be determined and UI displays "N/A" with tooltip. Racks always use calculated capacity (rows × columns). UI must visually distinguish between manual and calculated capacities.
 
@@ -1754,7 +1783,7 @@ separate "Move" and "View Storage" items.
 **Dependencies**: Requires Phase 5 (Dashboard) - StorageDashboard component must exist with occupancy display. Requires Phase 8 (Location CRUD) - Location tables must exist. Can be implemented in parallel with Phase 10 (Barcode Workflow).
 
 **Spec Reference**: FR-062a, FR-062b, FR-062c, FR-061, FR-063  
-**Research**: [research.md Section 9](./research.md#9-capacity-calculation-logic-2025-01-15)
+**Research**: [research.md Section 9](./research.md#9-capacity-calculation-logic)
 
 ### Tests First - Backend Unit Tests (Write BEFORE implementation)
 
@@ -1816,7 +1845,7 @@ separate "Move" and "View Storage" items.
 
 ---
 
-## Phase 11: Polish & Cross-Cutting Concerns
+## Phase 11: Polish & Cross-Cutting Concerns [NOT STARTED]
 
 **Purpose**: Final integration, optimization, and validation across all user
 stories
@@ -1908,7 +1937,7 @@ post-run, core happy paths efficiently covered.
 
 ---
 
-## Phase 10: Barcode Workflow Implementation (Comprehensive)
+## Phase 10: Barcode Workflow Implementation (Comprehensive) [IN PROGRESS]
 
 **Purpose**: Implement comprehensive barcode workflow functionality per FR-023 through FR-027f, following TDD approach with 6 iterations.
 
@@ -2043,7 +2072,7 @@ post-run, core happy paths efficiently covered.
 
 ---
 
-## Phase 12: Constitution Compliance Verification (OpenELIS Global 3.0)
+## Phase 12: Constitution Compliance Verification (OpenELIS Global 3.0) [NOT STARTED]
 
 **Purpose**: Verify feature adheres to all applicable constitution principles
 

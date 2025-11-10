@@ -9,29 +9,40 @@
 ## Executive Summary
 
 OpenELIS Global laboratories currently have **NO physical storage location
-tracking** for biological samples (blood, serum, tissue, etc.). This causes:
+tracking** for biological sample items (blood tubes, serum aliquots, tissue
+sections, etc.). This causes:
 
-- **Sample loss**: 2-5 samples per month cannot be located
+- **Sample loss**: 2-5 sample items per month cannot be located
 - **Retrieval delays**: Lab technicians spend 15-30 minutes searching for
-  samples
-- **Audit failures**: Cannot prove chain-of-custody for stored samples
+  sample items
+- **Audit failures**: Cannot prove chain-of-custody for stored sample items
   (SLIPTA/ISO accreditation requirement)
 - **No capacity visibility**: Cannot monitor freezer/refrigerator utilization
 
 This feature introduces a **5-level storage hierarchy** (Room → Device → Shelf →
 Rack → Position) with multi-mode location assignment (cascading dropdowns,
-type-ahead search, barcode scanning), sample movement tracking, and
-compliance-ready disposal workflows.
+type-ahead search, barcode scanning), sample item movement tracking, and
+compliance-ready disposal workflows. **Storage tracking operates at the
+SampleItem level** (physical specimens), not at the Sample level (orders). Each
+SampleItem can be stored independently, even when multiple SampleItems belong to
+the same parent Sample.
 
 **Target Users**: Reception clerks, lab technicians, quality managers, lab
 managers
 
 **Expected Impact**:
 
-- Reduce sample retrieval time from 15-30 minutes to <2 minutes
-- Eliminate sample loss due to unknown location
+- Reduce sample item retrieval time from 15-30 minutes to <2 minutes
+- Eliminate sample item loss due to unknown location
 - Achieve 95% SLIPTA compliance for storage documentation
 - Enable data-driven storage capacity planning
+
+**Storage Granularity**: Storage locations are tracked at the **SampleItem level**
+(physical specimens), not at the Sample level (orders). This allows different
+SampleItems from the same Sample to be stored in different locations when
+needed (e.g., blood tube in freezer, serum aliquot in refrigerator). The
+dashboard and assignment workflows are SampleItem-specific, with parent Sample
+information displayed for context and sorting/grouping capabilities.
 
 ## Clarifications
 
@@ -67,7 +78,7 @@ managers
   (5) Racks tab - show room column, filter by room, filter by shelf, device, and
   status
 
-### Session 2025-11-20
+### Session 2025-11-05
 
 - Q: When a user selects a location in the single location dropdown (e.g.,
   "Freezer Unit 1"), what should the filter behavior be? → A: Show all samples
@@ -102,9 +113,14 @@ managers
   locations, or only active locations? → A: Only active locations - breakdown
   shows counts for active rooms/devices/shelves/racks only
 
-### Session 2025-01-15
+### Session 2025-11-05
 
 - Q: When a Device or Shelf has no capacity_limit set and cannot calculate capacity from children (because some children lack defined capacities), how should the occupancy be displayed in the dashboard? → A: Show "N/A" or "Unlimited" with a tooltip explaining why capacity cannot be determined
+- Q: When a Sample has multiple SampleItems (e.g., blood tube + serum aliquot), can they be stored in different storage locations? → A: Yes, each SampleItem can be stored independently in different locations
+- Q: When assigning storage location, how should users identify which SampleItem to assign? → A: Hybrid approach - dashboard and assignment are SampleItem-specific, with parent Sample info displayed and sortable by Sample to easily see sample items together
+- Q: In the Storage Dashboard "Samples" tab, what should be displayed as the primary identifier for each row? → A: SampleItem ID/External ID (with Sample accession number as secondary info)
+- Q: When searching for storage locations, should users search by SampleItem ID/External ID, Sample accession number, or both? → A: Both (search matches either SampleItem ID/External ID or Sample accession number)
+- Q: For FHIR Specimen resource mapping, should the Specimen.container reference point to the SampleItem's storage location? → A: Yes, each SampleItem's storage location maps to its Specimen.container reference
 
 ### Session 2025-11-05
 
@@ -128,7 +144,7 @@ managers
   valid location for a sample must have at least 2 levels set: Room and Device
   MUST be selected. Shelf, Rack, and Position levels are optional
 
-### Session 2025-11-21
+### Session 2025-11-06
 
 - Q: Which menu items should appear in the samples table row overflow menu? → A:
   All four items: Move, Dispose, View Audit (placeholder), View Storage
@@ -187,7 +203,7 @@ managers
 - Q: What should the View Details operation display? → A: View Details option should not be included - all important details should be visible in the table columns
 - Q: Which fields should be editable vs read-only in the Edit modal? → A: Code and Parent are read-only (only name/description/attributes editable, prevents structural changes)
 
-### Session 2025-11-22
+### Session 2025-11-06
 
 - Q: How should the Move and View Storage menu items be consolidated? → A: Replace both "Move" and "View Storage" with a single "Manage Location" menu item that opens the consolidated modal
 - Q: What wording should be used for the consolidated modal title and button? → A: Dynamic wording based on location existence: If no location assigned → "Assign Storage Location" (title) / "Assign" (button). If location exists → "Move Sample" (title) / "Confirm Move" (button) - keep movement terminology when location exists
@@ -1049,22 +1065,28 @@ operations.
   breadcrumb navigation showing current location context within the 5-level
   hierarchy
 
-#### Sample Assignment
+#### SampleItem Assignment
 
-- **FR-033**: System MUST record sample assignment with: Sample ID, Location
+- **FR-033**: System MUST record sample item assignment with: SampleItem ID,
+  Sample ID (parent Sample reference for context), Location
   (room/device/shelf/rack/position), Assigned By (user ID), Timestamp, Optional
-  notes
-- **FR-033a**: System MUST require that a valid location for a sample has at
+  notes. Storage tracking operates at SampleItem level (physical specimens), not
+  Sample level (orders).
+- **FR-033a**: System MUST require that a valid location for a sample item has at
   least 2 levels set: Room and Device MUST be selected. Shelf, Rack, and
   Position levels are optional (shelf/rack/position may be left blank). A
   position can have at most 5 levels (Room → Device → Shelf → Rack → Position)
-  but at least 2 levels (Room → Device). A sample is associated with a position
-  that represents the lowest level in the hierarchy for that assignment. The
-  position can be at device level (2 levels), shelf level (3 levels), rack level
-  (4 levels), or position level (5 levels). The requirement is that it must be
-  at least at the device level (cannot be just a room). When assigning, we
-  select the lowest position in the hierarchy for the given sample, which
-  provides all necessary location information.
+  but at least 2 levels (Room → Device). A sample item is associated with a
+  position that represents the lowest level in the hierarchy for that
+  assignment. The position can be at device level (2 levels), shelf level (3
+  levels), rack level (4 levels), or position level (5 levels). The requirement
+  is that it must be at least at the device level (cannot be just a room). When
+  assigning, we select the lowest position in the hierarchy for the given sample
+  item, which provides all necessary location information.
+- **FR-033b**: System MUST allow users to select which SampleItem to assign when
+  a Sample has multiple SampleItems. Dashboard and assignment workflows are
+  SampleItem-specific, with parent Sample information displayed for context and
+  sorting/grouping capabilities.
 - **FR-034**: System MUST prevent assignment to already-occupied position
   (unless rack allows duplicates - see FR-014)
 - **FR-035**: System MUST prevent assignment to inactive/decommissioned location
@@ -1077,10 +1099,12 @@ operations.
 - **FR-037**: System MUST allow assignment at shelf/rack level without
   specifying position (position field blank)
 
-#### Sample Row Actions Menu
+#### SampleItem Row Actions Menu
 
-- **FR-037a**: Samples table rows MUST include an overflow menu button
-  (triple-dot icon, ⋮) in the Actions column
+- **FR-037a**: SampleItems table rows MUST include an overflow menu button
+  (triple-dot icon, ⋮) in the Actions column. Each row represents a SampleItem
+  (physical specimen), with parent Sample information displayed as secondary
+  context.
 - **FR-037b**: Overflow menu MUST display three menu items: Manage Location,
   Dispose, View Audit (placeholder). "Manage Location" consolidates the
   previous "Move" and "View Storage" functionality into a single unified modal
@@ -1163,11 +1187,13 @@ operations.
   dynamic based on whether sample has existing location:
   - **If no location assigned**: Modal title "Assign Storage Location", button
     text "Assign"
-  - **If location exists**: Modal title "Move Sample" with subtitle "Move sample
-    [Sample ID] to a new storage location", button text "Confirm Move"
-- **FR-040b**: Location management modal MUST display comprehensive sample
-  information section showing: Sample ID, Type, Status, Date Collected, Patient
-  ID, Test Orders in a highlighted/background box
+  - **If location exists**: Modal title "Move Sample Item" with subtitle "Move
+    sample item [SampleItem ID] (Sample: [Sample ID]) to a new storage location",
+    button text "Confirm Move"
+- **FR-040b**: Location management modal MUST display comprehensive sample item
+  information section showing: SampleItem ID/External ID, Sample ID (parent Sample
+  accession number), Type, Status, Date Collected, Patient ID, Test Orders in a
+  highlighted/background box
 - **FR-040c**: Location management modal MUST display "Current Location" section
   (if location exists) showing full hierarchical path (Room > Device > Shelf >
   Rack > Position) in a highlighted gray background box. If no location exists,
@@ -1199,7 +1225,7 @@ operations.
   component with proper accessibility attributes
 - **FR-041**: System MUST validate: Target location is active, target position
   is not occupied, target has available capacity
-- **FR-042**: System MUST update sample's current location to new location and
+- **FR-042**: System MUST update sample item's current location to new location and
   free previous position (mark as available) when location is changed
 - **FR-043**: System MUST record audit trail with: Previous location (if
   existed), New location, User, Timestamp, Reason (if provided when moving)
@@ -1232,13 +1258,14 @@ operations.
   - Notes (optional free text)
   - Attachment (optional: disposal certificate PDF upload)
 
-- **FR-051a**: Disposal modal MUST be titled "Dispose Sample" with subtitle
-  "Permanently dispose of sample [Sample ID]"
+- **FR-051a**: Disposal modal MUST be titled "Dispose Sample Item" with subtitle
+  "Permanently dispose of sample item [SampleItem ID] (Sample: [Sample ID])"
 - **FR-051b**: Disposal modal MUST display a red warning alert box at the top
   stating "This action cannot be undone. The sample will be marked as disposed
   and removed from storage." (uses warning/error styling with icon)
-- **FR-051c**: Disposal modal MUST display sample information section in gray
-  background box showing: Sample ID, Type, and Status
+- **FR-051c**: Disposal modal MUST display sample item information section in gray
+  background box showing: SampleItem ID/External ID, Sample ID (parent Sample),
+  Type, and Status
 - **FR-051d**: Disposal modal MUST display "Current Storage Location" section
   with location pin icon showing:
   - Full hierarchical path in gray background box
@@ -1280,18 +1307,20 @@ operations.
 
 #### Dashboard and Reporting
 
-- **FR-057**: Dashboard MUST display 4 metric cards: Total Samples (count of all
-  samples with locations), Active (currently stored), Disposed (disposed
-  samples), Storage Locations (formatted text list showing breakdown by type: "X
-  rooms, Y devices, Z shelves, W racks" with counts for each active hierarchy
+- **FR-057**: Dashboard MUST display 4 metric cards: Total SampleItems (count of all
+  sample items with locations), Active (currently stored), Disposed (disposed
+  sample items), Storage Locations (formatted text list showing breakdown by type:
+  "X rooms, Y devices, Z shelves, W racks" with counts for each active hierarchy
   level, color-coded using Carbon Design System tokens: blue-70 for rooms,
   teal-70 for devices, purple-70 for shelves, orange-70 for racks)
 - **FR-057a**: Storage Locations metric card text MUST be color-coded with
   matching subtle accent colors applied to corresponding tab labels/backgrounds
   (Rooms tab has blue accent, Devices tab has teal accent, Shelves tab has
   purple accent, Racks tab has orange accent) - tab coloring must be very subtle
-- **FR-058**: Dashboard MUST provide 5 tabs: Samples | Rooms | Devices | Shelves
-  | Racks
+- **FR-058**: Dashboard MUST provide 5 tabs: SampleItems | Rooms | Devices | Shelves
+  | Racks. SampleItems tab displays SampleItem-level data (physical specimens),
+  with parent Sample information displayed as secondary context and sortable by
+  Sample to easily see sample items together.
 - **FR-059**: Each tab MUST show data table appropriate for that entity level
    with relevant columns
 - **FR-059a**: Location tables (Rooms, Devices, Shelves, Racks) MUST support
@@ -1357,10 +1386,11 @@ operations.
 #### Filters and Search
 
 - **FR-064**: Dashboard MUST provide tab-specific search functionality:
-  - **Samples tab**: Live search (debounced 300-500ms) by sample ID, accession
-    number type/prefix, and assigned location (full hierarchical path string).
-    Search matches any of these fields (OR logic) using case-insensitive
-    partial/substring matching
+  - **SampleItems tab**: Live search (debounced 300-500ms) by SampleItem ID/External
+    ID, Sample accession number (parent Sample), and assigned location (full
+    hierarchical path string). Search matches any of these fields (OR logic) using
+    case-insensitive partial/substring matching. Primary identifier is SampleItem
+    ID/External ID, with Sample accession number displayed as secondary context.
   - **Rooms tab**: Search by name and code using case-insensitive
     partial/substring matching
   - **Devices tab**: Search by name, code, and type using case-insensitive
@@ -1519,8 +1549,9 @@ functional design:_
 - **CR-005**: External data integration MUST use FHIR R4 + IHE profiles
 
   - **Functional Impact**: Storage entities will map to FHIR Location resources
-  - **Functional Impact**: Sample-to-location link via Specimen.container
-    reference
+  - **Functional Impact**: SampleItem-to-location link via Specimen.container
+    (each SampleItem's storage location maps to its corresponding FHIR Specimen
+    resource container reference)
   - **Functional Impact**: Support IHE mCSD queries for facility/location
     discovery
 
@@ -1573,20 +1604,24 @@ functional design:_
   integers for grid visualization, occupancy state (empty/occupied), parent rack
   reference. Can be left blank for shelf/rack-level assignment.
 
-- **Sample Assignment**: Link between sample and storage location. Attributes:
-  Sample ID (reference to existing Sample entity), Location reference
+- **SampleItem Assignment**: Link between sample item and storage location.
+  Attributes: SampleItem ID (reference to existing SampleItem entity), Sample ID
+  (reference to parent Sample for context), Location reference
   (room/device/shelf/rack/position), Assigned by (user ID), Assignment
-  timestamp, Optional notes. Represents current location of sample.
+  timestamp, Optional notes. Represents current location of sample item (physical
+  specimen). Each SampleItem can be stored independently, even when multiple
+  SampleItems belong to the same parent Sample.
 
-- **Sample Movement**: Audit record of sample relocation. Attributes: Sample ID,
-  Previous location (full hierarchy path), New location (full hierarchy path),
-  Moved by (user ID), Movement timestamp, Optional reason. Immutable audit
-  trail.
+- **SampleItem Movement**: Audit record of sample item relocation. Attributes:
+  SampleItem ID, Sample ID (parent Sample reference), Previous location (full
+  hierarchy path), New location (full hierarchy path), Moved by (user ID),
+  Movement timestamp, Optional reason. Immutable audit trail.
 
-- **Sample Disposal**: Audit record of sample disposal. Attributes: Sample ID,
-  Location at disposal time, Disposed by (user ID), Disposal timestamp, Reason
-  (dropdown value), Method (dropdown value), Optional notes, Optional
-  certificate attachment. Immutable compliance record.
+- **SampleItem Disposal**: Audit record of sample item disposal. Attributes:
+  SampleItem ID, Sample ID (parent Sample reference), Location at disposal time,
+  Disposed by (user ID), Disposal timestamp, Reason (dropdown value), Method
+  (dropdown value), Optional notes, Optional certificate attachment. Immutable
+  compliance record.
 
 - **Storage Location Barcode**: Pre-generated barcodes for physical labels.
   Attributes: Barcode value (hierarchical format), Location reference
@@ -1664,7 +1699,9 @@ functional design:_
 
   - Map storage entities to FHIR Location resources (Room, Device, Shelf, Rack,
     Position)
-  - Link samples to locations via Specimen.container reference
+  - Link sample items to locations via Specimen.container reference (each
+    SampleItem's storage location maps to its corresponding FHIR Specimen
+    resource container reference)
   - Use existing FhirPersistanceService for creating/updating FHIR resources
   - Use existing FhirTransformService for entity↔FHIR conversion
   - Support IHE mCSD queries for location discovery
@@ -1686,8 +1723,10 @@ functional design:_
 
 ### Assumptions
 
-- **Assumption 1**: Existing OpenELIS sample entity has unique sample ID
-  suitable for foreign key reference
+- **Assumption 1**: Existing OpenELIS SampleItem entity has unique SampleItem ID
+  suitable for foreign key reference. Storage tracking operates at SampleItem
+  level (physical specimens), not Sample level (orders). Each SampleItem can be
+  stored independently.
 - **Assumption 2**: Existing OpenELIS user/role system supports adding new
   permissions (Assign Samples, Move Samples, Dispose Samples, etc.)
 - **Assumption 3**: Existing HAPI FHIR R4 server is running and accessible for
@@ -1720,22 +1759,24 @@ post-POC iterations.
 
 **In-Scope for POC (User Stories P1, P2A, P2B)**:
 
-- **SC-001**: **Storage Assignment Workflow** - User can assign a sample to a
+- **SC-001**: **Storage Assignment Workflow** - User can assign a sample item to a
   storage location using any of three methods (cascading dropdowns, type-ahead
   search, barcode scan), and assignment is saved with correct location path,
-  user ID, and timestamp
+  user ID, and timestamp. Storage tracking operates at SampleItem level (physical
+  specimens), with parent Sample information displayed for context.
 
-- **SC-002**: **Sample Search and Retrieval** - User can search for a sample by
-  ID and system displays the complete hierarchical storage location path (Room >
-  Device > Shelf > Rack > Position)
+- **SC-002**: **SampleItem Search and Retrieval** - User can search for a sample
+  item by SampleItem ID/External ID or Sample accession number, and system
+  displays the complete hierarchical storage location path (Room > Device > Shelf >
+  Rack > Position). Search matches either identifier.
 
-- **SC-003**: **Sample Movement** - User can move a sample from one storage
-  location to another, previous location is freed, new location is recorded, and
-  audit trail captures the movement with user, timestamp, and reason
+- **SC-003**: **SampleItem Movement** - User can move a sample item from one
+  storage location to another, previous location is freed, new location is
+  recorded, and audit trail captures the movement with user, timestamp, and reason
 
-- **SC-004**: **Bulk Movement** - User can select multiple samples and move them
-  together, system auto-assigns sequential positions with option to modify, and
-  each sample receives individual audit record
+- **SC-004**: **Bulk Movement** - User can select multiple sample items and move
+  them together, system auto-assigns sequential positions with option to modify,
+  and each sample item receives individual audit record
 
 - **SC-005**: **Location Hierarchy Management** - User can create storage
   locations inline (Room, Device, Shelf, Rack) during assignment workflow, and

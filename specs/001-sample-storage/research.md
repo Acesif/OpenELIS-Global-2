@@ -1266,6 +1266,7 @@ public class StorageLocationLabel extends Label {
 | Certificate Architecture    | Self-signed certs via certgen container, distributed via Docker volumes to nginx/proxy and Java services. Let's Encrypt setup requires Certbot container, nginx ACME challenge handling, and subdomain-specific server blocks | dev.docker-compose.yml, nginx.conf, certificate-setup-report.md |
 | Carbon DataTable Expandable Rows | Carbon DataTable expandableRows prop with TableExpandHeader/TableExpandRow/TableExpandedRow, React useState for single-row expansion, key-value pairs in Grid layout | Carbon DataTable docs, EOrder.js implementation |
 | Capacity Calculation Logic | Two-tier system: manual `capacity_limit` (if set) OR calculated from children (sum if all children have defined capacities). Racks always use rows × columns. Show "N/A" if capacity cannot be determined. | Spec FR-062a, FR-062b, FR-062c, laboratory workflow analysis |
+| Frontend Unit Testing Pattern | Standard import order (React → Testing Library → jest-dom → Intl → Component → Utils → Messages), mock utilities before imports, use `renderWithIntl` helper, AAA pattern, `getBy*`/`queryBy*`/`findBy*` selection, `waitFor` for async (never `setTimeout`) | StorageDashboard.test.jsx (canonical example), React Testing Library docs |
 
 **Decisions Made**:
 
@@ -1287,7 +1288,7 @@ quickstart.md)
 
 ---
 
-## 9. Capacity Calculation Logic (2025-01-15)
+## 9. Capacity Calculation Logic
 
 **Question**: How should capacity be calculated for Devices and Shelves when `capacity_limit` is not set? How should the system handle cases where some children have defined capacities and others don't?
 
@@ -1326,5 +1327,605 @@ quickstart.md)
 - Backend: `StorageLocationService` must implement `calculateDeviceCapacity()` and `calculateShelfCapacity()` methods
 - API: Device/Shelf responses must include `totalCapacity` and `capacityType` fields
 - Frontend: Occupancy display must handle null capacity and show visual distinction
+
+**Reference**: Spec FR-062a, FR-062b, FR-062c, FR-061, FR-063
+
+---
+
+## 10. Frontend Unit Testing Standard Pattern
+
+**Feature**: Standardized frontend unit testing patterns for React components  
+**Purpose**: Establish consistent, reliable testing patterns to prevent recurring test failures and maintainability issues
+
+### Research Questions
+
+#### Q1: What is the standard test file structure and import pattern?
+
+**Decision**: Follow exact import order and structure from `StorageDashboard.test.jsx` (canonical reference).
+
+**Standard Import Order (MANDATORY)**:
+```javascript
+// 1. React
+import React from "react";
+
+// 2. Testing Library (all utilities in one import)
+import {
+  render,
+  screen,
+  fireEvent,
+  waitFor,
+  within, // Include if needed for scoped queries
+} from "@testing-library/react";
+
+// 3. jest-dom matchers (MUST be imported)
+import "@testing-library/jest-dom";
+
+// 4. IntlProvider (if component uses i18n)
+import { IntlProvider } from "react-intl";
+
+// 5. Router (if component uses routing)
+import { BrowserRouter } from "react-router-dom";
+
+// 6. Component under test
+import ComponentName from "./ComponentName";
+
+// 7. Utilities (import functions, not just for mocking)
+import { getFromOpenElisServer } from "../utils/Utils";
+
+// 8. Messages/translations
+import messages from "../../../languages/en.json";
+```
+
+**Rationale**:
+- Import order prevents module hoisting conflicts
+- Testing Library imports must come before jest-dom
+- Utilities imported explicitly (not just mocked) for type checking
+- Messages imported last (not used in mocks)
+
+**Reference**: `frontend/src/components/storage/StorageDashboard.test.jsx` (lines 1-15)
+
+#### Q2: How should mocks be structured?
+
+**Decision**: Mock utilities BEFORE imports that use them, use `jest.mock()` at module level.
+
+**Standard Mock Pattern**:
+```javascript
+// Mock the API utilities (MUST be before imports that use them)
+jest.mock("../utils/Utils", () => ({
+  getFromOpenElisServer: jest.fn(),
+  postToOpenElisServer: jest.fn(), // Add as needed
+}));
+
+// Mock react-router-dom if component uses routing
+const mockHistory = {
+  replace: jest.fn(),
+  push: jest.fn(),
+};
+
+jest.mock("react-router-dom", () => ({
+  ...jest.requireActual("react-router-dom"),
+  useHistory: () => mockHistory,
+  useLocation: () => ({ pathname: "/path" }), // Adjust as needed
+}));
+
+// Mock child components if they have complex dependencies
+jest.mock("./ChildComponent", () => {
+  return function MockChildComponent({ prop1, onCallback }) {
+    return (
+      <div data-testid="child-component">
+        {/* Mock implementation */}
+      </div>
+    );
+  };
+});
+```
+
+**Rationale**:
+- Jest hoists `jest.mock()` calls, so they must be before imports
+- Using `jest.requireActual()` preserves other router functionality
+- Mock child components to isolate unit under test
+
+**Reference**: `frontend/src/components/storage/StorageDashboard.test.jsx` (lines 17-31)
+
+#### Q3: What helper functions should be standardized?
+
+**Decision**: Use `renderWithIntl` helper and optional `setupApiMocks` helper.
+
+**Standard Helper Functions**:
+```javascript
+// Helper function to create mock location (if using useLocation)
+const createMockLocation = (pathname) => ({ pathname });
+
+// Mock NotificationContext if component uses it
+const mockNotificationContext = {
+  notificationVisible: false,
+  setNotificationVisible: jest.fn(),
+  addNotification: jest.fn(),
+};
+
+// Standard render helper with IntlProvider
+const renderWithIntl = (component) => {
+  return render(
+    <BrowserRouter> {/* Include if component uses routing */}
+      <IntlProvider locale="en" messages={messages}>
+        {/* Include NotificationContext.Provider if needed */}
+        {component}
+      </IntlProvider>
+    </BrowserRouter>,
+  );
+};
+
+// Helper function to setup API mocks (if needed)
+const setupApiMocks = (overrides = {}) => {
+  const defaults = {
+    // Define default mock responses
+  };
+  const data = { ...defaults, ...overrides };
+
+  getFromOpenElisServer.mockImplementation((url, callback) => {
+    // Map URLs to mock responses
+    if (url.includes("/rest/endpoint1")) {
+      callback(data.endpoint1);
+    } else if (url.includes("/rest/endpoint2")) {
+      callback(data.endpoint2);
+    }
+  });
+};
+```
+
+**Rationale**:
+- `renderWithIntl` ensures all components have i18n context
+- `setupApiMocks` centralizes API mocking logic
+- Helper functions reduce test boilerplate
+
+**Reference**: `frontend/src/components/storage/StorageDashboard.test.jsx` (lines 33-90)
+
+#### Q4: How should test structure be organized?
+
+**Decision**: Follow AAA pattern (Arrange, Act, Assert) with descriptive test names and task references.
+
+**Standard Test Structure**:
+```javascript
+describe("ComponentName", () => {
+  // Define mock data constants
+  const mockData = {
+    // Component-specific mock data
+  };
+
+  const mockCallback = jest.fn();
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+    // Setup default API mocks if needed
+    // setupApiMocks();
+  });
+
+  /**
+   * Test description with task reference (e.g., T123: Test name)
+   */
+  test("testName", async () => {
+    // Arrange: Setup test data and render component
+    renderWithIntl(
+      <ComponentName
+        prop1={mockData.prop1}
+        onCallback={mockCallback}
+      />,
+    );
+
+    // Act: Perform user actions
+    const button = screen.getByTestId("button-id");
+    fireEvent.click(button);
+
+    // Assert: Verify expected behavior
+    // Use waitFor for async operations
+    await waitFor(() => {
+      expect(screen.getByText("Expected Text")).toBeInTheDocument();
+    });
+
+    // Use queryBy* for absence checks
+    expect(screen.queryByTestId("error-message")).not.toBeInTheDocument();
+  });
+});
+```
+
+**Rationale**:
+- AAA pattern makes tests readable and maintainable
+- Descriptive test names (testWhat_When_ExpectedResult)
+- Task references link tests to specifications
+- `beforeEach` ensures test isolation
+
+**Reference**: `frontend/src/components/storage/StorageDashboard.test.jsx` (lines 92-141)
+
+#### Q5: What query methods should be used and when?
+
+**Decision**: Use `screen.getBy*` for required elements, `screen.queryBy*` for absence checks, `screen.findBy*` for async queries.
+
+**Query Method Selection**:
+```javascript
+// ✅ CORRECT: Use getBy* for required elements (throws if not found)
+const button = screen.getByTestId("button-id");
+const text = screen.getByText("Expected Text");
+
+// ✅ CORRECT: Use queryBy* for absence checks (returns null if not found)
+expect(screen.queryByTestId("error-message")).not.toBeInTheDocument();
+
+// ✅ CORRECT: Use findBy* for async element queries (waits and retries)
+const asyncElement = await screen.findByText("Loaded Data");
+
+// ✅ CORRECT: Use within() for scoped queries within containers
+const container = screen.getByTestId("container");
+const scopedButton = within(container).getByText("Button Text");
+
+// ❌ WRONG: Using getBy* for absence checks (throws error)
+expect(screen.getByTestId("error-message")).not.toBeInTheDocument(); // FAILS
+
+// ❌ WRONG: Using queryBy* for required elements (doesn't fail if missing)
+const button = screen.queryByTestId("button-id"); // May be null
+```
+
+**Rationale**:
+- `getBy*` throws immediately if element not found (fails fast)
+- `queryBy*` returns null (safe for absence checks)
+- `findBy*` waits and retries (handles async rendering)
+- `within()` scopes queries to containers (prevents false matches)
+
+**Reference**: React Testing Library documentation, `StorageDashboard.test.jsx` examples
+
+#### Q6: How should async operations be handled?
+
+**Decision**: Use `waitFor` for async operations, never use `setTimeout`.
+
+**Async Operation Pattern**:
+```javascript
+// ✅ CORRECT: Use waitFor for async operations
+test("testAsyncOperation", async () => {
+  renderWithIntl(<ComponentName />);
+
+  // Wait for async operation
+  await waitFor(() => {
+    expect(screen.getByText("Loaded Data")).toBeInTheDocument();
+  });
+});
+
+// ✅ CORRECT: Use findBy* for async element queries
+const asyncElement = await screen.findByText("Loaded Data");
+
+// ❌ WRONG: Using setTimeout (unreliable, arbitrary delays)
+setTimeout(() => {
+  expect(screen.getByText("Loaded Data")).toBeInTheDocument();
+}, 1000); // FAILS - arbitrary delay, no retry logic
+
+// ❌ WRONG: Not waiting for async operations
+fireEvent.click(button);
+expect(screen.getByText("Loaded Data")).toBeInTheDocument(); // FAILS - element not rendered yet
+```
+
+**Rationale**:
+- `waitFor` retries assertions until they pass or timeout
+- `findBy*` queries automatically wait and retry
+- `setTimeout` is unreliable and arbitrary
+- Async operations need proper waiting
+
+**Reference**: React Testing Library async utilities documentation
+
+### Technical Decisions Summary
+
+| Decision | Choice | Rationale |
+|----------|--------|-----------|
+| Import Order | React → Testing Library → jest-dom → Intl → Component → Utils → Messages | Prevents module hoisting conflicts |
+| Mock Placement | Before imports that use them | Jest hoisting requires this order |
+| Helper Functions | `renderWithIntl`, optional `setupApiMocks` | Reduces boilerplate, ensures i18n context |
+| Test Structure | AAA pattern with task references | Readable, maintainable, traceable |
+| Query Methods | `getBy*` (required), `queryBy*` (absence), `findBy*` (async) | Appropriate tool for each use case |
+| Async Handling | `waitFor` and `findBy*`, never `setTimeout` | Reliable, retry-able, follows best practices |
+
+### Dependencies
+
+- **React Testing Library**: `@testing-library/react` (v12+)
+- **Jest DOM Matchers**: `@testing-library/jest-dom` (v5+)
+- **React Intl**: `react-intl` (v5.20.12)
+- **Jest**: v27+ (for `jest.mock()` hoisting)
+
+### Implementation Notes
+
+1. **Test Template**: Created `frontend/src/components/storage/__tests__/TEST_TEMPLATE.jsx` as reference
+2. **Canonical Example**: `StorageDashboard.test.jsx` serves as the reference implementation
+3. **Best Practices Checklist**: Included in test template comments
+4. **Common Pitfalls**:
+   - ❌ Importing `waitFor` but not using it (causes module resolution issues)
+   - ❌ Using `setTimeout` instead of `waitFor`
+   - ❌ Using `getBy*` for absence checks (throws error)
+   - ❌ Not clearing mocks in `beforeEach` (test pollution)
+   - ❌ Mocking utilities after imports (hoisting issues)
+
+### Best Practices Checklist
+
+**MANDATORY for all test files**:
+- ✅ Import order: React → Testing Library → jest-dom → Intl → Component → Utils → Messages
+- ✅ Mock utilities BEFORE imports that use them
+- ✅ Use `renderWithIntl` helper for all components
+- ✅ Use `beforeEach` to clear mocks
+- ✅ Use `async/await` with `waitFor` for async operations
+- ✅ Use `screen.getBy*` for required elements
+- ✅ Use `screen.queryBy*` for absence checks (with `.not.toBeInTheDocument()`)
+- ✅ Use `screen.findBy*` for async element queries
+- ✅ Use `within()` for scoped queries within containers
+- ✅ Use `data-testid` for reliable element selection
+- ✅ Use `fireEvent` for user interactions
+- ✅ Use `waitFor` instead of `setTimeout` for async operations
+- ✅ Include task references in test comments (e.g., T123: Test name)
+- ✅ Follow AAA pattern (Arrange, Act, Assert)
+- ✅ Use descriptive test names (testWhat_When_ExpectedResult)
+- ✅ Mock child components if they have complex dependencies
+- ✅ Clear mocks in `beforeEach`
+- ✅ Use `setupApiMocks` helper for complex API mocking scenarios
+
+**Reference**: 
+- Test Template: `frontend/src/components/storage/__tests__/TEST_TEMPLATE.jsx`
+- Canonical Example: `frontend/src/components/storage/StorageDashboard.test.jsx`
+- React Testing Library Docs: https://testing-library.com/docs/react-testing-library/intro/
+
+---
+
+## 11. SampleItem Entity Structure and Storage Integration
+
+**Feature**: SampleItem-level storage tracking  
+**Purpose**: Document SampleItem entity structure and its relationship to Sample entity for storage management integration
+
+### Research Questions
+
+#### Q1: What is the SampleItem entity structure?
+
+**Decision**: SampleItem represents physical specimens collected from patients, linked to a parent Sample (order).
+
+**Entity Structure** (`org.openelisglobal.sampleitem.valueholder.SampleItem`):
+
+**Key Fields**:
+- `id` (String) - Primary key, generated via `StringSequenceGenerator` (sequence: `sample_item_seq`)
+- `fhirUuid` (UUID) - FHIR resource identifier for Specimen mapping
+- `sample` (Many-to-One → Sample) - Parent Sample (order) relationship via `SAMP_ID` foreign key
+- `sampleItemId` (String) - External identifier for the physical specimen
+- `externalId` (String) - Additional external identifier
+- `sortOrder` (String) - Ordering within parent Sample
+- `typeOfSample` (Many-to-One → TypeOfSample) - Specimen type (blood, urine, etc.)
+- `sourceOfSample` (Many-to-One → SourceOfSample) - Collection source
+- `quantity` (Double) - Specimen quantity
+- `unitOfMeasure` (Many-to-One → UnitOfMeasure) - Quantity unit
+- `collectionDate` (Timestamp) - When specimen was collected
+- `collector` (String) - Person who collected the specimen
+- `statusId` (String) - Current status
+- `rejected` (boolean) - Rejection flag
+- `rejectReasonId` (String) - Reason for rejection
+- `voided` (boolean) - Void flag
+- `voidReason` (String) - Reason for voiding
+- `lastupdated` (Timestamp) - Optimistic locking version field
+
+**Hibernate Mapping** (`SampleItem.hbm.xml`):
+- Table: `SAMPLE_ITEM`
+- ID generation: `StringSequenceGenerator` with `sample_item_seq`
+- Optimistic locking: `version` on `lastupdated` column
+- Many-to-One to Sample: `SAMP_ID` foreign key, `lazy="false"`
+- Many-to-One to TypeOfSample: `TYPEOSAMP_ID` foreign key
+- Many-to-One to SourceOfSample: `SOURCE_ID` foreign key
+- Many-to-One to UnitOfMeasure: `UOM_ID` foreign key
+
+**Reference**: `src/main/java/org/openelisglobal/sampleitem/valueholder/SampleItem.java`, `src/main/resources/hibernate/hbm/SampleItem.hbm.xml`
+
+#### Q2: What is the relationship between Sample and SampleItem?
+
+**Decision**: One-to-Many relationship: One Sample (order) can have multiple SampleItems (physical specimens).
+
+**Sample Entity** (`org.openelisglobal.sample.valueholder.Sample`):
+- Represents a **laboratory order** (accession)
+- Key fields: `id`, `accessionNumber`, `collectionDate`, `status`, `fhirUuid`
+- One Sample can have multiple SampleItems (e.g., blood draw with multiple tubes)
+
+**SampleItem Entity**:
+- Represents a **physical specimen** collected from a patient
+- Each SampleItem belongs to exactly one Sample (via `SAMP_ID` foreign key)
+- Multiple SampleItems can belong to the same Sample
+- Each SampleItem can be stored independently
+
+**Relationship Pattern**:
+```
+Sample (Order)
+├── SampleItem 1 (Blood Tube 1) → Can be stored in Location A
+├── SampleItem 2 (Blood Tube 2) → Can be stored in Location B
+└── SampleItem 3 (Urine Container) → Can be stored in Location C
+```
+
+**Query Pattern**:
+```java
+// Get all SampleItems for a Sample
+List<SampleItem> items = sampleItemService.getSampleItemsBySampleId(sampleId);
+
+// Get parent Sample from SampleItem
+Sample parentSample = sampleItem.getSample();
+String accessionNumber = parentSample.getAccessionNumber();
+```
+
+**Reference**: `src/main/java/org/openelisglobal/sample/valueholder/Sample.java`, `src/main/java/org/openelisglobal/sampleitem/service/SampleItemServiceImpl.java`
+
+#### Q3: How does storage assignment integrate with SampleItem?
+
+**Decision**: Storage tracking operates at SampleItem level via `SampleStorageAssignment` junction table.
+
+**Storage Assignment Entity** (`SampleStorageAssignment`):
+- **Foreign Key**: `sample_item_id` → `SampleItem.id` (NOT `sample_id` → `Sample.id`)
+- **Polymorphic Location**: `location_id` + `location_type` (device/shelf/rack)
+- **Optional Position**: `position_coordinate` (text field for specific position)
+- **Unique Constraint**: One assignment per SampleItem (one current location)
+
+**Data Model**:
+```sql
+CREATE TABLE sample_storage_assignment (
+    id VARCHAR(36) PRIMARY KEY,
+    sample_item_id VARCHAR(36) NOT NULL REFERENCES sample_item(id),
+    location_id INTEGER NOT NULL,
+    location_type VARCHAR(20) NOT NULL CHECK (location_type IN ('device', 'shelf', 'rack')),
+    position_coordinate VARCHAR(50),
+    assigned_by_user_id INTEGER NOT NULL,
+    assigned_date TIMESTAMP NOT NULL,
+    notes TEXT,
+    UNIQUE (sample_item_id)  -- One current location per SampleItem
+);
+```
+
+**Query Patterns**:
+```java
+// Get storage location for a SampleItem
+SampleStorageAssignment assignment = assignmentDAO.getBySampleItemId(sampleItemId);
+if (assignment != null) {
+    String locationPath = buildHierarchicalPath(assignment.getLocationId(), assignment.getLocationType());
+}
+
+// Get all SampleItems stored in a location
+List<SampleStorageAssignment> assignments = assignmentDAO.getByLocation(locationId, locationType);
+List<SampleItem> items = assignments.stream()
+    .map(a -> sampleItemService.getData(a.getSampleItemId()))
+    .collect(Collectors.toList());
+
+// Get all SampleItems for a Sample (with storage locations)
+Sample sample = sampleService.getData(sampleId);
+List<SampleItem> items = sampleItemService.getSampleItemsBySampleId(sampleId);
+for (SampleItem item : items) {
+    SampleStorageAssignment assignment = assignmentDAO.getBySampleItemId(item.getId());
+    // Display item with location context
+}
+```
+
+**Reference**: `specs/001-sample-storage/data-model.md`, `specs/001-sample-storage/plan.md` (SampleItem Entity Integration section)
+
+#### Q4: How should the dashboard display SampleItem information?
+
+**Decision**: Dashboard displays SampleItem as primary entity with parent Sample context for grouping/sorting.
+
+**Display Pattern**:
+- **Primary Identifier**: SampleItem ID or External ID (if available)
+- **Secondary Context**: Parent Sample accession number (for grouping/sorting)
+- **Table Columns**: SampleItem ID, Parent Sample Accession, Type, Status, Location, Actions
+- **Sortable By**: SampleItem ID, Parent Sample Accession, Type, Status, Location
+- **Grouping**: Optional grouping by parent Sample (all SampleItems from same Sample together)
+
+**Frontend Data Structure**:
+```javascript
+{
+  sampleItemId: "12345",
+  sampleItemExternalId: "EXT-001",
+  parentSample: {
+    id: "67890",
+    accessionNumber: "S-2025-001"
+  },
+  typeOfSample: "Blood",
+  status: "Active",
+  location: {
+    hierarchicalPath: "Main Laboratory > Freezer Unit 1 > Shelf-A > Rack R1",
+    locationId: 123,
+    locationType: "rack",
+    positionCoordinate: "A5"
+  },
+  assignedBy: "John Doe",
+  assignedDate: "2025-11-15T10:30:00Z"
+}
+```
+
+**Search Support**:
+- Search by SampleItem ID
+- Search by SampleItem External ID
+- Search by parent Sample accession number (returns all SampleItems for that Sample)
+
+**Reference**: `specs/001-sample-storage/spec.md` (Storage Granularity section, FR-033b, FR-064)
+
+#### Q5: How does FHIR integration work with SampleItem storage?
+
+**Decision**: SampleItem storage location maps to FHIR Specimen resource `container` reference.
+
+**FHIR Specimen Resource Mapping**:
+- Each SampleItem has a corresponding FHIR Specimen resource (via `fhirUuid`)
+- Storage location stored in `Specimen.container.extension[storage-location]` reference
+- Container identifier contains hierarchical path for human readability
+
+**FHIR Resource Structure**:
+```json
+{
+  "resourceType": "Specimen",
+  "id": "{sampleItem.fhirUuid}",
+  "container": [{
+    "identifier": {
+      "value": "Main Laboratory > Freezer Unit 1 > Shelf-A > Rack R1 > Position A5"
+    },
+    "extension": [{
+      "url": "http://openelis.org/fhir/extension/storage-location",
+      "valueReference": {
+        "reference": "Location/{storage_location_fhir_uuid}"
+      }
+    }, {
+      "url": "http://openelis.org/fhir/extension/storage-position-coordinate",
+      "valueString": "A5"
+    }]
+  }],
+  "extension": [{
+    "url": "http://openelis.org/fhir/extension/storage-assigned-date",
+    "valueDateTime": "2025-11-15T10:30:00Z"
+  }]
+}
+```
+
+**Sync Strategy**:
+- On SampleStorageAssignment create/update: Update corresponding Specimen resource `container` extension
+- Use existing `FhirTransformService` and `FhirPersistanceService` patterns
+- Specimen resource already exists (created during sample entry), only update container extension
+
+**Reference**: `specs/001-sample-storage/plan.md` (SampleItem Entity Integration section), `specs/001-sample-storage/contracts/fhir-mappings.md`
+
+### Technical Decisions Summary
+
+| Decision | Choice | Rationale |
+|----------|--------|-----------|
+| Storage Granularity | SampleItem level (not Sample level) | Physical specimens are stored, not orders |
+| Assignment Entity | `SampleStorageAssignment.sample_item_id` → `SampleItem.id` | Direct link to physical specimen |
+| Dashboard Display | SampleItem primary, Sample context secondary | Users need to see individual specimens with order context |
+| Search Support | SampleItem ID/External ID OR Sample accession | Flexible search for both specimen and order identifiers |
+| FHIR Integration | Specimen.container extension | Standard FHIR pattern for specimen storage location |
+
+### Dependencies
+
+- **SampleItem Entity**: Existing entity, no modifications required
+- **Sample Entity**: Existing entity, no modifications required
+- **SampleStorageAssignment Entity**: Must reference `SampleItem.id` (not `Sample.id`)
+- **FHIR Specimen Resource**: Existing resource, update `container` extension on assignment
+
+### Implementation Notes
+
+1. **Backend Changes**:
+   - `SampleStorageAssignment` entity: Change foreign key from `sample_id` to `sample_item_id`
+   - Service methods: Update to accept `sampleItemId` instead of `sampleId`
+   - DAO queries: Update to join on `SampleItem` instead of `Sample`
+   - FHIR sync: Update Specimen `container` extension on assignment
+
+2. **Frontend Changes**:
+   - Dashboard: Display SampleItem ID/External ID as primary identifier
+   - Dashboard: Include parent Sample accession number for context
+   - Search: Support both SampleItem ID/External ID and Sample accession number
+   - Assignment modal: Accept SampleItem ID (not Sample ID)
+
+3. **Database Changes**:
+   - `SampleStorageAssignment` table: Change `sample_id` column to `sample_item_id`
+   - Update foreign key constraint: `sample_item_id` → `sample_item(id)`
+   - Update unique constraint: `UNIQUE (sample_item_id)` (one location per SampleItem)
+
+4. **Testing**:
+   - Unit tests: Verify SampleItem-level assignment logic
+   - Integration tests: Verify multiple SampleItems from same Sample can have different locations
+   - E2E tests: Verify dashboard displays SampleItem with parent Sample context
+
+**Reference**: 
+- Entity: `src/main/java/org/openelisglobal/sampleitem/valueholder/SampleItem.java`
+- Hibernate Mapping: `src/main/resources/hibernate/hbm/SampleItem.hbm.xml`
+- Service: `src/main/java/org/openelisglobal/sampleitem/service/SampleItemServiceImpl.java`
+- Spec: `specs/001-sample-storage/spec.md` (Storage Granularity section)
+- Plan: `specs/001-sample-storage/plan.md` (SampleItem Entity Integration section)
+
+---
 
 **Reference**: Spec FR-062a, FR-062b, FR-062c, FR-061, FR-063

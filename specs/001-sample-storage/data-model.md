@@ -14,7 +14,10 @@ StorageDevice (1) ─┼──> (N) StorageShelf
 StorageShelf (1) ──┼──> (N) StorageRack
                   │
                   │
-SampleStorageAssignment (1) ──> (1) Sample (one current location per sample)
+Sample (1) ──> (N) SampleItem (one Sample can have multiple SampleItems)
+                  │
+                  │
+SampleStorageAssignment (1) ──> (1) SampleItem (one current location per SampleItem)
   └──> Uses polymorphic location: location_id + location_type
        (references StorageDevice, StorageShelf, or StorageRack)
   └──> Optional position_coordinate (text field)
@@ -24,11 +27,15 @@ SampleStorageAssignment ──> (N) SampleStorageMovement (audit log)
   └──> Captures previous_location_id + previous_location_type + previous_position_coordinate
   └──> Captures new_location_id + new_location_type + new_position_coordinate
 
-Note: Flexible assignment model allows samples to be assigned directly to:
+Note: Flexible assignment model allows SampleItems to be assigned directly to:
 - StorageDevice (minimum 2 levels: room + device)
 - StorageShelf (3 levels: room + device + shelf)
 - StorageRack (4 levels: room + device + shelf + rack)
 - Optional position_coordinate (text field) can be used with any location_type
+
+Storage Granularity: Storage tracking operates at the SampleItem level (physical specimens),
+not at the Sample level (orders). Each SampleItem can be stored independently, even when
+multiple SampleItems belong to the same parent Sample.
 ```
 
 ---
@@ -366,11 +373,13 @@ and enforced by database constraint.
 
 ## 6. SampleStorageAssignment
 
-**Purpose**: Current storage location assignment for a sample. One-to-one
-relationship (one sample, one current location). Supports flexible assignment to
+**Purpose**: Current storage location assignment for a SampleItem (physical specimen). One-to-one
+relationship (one SampleItem, one current location). Supports flexible assignment to
 any hierarchy level (device, shelf, or rack) with optional text-based position
 coordinate. Position is represented as a text field (`position_coordinate`), not
 a separate entity reference.
+
+**Storage Granularity**: Storage tracking operates at the **SampleItem level** (physical specimens), not at the Sample level (orders). Each SampleItem can be stored independently, even when multiple SampleItems belong to the same parent Sample.
 
 **Table**: `SAMPLE_STORAGE_ASSIGNMENT`
 
@@ -379,7 +388,7 @@ a separate entity reference.
 | Field                 | Type        | Constraints             | Description                                                                  |
 | --------------------- | ----------- | ----------------------- | ---------------------------------------------------------------------------- |
 | `id`                  | VARCHAR(36) | PK, AUTO                | Primary key                                                                  |
-| `sample_id`           | VARCHAR(36) | NOT NULL, UNIQUE        | Sample reference (one current location per sample)                           |
+| `sample_item_id`      | VARCHAR(36) | NOT NULL, UNIQUE        | SampleItem reference (one current location per SampleItem)                  |
 | `location_id`         | NUMERIC(10) | NOT NULL                | Polymorphic location ID (references device, shelf, or rack)                  |
 | `location_type`       | VARCHAR(20) | NOT NULL                | Type discriminator: 'device', 'shelf', or 'rack'                             |
 | `position_coordinate` | VARCHAR(50) | NULL                    | Optional text-based position coordinate (can be used with any location_type) |
@@ -390,8 +399,8 @@ a separate entity reference.
 **Constraints**:
 
 - PRIMARY KEY (`id`)
-- UNIQUE (`sample_id`) - Enforces one current location per sample
-- FOREIGN KEY (`sample_id`) REFERENCES `sample(id)` ON DELETE CASCADE
+- UNIQUE (`sample_item_id`) - Enforces one current location per SampleItem
+- FOREIGN KEY (`sample_item_id`) REFERENCES `sample_item(id)` ON DELETE CASCADE
 - FOREIGN KEY (`assigned_by_user_id`) REFERENCES `system_user(id)`
 - CHECK (`location_type IN ('device', 'shelf', 'rack')`) - Valid location type
   enum (position is just text coordinate, not entity)
@@ -400,7 +409,7 @@ a separate entity reference.
 
 **Relationships**:
 
-- Many-to-One with `Sample` (one sample, one current assignment)
+- Many-to-One with `SampleItem` (one SampleItem, one current assignment)
 - Polymorphic relationship to `StorageDevice`, `StorageShelf`, or `StorageRack`
   via `location_id` + `location_type`
 - Many-to-One with `SystemUser` (assigned by user)
@@ -413,9 +422,9 @@ a separate entity reference.
   - Optional `position_coordinate` provides text-based position information
     (e.g., "A1", "Top shelf", "Rack 3, Position 5")
   - Create entry in `SampleStorageMovement` audit log
-- **On UPDATE (sample moved)**: Update location reference, create audit log
+- **On UPDATE (SampleItem moved)**: Update location reference, create audit log
   entry
-- **On DELETE (sample disposed)**: Create audit log entry with
+- **On DELETE (SampleItem disposed)**: Create audit log entry with
   `new_location_id = NULL`, `new_location_type = NULL`, `new_position_coordinate = NULL`
 
 **Validation Rules**:
@@ -429,10 +438,10 @@ a separate entity reference.
   `StorageShelf` (3 levels: room + device + shelf)
 - If `location_type = 'rack'`: `location_id` must reference a valid
   `StorageRack` (4 levels: room + device + shelf + rack)
-- Cannot assign sample to inactive storage location (check entire hierarchy:
+- Cannot assign SampleItem to inactive storage location (check entire hierarchy:
   room, device, shelf, rack)
-- Sample can have only one current assignment (enforced by UNIQUE constraint on
-  sample_id)
+- SampleItem can have only one current assignment (enforced by UNIQUE constraint on
+  sample_item_id)
 - `position_coordinate` is optional text (max 50 chars per FR-010), can be used
   with any `location_type` to provide specific position information
 
@@ -440,7 +449,7 @@ a separate entity reference.
 
 ## 7. SampleStorageMovement
 
-**Purpose**: Immutable audit log of sample storage movements. Records all
+**Purpose**: Immutable audit log of SampleItem storage movements. Records all
 location changes for compliance. This table serves as a complete audit trail of
 all changes to `SampleStorageAssignment`, capturing both the previous and new
 location states for each movement event.
@@ -452,7 +461,7 @@ location states for each movement event.
 | Field                        | Type        | Constraints             | Description                                                                  |
 | ---------------------------- | ----------- | ----------------------- | ---------------------------------------------------------------------------- |
 | `id`                         | VARCHAR(36) | PK, AUTO                | Primary key                                                                  |
-| `sample_id`                  | VARCHAR(36) | NOT NULL, FK            | Sample reference                                                             |
+| `sample_item_id`             | VARCHAR(36) | NOT NULL, FK            | SampleItem reference                                                         |
 | `previous_location_id`       | NUMERIC(10) | NULL                    | Previous location ID (polymorphic: device, shelf, or rack)                   |
 | `previous_location_type`    | VARCHAR(20) | NULL                    | Previous location type: 'device', 'shelf', or 'rack'                         |
 | `previous_position_coordinate` | VARCHAR(50) | NULL                    | Previous position coordinate (optional text field)                           |
@@ -466,7 +475,7 @@ location states for each movement event.
 **Constraints**:
 
 - PRIMARY KEY (`id`)
-- FOREIGN KEY (`sample_id`) REFERENCES `sample(id)` ON DELETE CASCADE
+- FOREIGN KEY (`sample_item_id`) REFERENCES `sample_item(id)` ON DELETE CASCADE
 - FOREIGN KEY (`moved_by_user_id`) REFERENCES `system_user(id)`
 - CHECK (`previous_location_id` IS NOT NULL AND `previous_location_type` IS NOT NULL) OR
   (`new_location_id` IS NOT NULL AND `new_location_type` IS NOT NULL) - At least one
@@ -476,7 +485,7 @@ location states for each movement event.
 
 **Relationships**:
 
-- Many-to-One with `Sample`
+- Many-to-One with `SampleItem`
 - Polymorphic relationship to `StorageDevice`, `StorageShelf`, or `StorageRack` via
   `previous_location_id` + `previous_location_type` (previous location)
 - Polymorphic relationship to `StorageDevice`, `StorageShelf`, or `StorageRack` via
@@ -512,7 +521,7 @@ location states for each movement event.
 **Relationship to SampleStorageAssignment**:
 
 - `SampleStorageMovement` is an **audit log** of all changes to `SampleStorageAssignment`
-- When a sample is assigned or moved:
+- When a SampleItem is assigned or moved:
   1. `SampleStorageAssignment` is created or updated with the new current location
   2. A `SampleStorageMovement` record is created capturing both the previous state (from
      the old assignment) and the new state (the updated assignment)
@@ -523,7 +532,7 @@ location states for each movement event.
 
 ## State Transitions
 
-### Sample Location Lifecycle
+### SampleItem Location Lifecycle
 
 ```
 [No Location]
@@ -540,7 +549,7 @@ location states for each movement event.
 ```
 
 Note: Each location assignment can include an optional `position_coordinate` (text field) for
-additional specificity within the assigned location (device, shelf, or rack).
+additional specificity within the assigned location (device, shelf, or rack). Storage tracking operates at the SampleItem level (physical specimens), not at the Sample level (orders).
 
 ### Location Hierarchy Active Status
 
@@ -569,12 +578,12 @@ CREATE INDEX idx_shelf_parent ON storage_shelf(parent_device_id);
 CREATE INDEX idx_rack_parent ON storage_rack(parent_shelf_id);
 CREATE INDEX idx_position_parent ON storage_position(parent_rack_id);
 
--- Sample lookups
-CREATE INDEX idx_assignment_sample ON sample_storage_assignment(sample_id);
+-- SampleItem lookups
+CREATE INDEX idx_assignment_sample_item ON sample_storage_assignment(sample_item_id);
 CREATE INDEX idx_assignment_location ON sample_storage_assignment(location_id, location_type);
 
 -- Movement audit queries
-CREATE INDEX idx_movement_sample ON sample_storage_movement(sample_id);
+CREATE INDEX idx_movement_sample_item ON sample_storage_movement(sample_item_id);
 CREATE INDEX idx_movement_date ON sample_storage_movement(movement_date DESC);
 
 -- FHIR UUID lookups
@@ -611,12 +620,12 @@ CREATE INDEX idx_position_occupied ON storage_position(parent_rack_id, occupied)
 | StorageRack             | 200                                       | <1           |
 | StoragePosition         | 10,000                                    | ~2           |
 | SampleStorageAssignment | 12,000 (6 months × 2k/month)              | ~3           |
-| SampleStorageMovement   | 15,000 (audit log, 1.25 moves/sample avg) | ~4           |
+| SampleStorageMovement   | 15,000 (audit log, 1.25 moves/SampleItem avg) | ~4           |
 | **Total**               | **37,275**                                | **~11 MB**   |
 
 **Growth Rate**: +2,000 assignments/month, +2,500 movements/month during POC
 
-**Scalability**: Design supports 100,000+ samples with <100MB storage footprint
+**Scalability**: Design supports 100,000+ SampleItems with <100MB storage footprint
 and <100ms query times (with proper indexing).
 
 ---
@@ -624,10 +633,11 @@ and <100ms query times (with proper indexing).
 ## Summary
 
 **Entities**: 7 (5 hierarchy + 2 assignment/audit)  
-**Relationships**: 6 parent-child + 3 cross-entity  
-**FHIR Resources**: 5 Location resources (Room, Device, Shelf, Rack, Position)  
+**Relationships**: 6 parent-child + 4 cross-entity (including Sample → SampleItem)  
+**FHIR Resources**: 5 Location resources (Room, Device, Shelf, Rack, Position) + Specimen.container for SampleItem storage  
+**Storage Granularity**: SampleItem level (physical specimens), not Sample level (orders)  
 **Audit Trail**: Complete (SampleStorageMovement immutable log)  
 **Flexibility**: Position coordinates free-text, duplicate positions allowed
 within racks  
-**Performance**: Indexed for common queries (parent traversal, sample lookup,
+**Performance**: Indexed for common queries (parent traversal, SampleItem lookup,
 audit queries)

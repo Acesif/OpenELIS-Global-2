@@ -48,15 +48,36 @@ validation, debouncing (500ms), visual feedback, dual barcode auto-detection,
 history), and error recovery. All barcode requirements from FR-023 through
 FR-027f must be implemented. See Phase 10 below for detailed TDD workflow.
 
-**Amendment (2025-01-15)**: Update capacity calculation logic to implement
-two-tier system (per FR-062a, FR-062b, FR-062c). Devices and Shelves support
-manual `capacity_limit` (static) or calculated capacity from children. If
+**Amendment**: Update capacity calculation logic to implement two-tier system
+(per FR-062a, FR-062b, FR-062c). Devices and Shelves support manual
+`capacity_limit` (static) or calculated capacity from children. If
 `capacity_limit` is NULL, calculate from child locations (sum if all
 children have defined capacities). If any child lacks defined capacity,
 parent capacity cannot be determined and UI displays "N/A" with tooltip. Racks
 always use calculated capacity (rows × columns). UI must visually distinguish
 between manual and calculated capacities (badge, tooltip, or icon). See
-updated capacity calculator implementation in Phase 2 below.
+updated capacity calculator implementation in Phase 9.5 below.
+
+## Implementation Phase Structure
+
+This document is an **Implementation Plan** that describes the technical approach and architecture for building the Sample Storage Management feature. The phases below correspond to implementation phases that are broken down into actionable tasks in `tasks.md`.
+
+**Phase Organization**:
+- **Phase 1**: Setup & Database Schema
+- **Phase 2**: Foundational - Core Entities & FHIR Transform
+- **Phase 3**: Position Hierarchy Structure Update (2-5 Level Support)
+- **Phase 4**: Flexible Assignment Architecture
+- **Phase 5**: User Story 1 - Basic Storage Assignment
+- **Phase 6**: User Story 2A - SampleItem Search and Retrieval
+- **Phase 7**: User Story 2B - SampleItem Movement
+- **Phase 7.5**: Modal Consolidation
+- **Phase 8**: Location CRUD Operations
+- **Phase 9**: Expandable Row Functionality
+- **Phase 9.5**: Capacity Calculation Logic
+- **Phase 10**: Barcode Workflow Implementation
+- **Phase 11**: Polish & Cross-Cutting Concerns
+- **Phase 12**: Constitution Compliance Verification
+
 
 ## Technical Context
 
@@ -105,8 +126,6 @@ searches/saves), no optimization required
 - Target >70% coverage per OpenELIS constitution
 
 ## Constitution Check
-
-_GATE: Must pass before Phase 0 research. Re-check after Phase 1 design._
 
 Verify compliance with
 [OpenELIS Global 3.0 Constitution](../../.specify/memory/constitution.md):
@@ -381,1895 +400,249 @@ Phase 3 learnings)
    - Integration into SamplePatientEntry, LogbookResults
    - Data fetching hooks
 
-### Phase 3.1: Tab-Specific Search Functionality Implementation (FR-064(a))
+## Phase 1: Setup & Database Schema
 
-### Objective
+**Objective**: Initialize storage module structure and database foundation.
 
-Implement tab-specific search functionality per FR-064 and FR-064a:
+**Technical Approach**:
+- Create storage module package structure in `src/main/java/org/openelisglobal/storage/` with subdirectories: valueholder/, dao/, service/, controller/, form/, fhir/
+- Create frontend storage component directory structure in `frontend/src/components/storage/` with subdirectories: StorageLocationSelector/, SampleStorage/, hooks/
+- Create Liquibase changesets for database schema:
+  - `001-create-storage-hierarchy-tables.xml` - Room, Device, Shelf, Rack, Position tables with fhir_uuid columns
+  - `002-create-assignment-tables.xml` - SampleStorageAssignment and SampleStorageMovement tables
+  - `003-create-indexes.xml` - Performance indexes (parent lookups, FHIR UUID, occupancy queries)
+- Add storage message keys to internationalization files (en.json, fr.json, sw.json)
 
-- **Samples tab**: Debounced live search (300-500ms) by sample ID, accession
-  number type/prefix, and assigned location (full hierarchical path)
-- **Rooms tab**: Search by name and code
-- **Devices tab**: Search by name, code, and type
-- **Shelves tab**: Search by name (label)
-- **Racks tab**: Search by name (label)
+**Dependencies**: None (foundational setup)
 
-All searches use case-insensitive partial/substring matching with OR logic
-(matches any of the specified fields).
-
-### TDD Approach
-
-Following strict test-first development:
-
-1. **Write failing tests** (Red phase)
-2. **Implement minimal code to pass** (Green phase)
-3. **Refactor while keeping tests green** (Refactor phase)
-
-### Test Specifications
-
-#### Backend Integration Tests (Write First)
-
-**File**:
-`src/test/java/org/openelisglobal/storage/controller/StorageSearchRestControllerTest.java`
-
-**Test Cases**:
-
-1. **Samples Search Tests**:
-
-   - `testSearchSamples_BySampleId_ReturnsMatching()` - Search by exact sample
-     ID
-   - `testSearchSamples_ByAccessionPrefix_ReturnsMatching()` - Search by
-     accession prefix (e.g., "S-2025" matches "S-2025-001")
-   - `testSearchSamples_ByLocationPath_ReturnsMatching()` - Search by location
-     path substring (e.g., "Freezer" matches "Main Laboratory > Freezer Unit 1 >
-     ...")
-   - `testSearchSamples_CombinedFields_OR_Logic()` - Search matches ANY of the
-     three fields (OR logic)
-   - `testSearchSamples_CaseInsensitive()` - "freezer" matches "Freezer Unit 1"
-   - `testSearchSamples_PartialMatch()` - "S-202" matches "S-2025-001"
-   - `testSearchSamples_EmptyQuery_ReturnsAll()` - Empty search returns all
-     samples
-   - `testSearchSamples_NoMatches_ReturnsEmpty()` - No matches returns empty
-     array
-
-2. **Rooms Search Tests**:
-
-   - `testSearchRooms_ByName_ReturnsMatching()` - Search by name
-     (case-insensitive partial)
-   - `testSearchRooms_ByCode_ReturnsMatching()` - Search by code
-     (case-insensitive partial)
-   - `testSearchRooms_CombinedFields_OR_Logic()` - Matches name OR code
-
-3. **Devices Search Tests**:
-
-   - `testSearchDevices_ByName_ReturnsMatching()` - Search by name
-   - `testSearchDevices_ByCode_ReturnsMatching()` - Search by code
-   - `testSearchDevices_ByType_ReturnsMatching()` - Search by type (freezer,
-     refrigerator, etc.)
-   - `testSearchDevices_CombinedFields_OR_Logic()` - Matches name OR code OR
-     type
-
-4. **Shelves Search Tests**:
-
-   - `testSearchShelves_ByLabel_ReturnsMatching()` - Search by label
-     (case-insensitive partial)
-
-5. **Racks Search Tests**:
-   - `testSearchRacks_ByLabel_ReturnsMatching()` - Search by label
-     (case-insensitive partial)
-
-**Test Data Setup**:
-
-- Use JDBC to insert test data (rooms, devices, shelves, racks, samples,
-  assignments)
-- Ensure test data covers:
-  - Multiple samples with different accession prefixes
-  - Samples in different locations (different hierarchical paths)
-  - Entities with various names/codes/types for testing partial matches
-
-**API Contract**:
-
-- `GET /rest/storage/samples/search?q={searchTerm}` - Search samples
-- `GET /rest/storage/rooms/search?q={searchTerm}` - Search rooms
-- `GET /rest/storage/devices/search?q={searchTerm}` - Search devices
-- `GET /rest/storage/shelves/search?q={searchTerm}` - Search shelves
-- `GET /rest/storage/racks/search?q={searchTerm}` - Search racks
-
-**Expected Response Format**:
-
-- All endpoints return `List<Map<String, Object>>` matching existing API format
-- Samples: Include sample ID, type, status, location (full path), assigned by,
-  date
-- Rooms: Include id, name, code, description, active
-- Devices: Include id, name, code, type, roomId, roomName, active
-- Shelves: Include id, label, deviceId, deviceName, roomId, roomName, active
-- Racks: Include id, label, shelfId, shelfLabel, deviceId, deviceName, roomId,
-  roomName, active
-
-#### Backend Service Unit Tests (Write First)
-
-**File**:
-`src/test/java/org/openelisglobal/storage/service/StorageSearchServiceImplTest.java`
-
-**Test Cases**:
-
-1. **Sample Search Service Tests**:
-
-   - `testSearchSamples_FiltersBySampleId()` - Filter samples by ID substring
-   - `testSearchSamples_FiltersByAccessionPrefix()` - Filter by accession prefix
-   - `testSearchSamples_FiltersByLocationPath()` - Filter by location path
-     substring
-   - `testSearchSamples_OR_Logic()` - Matches if ANY field matches
-   - `testSearchSamples_CaseInsensitive()` - Case-insensitive matching
-   - `testSearchSamples_EmptyQuery_ReturnsAll()` - Empty query returns all
-   - `testSearchSamples_NullQuery_ReturnsAll()` - Null query returns all
-
-2. **Room Search Service Tests**:
-
-   - `testSearchRooms_FiltersByNameOrCode()` - Matches name OR code
-
-3. **Device Search Service Tests**:
-
-   - `testSearchDevices_FiltersByNameCodeOrType()` - Matches name OR code OR
-     type
-
-4. **Shelf Search Service Tests**:
-
-   - `testSearchShelves_FiltersByLabel()` - Matches label
-
-5. **Rack Search Service Tests**:
-   - `testSearchRacks_FiltersByLabel()` - Matches label
-
-**Mock Strategy**:
-
-- Mock DAO calls to return test data
-- Verify service calls DAO methods with correct filters
-- Test search logic in isolation
-
-#### Frontend Unit Tests (Write First)
-
-**File**:
-`frontend/src/components/storage/__tests__/StorageDashboardSearch.test.jsx`
-
-**Test Cases**:
-
-1. **Search Input Component Tests**:
-
-   - `testSearchInput_RendersCorrectly()` - Renders search input with
-     placeholder
-   - `testSearchInput_UpdatesOnChange()` - Updates state on input change
-   - `testSearchInput_DebouncedForSamples()` - Debounces input for samples tab
-     (300-500ms)
-   - `testSearchInput_ImmediateForOtherTabs()` - Immediate or submit-button for
-     other tabs
-
-2. **Search Results Tests**:
-
-   - `testSearchResults_FiltersSamples()` - Filters samples by search term
-   - `testSearchResults_FiltersRooms()` - Filters rooms by search term
-   - `testSearchResults_FiltersDevices()` - Filters devices by search term
-   - `testSearchResults_FiltersShelves()` - Filters shelves by search term
-   - `testSearchResults_FiltersRacks()` - Filters racks by search term
-   - `testSearchResults_CaseInsensitive()` - Case-insensitive matching
-   - `testSearchResults_PartialMatch()` - Partial substring matching
-   - `testSearchResults_EmptySearch_ShowsAll()` - Empty search shows all items
-
-3. **Tab-Specific Search Tests**:
-   - `testSamplesTab_SearchesByIdLocationPrefix()` - Samples tab searches by ID,
-     accession prefix, location
-   - `testRoomsTab_SearchesByNameCode()` - Rooms tab searches by name and code
-   - `testDevicesTab_SearchesByNameCodeType()` - Devices tab searches by name,
-     code, type
-   - `testShelvesTab_SearchesByLabel()` - Shelves tab searches by label
-   - `testRacksTab_SearchesByLabel()` - Racks tab searches by label
-
-**Mock Strategy**:
-
-- Mock API calls (`getFromOpenElisServer`)
-- Use React Testing Library for component rendering
-- Test user interactions (typing, debouncing)
-
-#### Frontend E2E Tests (Write First)
-
-**File**: `frontend/cypress/e2e/storageSearch.cy.js` (update existing)
-
-**Test Cases**:
-
-1. **Samples Tab Search E2E**:
-
-   - `testSamplesSearch_BySampleId()` - Search by sample ID, verify results
-   - `testSamplesSearch_ByAccessionPrefix()` - Search by accession prefix,
-     verify results
-   - `testSamplesSearch_ByLocationPath()` - Search by location path, verify
-     results
-   - `testSamplesSearch_Debounced()` - Verify debounced search (300-500ms delay)
-   - `testSamplesSearch_CaseInsensitive()` - Verify case-insensitive matching
-   - `testSamplesSearch_PartialMatch()` - Verify partial substring matching
-
-2. **Rooms Tab Search E2E**:
-
-   - `testRoomsSearch_ByName()` - Search rooms by name
-   - `testRoomsSearch_ByCode()` - Search rooms by code
-
-3. **Devices Tab Search E2E**:
-
-   - `testDevicesSearch_ByName()` - Search devices by name
-   - `testDevicesSearch_ByCode()` - Search devices by code
-   - `testDevicesSearch_ByType()` - Search devices by type
-
-4. **Shelves Tab Search E2E**:
-
-   - `testShelvesSearch_ByLabel()` - Search shelves by label
-
-5. **Racks Tab Search E2E**:
-   - `testRacksSearch_ByLabel()` - Search racks by label
-
-**Test Strategy**:
-
-- Load test fixtures with known data
-- Intercept API calls to verify search parameters
-- Verify UI updates with filtered results
-- Verify search persists across tab switches
-
-### Implementation Tasks (After Tests Pass)
-
-#### Backend Implementation
-
-1. **Create Search Service Interface** (`StorageSearchService.java`):
-
-   ```java
-   List<Map<String, Object>> searchSamples(String query);
-   List<StorageRoom> searchRooms(String query);
-   List<StorageDevice> searchDevices(String query);
-   List<StorageShelf> searchShelves(String query);
-   List<StorageRack> searchRacks(String query);
-   ```
-
-2. **Implement Search Service** (`StorageSearchServiceImpl.java`):
-
-   - Sample search: Query by sample ID, accession prefix, location path (OR
-     logic)
-   - Room search: Query by name OR code (case-insensitive LIKE)
-   - Device search: Query by name OR code OR type (case-insensitive LIKE)
-   - Shelf search: Query by label (case-insensitive LIKE)
-   - Rack search: Query by label (case-insensitive LIKE)
-   - All searches use case-insensitive substring matching
-
-3. **Update REST Controllers**:
-
-   - Add `GET /rest/storage/samples/search?q={term}` endpoint
-   - Add `GET /rest/storage/rooms/search?q={term}` endpoint
-   - Add `GET /rest/storage/devices/search?q={term}` endpoint
-   - Add `GET /rest/storage/shelves/search?q={term}` endpoint
-   - Add `GET /rest/storage/racks/search?q={term}` endpoint
-   - All endpoints return JSON arrays matching existing API format
-
-4. **Query Optimization**:
-   - Use database indexes on searchable columns (name, code, type, label)
-   - For samples location search: Use full-text search on hierarchical path or
-     JOIN through hierarchy
-   - Consider PostgreSQL `ILIKE` for case-insensitive matching
-
-#### Frontend Implementation
-
-1. **Update Search Component** (`StorageDashboard.jsx`):
-
-   - Add search input field (already exists, update logic)
-   - Implement debounced search for samples tab (300-500ms delay)
-   - Implement search logic for each tab:
-     - Samples: Search by ID, accession prefix, location path
-     - Rooms: Search by name and code
-     - Devices: Search by name, code, and type
-     - Shelves: Search by label
-     - Racks: Search by label
-   - Use case-insensitive partial matching
-   - Combine search with existing filters (AND logic)
-
-2. **API Integration**:
-
-   - Call search endpoints when search term is entered
-   - For samples: Use debounced API calls (300-500ms delay)
-   - For other tabs: Use debounced or submit-button search
-   - Update table data with filtered results
-
-3. **Search State Management**:
-   - Store search term in component state
-   - Clear search when switching tabs
-   - Persist search term within tab (optional enhancement)
-
-### Testing Checklist
-
-- [ ] All backend integration tests pass
-- [ ] All backend service unit tests pass
-- [ ] All frontend unit tests pass
-- [ ] All E2E tests pass
-- [ ] Search works correctly for samples (ID, accession prefix, location)
-- [ ] Search works correctly for rooms (name, code)
-- [ ] Search works correctly for devices (name, code, type)
-- [ ] Search works correctly for shelves (label)
-- [ ] Search works correctly for racks (label)
-- [ ] Case-insensitive matching verified
-- [ ] Partial/substring matching verified
-- [ ] Debounced search (300-500ms) verified for samples tab
-- [ ] Empty search shows all items
-- [ ] Search combines correctly with filters (AND logic)
-- [ ] Performance acceptable (<2 seconds for 100,000+ records)
-
-### Dependencies
-
-- Existing filter functionality (FR-065) - search must work alongside filters
-- Existing API endpoints for fetching data
-- Existing table rendering components
-
-### Success Criteria
-
-- All tests pass (integration, unit, E2E)
-- Search functionality works for all 5 tabs per FR-064
-- Debounced search implemented for samples tab (300-500ms)
-- Case-insensitive partial matching working
-- Search combines with filters (AND logic)
-- Performance meets requirements (<2 seconds)
+**Implementation Status**: [COMPLETE] - All setup tasks completed. See `tasks.md` Phase 1 for details.
 
 ---
 
-**Phase 4: Dashboard Storage Locations Metric Card & E2E Tests**
+## Phase 2: Foundational - Core Entities & FHIR Transform
 
-### Dashboard Storage Locations Metric Card Implementation
+**Objective**: Create storage entities and FHIR mapping infrastructure required by ALL user stories.
 
-**Objective**: Implement color-coded Storage Locations metric card with
-breakdown by type and matching tab accents per FR-057 and FR-057a.
+**Technical Approach**:
+- Create Hibernate mappings for all 7 entities (Room, Device, Shelf, Rack, Position, SampleStorageAssignment, SampleStorageMovement)
+- Create JPA entity classes extending BaseObject with fhir_uuid columns
+- Implement StorageLocationFhirTransform service for FHIR Location resource mapping
+- Add @PostPersist and @PostUpdate hooks to all storage entities for immediate FHIR sync
+- Create ORM validation test to verify all mappings load correctly
 
-**Requirements**:
+**Architecture Decisions**:
+- Use JPA annotations directly (NOT XML mappings) per Constitution IV.1
+- All entities include fhir_uuid UUID column for FHIR resource mapping
+- FHIR sync happens automatically via entity lifecycle hooks
 
-- Display formatted text list: "X rooms, Y devices, Z shelves, W racks" (active
-  locations only)
-- Color-code text using Carbon Design System tokens:
-  - Rooms: `blue-70` (blue-70)
-  - Devices: `teal-70` (teal-70)
-  - Shelves: `purple-70` (purple-70)
-  - Racks: `orange-70` (orange-70)
-- Apply matching subtle accent colors to corresponding tab labels/backgrounds:
-  - Rooms tab: subtle blue accent matching "X rooms" text color
-  - Devices tab: subtle teal accent matching "Y devices" text color
-  - Shelves tab: subtle purple accent matching "Z shelves" text color
-  - Racks tab: subtle orange accent matching "W racks" text color
-- Tab coloring must be very subtle (light background tint or border accent, not
-  overpowering)
+**Dependencies**: Phase 1 (Setup) must complete first
 
-**Implementation Tasks**:
-
-1. Update `StorageDashboard.jsx` to calculate active location counts by type
-   (Room, Device, Shelf, Rack)
-2. Create `StorageLocationsMetricCard.jsx` component displaying formatted
-   breakdown with color-coded text
-3. Apply Carbon color tokens to metric card text using Carbon `Text` component
-   or inline styles
-4. Update tab styling to include subtle accent colors matching metric card
-   colors
-5. Ensure colorblind accessibility (Carbon tokens are WCAG compliant)
-
-**Testing**:
-
-- Verify metric card displays correct counts for active locations only
-- Verify color-coding matches Carbon Design System tokens
-- Verify tab accent colors are subtle and match metric card colors
-- Verify colorblind accessibility (test with colorblind simulation tools)
-
-### E2E Tests - Validate complete workflows
-
-1. **Cypress E2E Tests** - Test user scenarios end-to-end
-   - Test: `storageAssignment.cy.js` (P1 user story)
-   - Test: `storageSearch.cy.js` (P2A user story)
-   - Test: `storageMovement.cy.js` (P2B user story)
-   - Test: `storageDashboardFilter.cy.js` (Dashboard Samples tab filtering)
-     - Test single location dropdown with autocomplete search
-     - Test hierarchical browsing (tree view expand/collapse)
-     - Test filtering by Room, Device, Shelf, and Rack levels
-     - Verify downward inclusive filtering (selecting device shows all samples
-       in child shelves/racks/positions)
-     - Test inactive location display (visual distinction)
-     - Test combination of location filter and status filter
-     - Verify Position-level locations excluded from dropdown (only
-       Room/Device/Shelf/Rack)
-   - Test: `storageDashboardMetrics.cy.js` (Storage Locations metric card)
-     - Verify metric card displays formatted breakdown: "X rooms, Y devices, Z
-       shelves, W racks"
-     - Verify color-coding matches specification (blue-70, teal-70, purple-70,
-       orange-70)
-     - Verify only active locations included in counts
-     - Verify tab accent colors match metric card colors and are subtle
-     - Verify colorblind accessibility
-
-### Test-First Principles
-
-**MANDATORY RULES**:
-
-- ❌ **DO NOT** write implementation code before tests exist
-- ❌ **DO NOT** skip test creation "to move faster"
-- ✅ **DO** write failing tests first (Red phase)
-- ✅ **DO** write minimal implementation to pass tests (Green phase)
-- ✅ **DO** refactor after tests pass (Refactor phase)
-
-**Benefits for POC**:
-
-- Clear acceptance criteria (tests define "done")
-- Prevents scope creep (only implement what tests require)
-- Regression protection (catch breaks immediately)
-- Living documentation (tests show how code should be used)
-
-**Verification Gates**:
-
-- After FHIR tests: All FHIR resources validate against R4 spec
-- After integration tests: All API endpoints return correct responses per
-  OpenAPI spec
-- After unit tests: All business logic validated (assignment rules, capacity
-  warnings, audit trails)
-- After frontend tests: All UI components render correctly and handle user
-  interactions
-- After E2E tests: All user scenarios (P1, P2A, P2B) work end-to-end
-
-## Complexity Tracking
-
-No complexity violations - plan fully compliant with OpenELIS Global 3.0
-Constitution.
+**Implementation Status**: [COMPLETE] - All foundational entities and FHIR transform service implemented. See `tasks.md` Phase 2 for details.
 
 ---
 
-## Phase 0: Outline & Research
+## Phase 3: Position Hierarchy Structure Update (2-5 Level Support)
 
-**Objective**: Validate technology choices, resolve unknowns, document best
-practices for OpenELIS patterns.
+**Objective**: Update StoragePosition entity structure to support flexible hierarchy (2-5 levels). Positions can have parent_device_id (required), parent_shelf_id (optional), parent_rack_id (optional), coordinate (optional). Minimum requirement is device level (room + device); cannot be just a room.
 
-### Research Tasks
+**Technical Approach**:
+- Update STORAGE_POSITION table via Liquibase changeset:
+  - Add parent_device_id column (VARCHAR(36), NOT NULL, FK to storage_device)
+  - Add parent_shelf_id column (VARCHAR(36), NULL, FK to storage_shelf)
+  - Change parent_rack_id from NOT NULL to NULL (optional)
+  - Make coordinate column NULL (optional, only for 5-level positions)
+  - Add CHECK constraints for hierarchy integrity
+- Update StoragePosition entity with new relationships
+- Update buildHierarchicalPath() method to handle optional parents
+- Update validateLocationActive() to traverse flexible hierarchy
+- Update FHIR transform to support all hierarchy levels
 
-No NEEDS CLARIFICATION items in Technical Context - all technologies specified
-per constitution. Research focuses on validating existing OpenELIS patterns and
-best practices.
+**Architecture Decisions**:
+- Minimum 2 levels (room + device) required per FR-033a
+- Maximum 5 levels (room + device + shelf + rack + position coordinate)
+- Hierarchy integrity enforced via CHECK constraints
 
-**Research Questions**:
+**Dependencies**: Phase 2 (Foundational) must complete first. This phase must complete before Phase 7 (US2B - Movement) as movement logic requires position hierarchy validation.
 
-1. **Hibernate XML Mapping Pattern**: How are existing OpenELIS entities mapped
-   using Hibernate XML? (Examine existing .hbm.xml files for reference patterns)
-
-2. **FHIR Location Resource Structure**: What is the correct FHIR R4 Location
-   resource structure for hierarchical storage? (Validate against IHE mCSD
-   profile requirements)
-
-3. **Carbon Dropdown Cascading**: What is the best practice for implementing
-   cascading dropdowns in Carbon Design System? (Check @carbon/react Dropdown
-   component API)
-
-4. **Barcode Scanner Integration**: How do USB HID barcode scanners emit
-   keyboard input in browser context? (Research browser keyboard event handling
-   for scan gun input)
-
-5. **SWR Data Fetching Pattern**: How does existing OpenELIS frontend use SWR
-   for API calls? (Examine existing hooks in `frontend/src/hooks/`)
-
-6. **Cypress E2E Setup**: What is the OpenELIS Cypress configuration and test
-   structure? (Examine existing cypress.config.js and test files in
-   cypress/e2e/)
-
-### Research Output Structure
-
-Create `research.md` with sections:
-
-```markdown
-# Research: Sample Storage Management
-
-## 1. Hibernate XML Mapping Pattern
-
-- **Pattern**: [Describe existing OpenELIS pattern from .hbm.xml files]
-- **Example**: [Reference to existing entity mapping]
-- **Application**: [How to apply to StorageRoom, StorageDevice, etc.]
-
-## 2. FHIR Location Resource Structure
-
-- **R4 Specification**: [Link to HL7 FHIR R4 Location resource]
-- **IHE mCSD Profile**: [Hierarchical location requirements]
-- **Mapping Strategy**: [Room → Location, Device → Location.partOf, etc.]
-
-## 3. Carbon Dropdown Cascading
-
-- **Component**: [@carbon/react Dropdown API reference]
-- **Pattern**: [Controlled component with onChange handlers]
-- **Data Flow**: [Parent state management for cascading selection]
-
-## 4. Barcode Scanner Browser Integration
-
-- **Event Type**: [Keyboard events with rapid character input]
-- **Detection**: [Timing-based detection (characters within ~50ms = scan)]
-- **Implementation**: [useEffect hook with keydown listener]
-
-## 5. SWR Data Fetching Pattern
-
-- **Existing Pattern**: [Reference to OpenELIS hooks using SWR]
-- **Caching Strategy**: [SWR cache key structure]
-- **Mutation Pattern**: [useSWRMutation for POST/PUT/DELETE]
-
-## 6. Cypress E2E Configuration
-
-- **Status**: Existing Cypress 12.17.3 framework in OpenELIS
-- **Configuration**: See enhanced configuration section below (per Constitution V.5)
-- **Test Structure**: Page object pattern from existing tests
-- **Best Practices**: See Test Refactoring Patterns section below
-```
-
-**Deliverable**: `specs/001-sample-storage/research.md` with all 6 questions
-answered
+**Implementation Status**: [COMPLETE] - Position hierarchy structure updated to support 2-5 levels. See `tasks.md` Phase 3 for details.
 
 ---
 
-## Phase 1: Design & Contracts (Test Specifications)
-
-**Prerequisites**: research.md complete
-
-**Objective**: Create design artifacts that serve as **test specifications**.
-These documents define WHAT to test BEFORE writing any code.
-
-### Task 1.1: Generate Data Model (Test Specification)
-
-Create `data-model.md` documenting entity schemas, relationships, and validation
-rules. This document serves as the specification for:
-
-- **FHIR validation tests**: Verify entity → FHIR Location transformation
-  correctness
-- **Integration tests**: Verify database persistence matches schema
-- **Unit tests**: Verify validation rules enforced
-
-**Content**:
-
-**Entities** (extract from spec.md Key Entities section):
-
-1. **StorageRoom**
-
-   - Fields: id (VARCHAR(36)), fhir_uuid (UUID), name (VARCHAR(255)), code
-     (VARCHAR(50)), description (TEXT), active (BOOLEAN), sys_user_id (INT),
-     lastupdated (TIMESTAMP)
-   - Constraints: Unique (code), NOT NULL (name, code, active)
-   - Relationships: One-to-Many with StorageDevice
-
-2. **StorageDevice**
-
-   - Fields: id, fhir_uuid, name, code, type (ENUM:
-     freezer/refrigerator/cabinet/other), temperature_setting (DECIMAL),
-     capacity_limit (INT), active, parent_room_id (FK), sys_user_id, lastupdated
-   - Constraints: Unique (code within parent_room_id), NOT NULL (name, code,
-     type, parent_room_id)
-   - Relationships: Many-to-One with StorageRoom, One-to-Many with StorageShelf
-
-3. **StorageShelf**
-
-   - Fields: id, fhir_uuid, label, capacity_limit (INT), active,
-     parent_device_id (FK), sys_user_id, lastupdated
-   - Constraints: Unique (label within parent_device_id), NOT NULL (label,
-     parent_device_id)
-   - Relationships: Many-to-One with StorageDevice, One-to-Many with StorageRack
-
-4. **StorageRack**
-
-   - Fields: id, fhir_uuid, label, rows (INT), columns (INT),
-     position_schema_hint (VARCHAR(50)), active, parent_shelf_id (FK),
-     sys_user_id, lastupdated
-   - Constraints: Unique (label within parent_shelf_id), NOT NULL (label,
-     parent_shelf_id), CHECK (rows >= 0 AND columns >= 0)
-   - Relationships: Many-to-One with StorageShelf, One-to-Many with
-     StoragePosition
-   - Calculated: capacity = rows \* columns (or 0 if no grid)
-
-5. **StoragePosition**
-
-   - Fields: id, fhir_uuid (UUID), coordinate (VARCHAR(50), optional), row_index
-     (INT, optional), column_index (INT, optional), occupied (BOOLEAN DEFAULT
-     false), parent_device_id (FK, required), parent_shelf_id (FK, optional),
-     parent_rack_id (FK, optional), sys_user_id, lastupdated
-   - Constraints: NOT NULL (parent_device_id), UNIQUE (fhir_uuid), coordinate
-     optional (only for 5-level positions), CHECK (if parent_rack_id NOT NULL
-     then parent_shelf_id NOT NULL), CHECK (if coordinate NOT NULL then
-     parent_rack_id NOT NULL), coordinate allows duplicates within same rack
-     (flexible storage)
-   - Relationships: Many-to-One with StorageDevice (required), Many-to-One with
-     StorageShelf (optional), Many-to-One with StorageRack (optional),
-     One-to-One with SampleStorageAssignment (current)
-   - Note: Position represents the lowest level in hierarchy for a sample
-     assignment. Can be at device level (2 levels), shelf level (3 levels), rack
-     level (4 levels), or position level (5 levels). Minimum requirement is
-     device level (room + device); cannot be just a room. Maps to FHIR Location
-     resource with occupancy extension.
-
-6. **SampleStorageAssignment**
-
-   - Fields: id, sample_id (FK to Sample), location_id (numeric, NOT NULL),
-     location_type (VARCHAR(20), NOT NULL), position_coordinate (VARCHAR(50),
-     nullable), assigned_by_user_id (FK to SystemUser), assigned_date
-     (TIMESTAMP), notes (TEXT)
-   - Constraints: NOT NULL (sample_id, location_id, location_type,
-     assigned_by_user_id), Unique (sample_id) - one current location per sample
-   - CHECK constraint: `location_type` must be one of: 'device', 'shelf', 'rack'
-     (position is just text coordinate, not entity)
-   - Relationships: Many-to-One with Sample, Polymorphic relationship to
-     StorageDevice/StorageShelf/StorageRack via location_id + location_type,
-     Many-to-One with SystemUser
-   - Note: Represents CURRENT location. Supports flexible assignment to any
-     hierarchy level (device/shelf/rack) via simplified polymorphic
-     relationship. Position is represented as optional text field
-     (`position_coordinate`), not a separate entity reference. Historical moves
-     tracked in SampleStorageMovement.
-
-7. **SampleStorageMovement**
-   - Fields: id, sample_id (FK), previous_position_id (FK), new_position_id
-     (FK), moved_by_user_id (FK), movement_date (TIMESTAMP), reason (TEXT)
-   - Constraints: NOT NULL (sample_id, moved_by_user_id, movement_date),
-     previous_position_id OR new_position_id can be NULL (initial assignment or
-     removal)
-   - Relationships: Many-to-One with Sample, Many-to-One with StoragePosition
-     (previous), Many-to-One with StoragePosition (new), Many-to-One with
-     SystemUser
-   - Note: Immutable audit log. Insertion only, no updates/deletes.
-
-**Validation Rules** (from spec.md Functional Requirements):
-
-- Require minimum 2 levels for valid location: Room and Device MUST be selected
-  (FR-033a). Shelf, Rack, and Position are optional. Position can be at device
-  level (2 levels), shelf level (3 levels), rack level (4 levels), or position
-  level (5 levels). Minimum requirement is device level (room + device); cannot
-  be just a room.
-- Prevent assignment to inactive location (FR-035)
-- Prevent double-occupancy unless rack allows duplicates (FR-034)
-- Capacity warnings at 80%, 90%, 100% (FR-036) - no hard block
-- Position coordinate free text, max 50 chars (FR-010)
-- Hierarchical barcode uniqueness (FR-004)
-
-**State Transitions**:
-
-- Sample: No location → Assigned → Moved (multiple times) → [Disposed - deferred
-  to P3]
-- Position: Empty (occupied=false) → Occupied (occupied=true) → Empty (on sample
-  move/disposal)
-- Location hierarchy: Active → Inactive (deactivation requires no active samples
-  or warning)
-
-### Task 1.2: Generate API Contracts (Test Specification)
-
-Create `/contracts/storage-api.json` (OpenAPI 3.0) specification. This document
-serves as the contract for:
-
-- **Backend integration tests**: Verify REST endpoints match request/response
-  schemas
-- **Frontend component tests**: Mock API responses match contract
-- **E2E tests**: Verify complete request/response flow
-
-**Endpoints**:
-
-**Storage Hierarchy Management**:
-
-- `GET /rest/storage/rooms` - List all rooms (with optional filters)
-- `POST /rest/storage/rooms` - Create room
-- `GET /rest/storage/rooms/{id}` - Get room details
-- `PUT /rest/storage/rooms/{id}` - Update room
-- `DELETE /rest/storage/rooms/{id}` - Delete room (if no children)
-- `GET /rest/storage/devices` - List devices (filterable by room)
-- `POST /rest/storage/devices` - Create device
-- [... similar CRUD for shelves, racks, positions]
-
-**Sample Storage Assignment**:
-
-- `POST /rest/storage/samples/assign` - Assign sample to location
-  - Request:
-    `{ sample_id, location_id, location_type, position_coordinate?, notes }`
-  - Response: `{ assignment_id, hierarchical_path, assigned_date }`
-  - Validation:
-    - `location_id` and `location_type` are required (NOT NULL)
-    - `location_type` must be one of: 'device', 'shelf', 'rack' (position is
-      just text coordinate, not entity)
-    - If `location_type = 'device'`: Minimum 2 levels (room + device per
-      FR-033a)
-    - If `location_type = 'shelf'`: 3 levels (room + device + shelf)
-    - If `location_type = 'rack'`: 4 levels (room + device + shelf + rack)
-    - Location must be active (check entire hierarchy: room, device, shelf,
-      rack)
-    - `position_coordinate` is optional text (max 50 chars) for any
-      location_type to provide specific position information
-
-**Sample Search**:
-
-- `GET /rest/storage/samples/search?sample_id={id}` - Search by sample ID
-  - Response:
-    `{ sample_id, type, status, location: { room, device, shelf, rack, position, hierarchical_path }, assigned_by, assigned_date }`
-- `GET /rest/storage/samples?location_id={id}&location_type={room|device|shelf|rack}&status={active}` -
-  Filter samples by location (single location dropdown) and status
-  - `location_id`: ID of selected location (Room, Device, Shelf, or Rack)
-  - `location_type`: Hierarchy level of selected location (determines downward
-    inclusive filtering)
-  - Filter behavior: Returns all samples within selected location's hierarchy
-    (downward inclusive)
-  - Example:
-    `GET /rest/storage/samples?location_id=123&location_type=device&status=active`
-    returns all samples in device 123 and all its child shelves/racks/positions
-
-**Sample Movement**:
-
-- `POST /rest/storage/samples/move` - Move sample to new location
-  - Request:
-    `{ sample_id, location_id, location_type, position_coordinate?, reason }`
-  - Response: `{ movement_id, previous_location, new_location, moved_date }`
-  - Validation:
-    - `location_id` and `location_type` are required (NOT NULL)
-    - `location_type` must be one of: 'device', 'shelf', 'rack' (position is
-      just text coordinate, not entity)
-    - If `location_type = 'device'`: Minimum 2 levels (room + device per
-      FR-033a)
-    - If `location_type = 'shelf'`: 3 levels (room + device + shelf)
-    - If `location_type = 'rack'`: 4 levels (room + device + shelf + rack)
-    - Location must be active (check entire hierarchy: room, device, shelf,
-      rack)
-    - `position_coordinate` is optional text (max 50 chars) for any
-      location_type to provide specific position information
-- `POST /rest/storage/samples/bulk-move` - Bulk move samples
-  - Request:
-    `{ sample_ids: [], target_rack_id, position_assignments: [{sample_id, position_coordinate}] }`
-  - Response: `{ movement_ids: [], summary: { total, successful, failed } }`
-
-**Sample Disposal**:
-
-- `POST /rest/storage/samples/dispose` - Dispose sample
-  - Request: `{ sample_id, reason, method, notes, date_time }`
-  - Response: `{ disposal_id, sample_id, disposed_date, location_at_disposal }`
-  - Validation: Requires authorization (role-based permission check), reason and
-    method required
-  - Note: Disposal workflow deferred to post-POC (P3), but endpoint structure
-    defined
-
-**Location Quick-Find Search**:
-
-- `GET /rest/storage/locations/search?q={term}` - Search locations at any
-  hierarchy level
-  - Query parameter: `q` - search term (location name or code)
-  - Response: `[{ id, name, code, type, hierarchical_path, level }]` - Array of
-    matching locations with full hierarchical paths
-  - Behavior: Case-insensitive partial matching across Room, Device, Shelf, and
-    Rack levels
-  - Example: `GET /rest/storage/locations/search?q=freezer` returns devices
-    matching "freezer" with full paths like "Main Laboratory > Freezer Unit 1"
-
-**Barcode Generation**: ✅ Implemented in Phase 10 (barcode validation, label management, printing)
-
-### Task 1.3: Generate FHIR Mappings (Test Specification)
-
-Create `/contracts/fhir-mappings.md` documenting FHIR resource structure. This
-document serves as the specification for:
-
-- **FHIR validation tests**: Verify transform service outputs match FHIR R4
-  Location spec
-- **IHE mCSD compliance tests**: Verify hierarchical queries work correctly
-- **Integration tests**: Verify FHIR sync occurs after entity persistence
-
-**Content**:
-
-**FHIR R4 Location Resource Mapping**:
-
-```markdown
-# FHIR Location Mappings for Storage Entities
-
-## Room → FHIR Location
-
-- `Location.id` = StorageRoom.fhir_uuid
-- `Location.name` = StorageRoom.name
-- `Location.identifier.value` = StorageRoom.code
-- `Location.status` = StorageRoom.active ? "active" : "inactive"
-- `Location.description` = StorageRoom.description
-- `Location.mode` = "instance"
-- `Location.physicalType.coding.code` = "ro" (room)
-
-## Device → FHIR Location
-
-- `Location.id` = StorageDevice.fhir_uuid
-- `Location.name` = StorageDevice.name
-- `Location.identifier.value` = "ROOM_CODE-DEVICE_CODE" (hierarchical)
-- `Location.status` = active/inactive
-- `Location.mode` = "instance"
-- `Location.physicalType.coding.code` = "ve" (vehicle/equipment)
-- `Location.type.coding.code` = StorageDevice.type (freezer/fridge/cabinet)
-- `Location.partOf.reference` = "Location/{parent_room_fhir_uuid}"
-
-## Shelf → FHIR Location
-
-- Similar to Device
-- `Location.partOf.reference` = "Location/{parent_device_fhir_uuid}"
-- `Location.physicalType.coding.code` = "co" (container)
-
-## Rack → FHIR Location
-
-- Similar to Shelf
-- `Location.partOf.reference` = "Location/{parent_shelf_fhir_uuid}"
-- Custom extension for rows/columns: `extension[grid-dimensions]`
-
-## Position → FHIR Location (with Extensions)
-
-- Maps to FHIR R4 `Location` resource (child of parent location)
-- `Location.id` = StoragePosition.fhir_uuid
-- `Location.identifier.value` = hierarchical code based on position level:
-  - Device level: "{room_code}-{device_code}"
-  - Shelf level: "{room_code}-{device_code}-{shelf_label}"
-  - Rack level: "{room_code}-{device_code}-{shelf_label}-{rack_label}"
-  - Position level:
-    "{room_code}-{device_code}-{shelf_label}-{rack_label}-{coordinate}"
-- `Location.name` = coordinate (if position level) or device/shelf/rack label
-  (if lower level)
-- `Location.partOf.reference` = "Location/{parent_fhir_uuid}" (parent device,
-  shelf, or rack depending on position level)
-- `Location.extension[position-occupancy].valueBoolean` = occupied status
-- `Location.extension[position-grid-row].valueInteger` = row index (optional)
-- `Location.extension[position-grid-column].valueInteger` = column index
-  (optional)
-
-## Sample-to-Location Link
-
-- `Specimen.container.identifier.value` = full hierarchical path
-- `Specimen.container.extension[storage-position-location].valueReference` =
-  "Location/{position_fhir_uuid}"
-- `Specimen.extension[storage-assigned-date].valueDateTime` = assignment
-  timestamp
-```
-
-**IHE mCSD Compliance**:
-
-- All Location resources queryable via `GET /fhir/Location?partOf={parent_id}`
-- Hierarchical queries supported: `GET /fhir/Location?_include=Location:partOf`
-- Position availability queries:
-  `GET /fhir/Location?partOf={rack_fhir_uuid}&extension=position-occupancy|false`
-
-**FHIR Sync Strategy**:
-
-- All entities (Room, Device, Shelf, Rack, Position): Sync immediately on entity
-  create/update via @PostPersist/@PostUpdate hooks
-- Uses existing OpenELIS FHIR sync pattern (FhirTransformService +
-  FhirPersistanceService)
-- Specimen: Update container extension on sample assignment/movement
-
-**Inline Location Creation**:
-
-- Uses same REST endpoints (POST /storage/rooms, POST /storage/devices, etc.)
-- Frontend manages state to immediately show newly created location in selector
-  dropdown
-- No special "inline" endpoints needed - standard CRUD operations
-
-**SamplePatientEntry Integration** (Orders Workflow):
-
-- **Integration Point**: Below "Collector" field in sample collection section
-- **Widget Placement**: After collector dropdown, before sample collection time
-- **Behavior**: Optional assignment (can be left blank and assigned later)
-- **Widget Structure**: Compact inline view showing selected location path (or
-  "Not assigned") with "Expand" button
-- **Expanded Modal**: Opens full location assignment modal matching View Storage
-  modal structure (sample info, current location, full assignment form)
-- **Component**: Embeds
-  `<StorageLocationSelector workflow="orders" optional={true} />`
-
-**LogbookResults Integration** (Results Workflow):
-
-- **Integration Point**: Below existing referral/test result fields in expanded
-  sample details
-- **Widget Structure**: Compact inline view with quick-find search input
-  (type-ahead autocomplete) for rapidly finding existing locations + "Expand"
-  button
-- **Quick-Find Search**: Matches location names/codes at any hierarchy level
-  (Room, Device, Shelf, or Rack) using case-insensitive partial matching,
-  displays full hierarchical path in results
-- **Expanded Modal**: Opens full location assignment modal matching View Storage
-  modal structure (sample info, current location, full assignment form)
-- **Behavior**: Shows current location (read-only or editable based on
-  permissions), allows Move action via overflow menu
-- **Component**: Embeds
-  `<StorageLocationSelector workflow="results" showQuickFind={true} />`
-
-### Task 1.4: Generate Quickstart (Test-First Development Guide)
-
-Create `quickstart.md` documenting test-first development workflow and
-environment setup. This guide emphasizes running tests BEFORE writing
-implementation code.
-
-````markdown
-# Quickstart: Sample Storage Management POC
-
-## Prerequisites
-
-- OpenELIS Global 3.0 development environment running (see
-  [dev_setup.md](../../../docs/dev_setup.md))
-- PostgreSQL 14+ database accessible
-- Java 21, Maven 3.8+, Node.js 16+
-
-## Backend Setup
-
-1. **Database Migration**
-   ```bash
-   # Liquibase changesets auto-run on application startup
-   # Verify migration: psql -U clinlims -d clinlims -c "\dt storage_*"
-   ```
-````
-
-2. **Build Backend**
-
-   ```bash
-   cd /Users/pmanko/code/OpenELIS-Global-2
-   mvn clean install -DskipTests -Dmaven.test.skip=true
-   ```
-
-3. **Run Tests**
-
-   ```bash
-   # Unit tests
-   mvn test -Dtest="org.openelisglobal.storage.**"
-
-   # Integration tests (requires DB)
-   mvn verify -Dtest="org.openelisglobal.storage.controller.**"
-   ```
-
-## Frontend Setup
-
-1. **Install Dependencies** (if not already done)
-
-   ```bash
-   cd frontend
-   npm install
-   ```
-
-2. **Add Internationalization Keys**
-
-   - Edit `frontend/src/languages/en.json`, `fr.json`, `sw.json`
-   - Add storage.\* message keys (see translations section in this doc)
-
-3. **Run Frontend Dev Server**
-
-   ```bash
-   npm start
-   # Access at https://localhost/
-   ```
-
-4. **Run Frontend Tests**
-
-   ```bash
-   # Unit tests
-   npm test -- components/storage
-
-   # E2E tests (Cypress) - Run individually per Constitution V.5
-   npm run cy:run -- --spec "cypress/e2e/storageAssignment.cy.js"
-   npm run cy:run -- --spec "cypress/e2e/storageSearch.cy.js"
-   npm run cy:run -- --spec "cypress/e2e/storageMovement.cy.js"
-   # Full suite only in CI/CD: npm run cy:run
-   ```
-
-## FHIR Validation
-
-1. **Access FHIR Server**
-
-   ```
-   https://fhir.openelis.org:8443/fhir/
-   ```
-
-2. **Query Storage Locations**
-
-   ```bash
-   # Get all rooms
-   curl https://fhir.openelis.org:8443/fhir/Location?physicalType=ro
-
-   # Get devices in a specific room
-   curl https://fhir.openelis.org:8443/fhir/Location?partOf=Location/{room_fhir_uuid}
-   ```
-
-3. **Validate FHIR Resource**
-   ```bash
-   # POST new Location resource and check response
-   curl -X POST https://fhir.openelis.org:8443/fhir/Location \
-     -H "Content-Type: application/fhir+json" \
-     -d @test-location.json
-   ```
-
-## Testing User Scenarios
-
-### P1: Basic Storage Assignment
-
-1. Navigate to Sample Patient Entry
-2. Complete sample accessioning
-3. In Storage Location Selector widget:
-   - Verify compact inline view shows "Not assigned" initially
-   - Click "Expand" button to open full location assignment modal
-   - In expanded modal, try cascading dropdown mode (Room → Device → Shelf →
-     Rack → Position)
-   - Try type-ahead autocomplete in expanded modal
-   - Verify modal shows sample info box and current location section
-   - Select location and verify hierarchical path updates in compact view
-4. Verify assignment saved with hierarchical path
-
-### P2A: Sample Search/Retrieval
-
-1. Navigate to Logbook Results
-2. Search for sample ID
-3. Verify location displays in compact inline view (with quick-find search
-   input)
-4. Test quick-find search: Type location name/code, verify autocomplete results
-   show full hierarchical paths
-5. Select location from quick-find results, verify compact view updates
-6. Click "Expand" button to open full location assignment modal
-7. Navigate to Storage Dashboard, Samples tab
-8. Test single location dropdown filter:
-   - Open location dropdown
-   - Test autocomplete search (type "Freezer" to find devices)
-   - Test hierarchical browsing (expand/collapse tree view)
-   - Select a Room → verify all samples in that room (downward inclusive)
-   - Select a Device → verify all samples in that device and its children
-   - Verify inactive locations are visually distinguished
-   - Test combination: location filter + status filter
-
-### P2B: Sample Movement
-
-1. Navigate to Storage Dashboard, Samples tab
-2. Find sample with assigned location
-3. Click overflow menu (⋮) in Actions column
-4. Verify menu shows: Manage Location, Dispose, View Audit (placeholder/disabled)
-5. Click "Manage Location" from overflow menu
-6. Verify Location Management modal opens (titled "Move Sample" since location
-   exists) with:
-   - Comprehensive sample information section (Sample ID, Type, Status, Date
-     Collected, Patient ID, Test Orders)
-   - Current location displayed in gray box
-   - Downward arrow icon separator
-   - Location selector in bordered box (Room/Device/Shelf/Rack/Position
-     selectors)
-   - Condition Notes textarea
-   - "Selected Location" preview box (shows "Not selected" initially)
-   - Cancel and "Confirm Move" buttons
-7. Select new location, verify "Selected Location" preview updates
-8. Verify "Reason for Move" field appears (since location exists and different
-   location selected)
-9. Enter reason (optional)
-10. Click "Confirm Move"
-11. Verify audit trail updated
-
-### P2B Extended: Location Management Modal - Assignment Mode
-
-1. Navigate to Storage Dashboard, Samples tab
-2. Find sample without assigned location
-3. Click overflow menu (⋮) in Actions column
-4. Click "Manage Location"
-5. Verify Location Management modal opens (titled "Assign Storage Location" since
-   no location exists) with:
-   - Comprehensive sample information section (Sample ID, Type, Status, Date
-     Collected, Patient ID, Test Orders)
-   - No Current Location section (location doesn't exist)
-   - Horizontal line separator
-   - Location selector in bordered box (Room/Device/Shelf/Rack/Position
-     selectors)
-   - Condition Notes textarea
-   - "Selected Location" preview box
-   - Cancel and "Assign" buttons
-6. Select location assignment using form
-7. Verify "Reason for Move" field does NOT appear (no existing location)
-8. Click "Assign"
-9. Verify assignment saved
-
-### P3: Sample Disposal (Deferred to Post-POC)
-
-1. Navigate to Storage Dashboard, Samples tab
-2. Find sample to dispose
-3. Click overflow menu (⋮) in Actions column
-4. Click "Dispose"
-5. Verify Dispose modal opens with:
-   - Modal title "Dispose Sample" with subtitle
-   - Red warning alert at top ("This action cannot be undone")
-   - Sample information section (Sample ID, Type, Status) in gray box
-   - Current Storage Location section with location pin icon
-   - Disposal instructions info box
-   - Required "Disposal Reason" dropdown
-   - Required "Disposal Method" dropdown
-   - Optional "Additional Notes" textarea
-   - Confirmation checkbox ("I confirm...")
-   - Cancel and "Confirm Disposal" button (red/destructive styling, disabled
-     until checkbox checked)
-6. Select reason and method
-7. Check confirmation checkbox
-8. Click "Confirm Disposal"
-9. Verify sample marked as disposed
-
-## Troubleshooting
-
-- **Liquibase migration fails**: Check `liquibase/storage/*.xml` syntax
-- **FHIR sync fails**: Verify FHIR server running at configured URI
-- **Frontend widget not appearing**: Check React Intl message keys loaded
-- **Barcode scanner not detected**: Verify USB HID scanner emitting keyboard
-  events
-
-````
-
-### Task 1.5: Update Agent Context
-
-Run agent context update script:
-
-```bash
-cd /Users/pmanko/code/OpenELIS-Global-2
-.specify/scripts/bash/update-agent-context.sh cursor-agent
-````
-
-This script will:
-
-- Detect Cursor AI agent context file
-- Add new technology references from this plan:
-  - Storage module package structure
-  - FHIR Location resource mapping (flexible hierarchy: positions can have 2-5
-    levels)
-  - Carbon Design System Storage Location Selector widget
-  - Cypress E2E testing patterns (existing OpenELIS framework)
-- Preserve existing OpenELIS patterns and manual additions
-
-**Deliverables**:
-
-- `data-model.md` - Entity schemas, relationships, validation rules
-- `/contracts/storage-api.json` - OpenAPI 3.0 REST endpoints
-- `/contracts/fhir-mappings.md` - FHIR R4 Location resource mappings
-- `quickstart.md` - Developer setup instructions
-- Updated agent context file (Cursor-specific)
+## Phase 4: Flexible Assignment Architecture (Simplified Polymorphic Location)
+
+**Objective**: Simplify sample assignment to use a single polymorphic location relationship (`location_id` + `location_type`) instead of requiring StoragePosition entities for all assignments. Allows assignment directly to device/shelf/rack levels with optional text-based coordinate.
+
+**Technical Approach**:
+- Update SAMPLE_STORAGE_ASSIGNMENT table via Liquibase changeset:
+  - Drop storage_position_id column entirely (no backward compatibility)
+  - Add location_id column (numeric, NOT NULL, no FK - polymorphic reference)
+  - Add location_type column (VARCHAR(20), NOT NULL, enum: 'device', 'shelf', 'rack')
+  - Add position_coordinate column (VARCHAR(50), nullable, optional text)
+- Update SampleStorageAssignment entity with new fields
+- Update service methods: assignSampleWithLocation(), moveSampleWithLocation()
+- Update controller endpoints to accept locationId + locationType
+- Update frontend components to extract locationId and locationType from selected hierarchy
+
+**Architecture Decisions**:
+- Position is represented as optional text field (positionCoordinate), not a separate entity reference
+- Polymorphic location reference allows assignment to any hierarchy level (device/shelf/rack)
+- No occupancy tracking at position level (position is just text coordinate)
+
+**Dependencies**: Phase 2 (Foundational) and Phase 3 (Position Hierarchy) must complete first. This phase must complete before Phase 5 (US1) and Phase 7 (US2B) as it changes the core assignment architecture.
+
+**Implementation Status**: [COMPLETE] - Flexible assignment architecture implemented. See `tasks.md` Phase 4 for details.
 
 ---
 
-## Phase 2: Task Breakdown (Deferred)
+## Phase 5: User Story 1 - Basic Storage Assignment (Priority: P1) 🎯 MVP
 
-**Not executed by `/speckit.plan` command.**
+**Objective**: Reception clerks can assign sample items to storage locations during sample entry using cascading dropdowns, type-ahead search, or barcode scanning.
 
-Use `/speckit.tasks` command to generate detailed task breakdown from this plan.
-Tasks will be organized by user story (P1, P2A, P2B) with dependency ordering
-and parallel execution markers.
+**Technical Approach**:
+- Implement Storage Location CRUD operations (Room, Device, Shelf, Rack, Position)
+- Create DAOs, Services, and Controllers for storage hierarchy management
+- Implement SampleItem assignment service with flexible location support (location_id + location_type)
+- Create Storage Location Selector widget with two-tier design:
+  - Compact inline view (shows location path + expand button)
+  - Expanded modal view (full assignment form with cascading dropdowns, type-ahead, barcode input)
+- Integrate widget into SamplePatientEntry workflow
+- Create Storage Dashboard with:
+  - Metric cards (Total SampleItems, Active, Disposed, Storage Locations)
+  - Tabs (SampleItems, Rooms, Devices, Shelves, Racks)
+  - Tab-specific filters and search
+  - Storage Locations metric card with color-coded breakdown
 
----
+**Architecture Decisions**:
+- Storage tracking operates at SampleItem level (physical specimens), not Sample level (orders)
+- Dashboard displays SampleItem ID/External ID as primary identifier, with parent Sample accession number as secondary context
+- Search matches either SampleItem ID/External ID or Sample accession number
+- Widget supports three input modes: cascading dropdowns, type-ahead autocomplete, barcode scanning
+- Two-tier widget design: compact view for inline display, modal for full assignment workflow
 
-## Post-Phase 1 Constitution Re-Check
+**Dependencies**: Phase 2 (Foundational), Phase 3 (Position Hierarchy), Phase 4 (Flexible Assignment) must complete first
 
-_Re-verify compliance after design artifacts generated:_
-
-- [x] **Configuration-Driven**: Position coordinates remain free-text, no
-      hardcoded validation
-- [x] **Carbon Design System**: Storage Location Selector uses @carbon/react
-      Dropdown, TextInput, Button components
-- [x] **FHIR/IHE Compliance**: All hierarchy levels (Room, Device, Shelf, Rack,
-      Position) map to FHIR Location resources, IHE mCSD hierarchy supported.
-      Positions can have 2-5 levels (minimum: room+device, maximum:
-      room+device+shelf+rack+position).
-- [x] **Layered Architecture**: All 5 layers present (Valueholder → DAO →
-      Service → Controller → Form)
-- [x] **Test Coverage**: Unit/integration/Cypress E2E test structure defined in
-      quickstart
-- [x] **Schema Management**: Liquibase changesets planned in
-      `liquibase/storage/` with fhir_uuid columns
-- [x] **Internationalization**: Message keys documented for en/fr/sw in
-      quickstart
-- [x] **Security & Compliance**: RBAC enforced in controllers, audit fields in
-      all entities
-
-**Final Verdict**: ✅ Plan fully compliant with OpenELIS Global 3.0 Constitution
+**Implementation Status**: [IN PROGRESS] - Core assignment functionality complete. Dashboard features (filters, search, metric card) in progress. See `tasks.md` Phase 5 for details.
 
 ---
 
----
+## Phase 6: User Story 2A - SampleItem Search and Retrieval (Priority: P2)
 
-## Phase 5: Overflow Menu and Consolidated Location Management Modal Implementation
+**Objective**: Lab technicians can search for sample items by SampleItem ID/External ID or Sample accession number and retrieve storage location to physically find sample items.
 
-### Objective
+**Technical Approach**:
+- Implement search service supporting both SampleItem ID/External ID and Sample accession number
+- Create search endpoints: GET /rest/storage/sample-items/search?q={term}
+- Create StorageLocationDisplay component showing hierarchical path
+- Integrate QuickFindSearch component into LogbookResults workflow
+- Add location search endpoint: GET /rest/storage/locations/search?q={term}
 
-Implement samples table row overflow menu with three actions (Manage Location,
-Dispose, View Audit placeholder) and consolidated Location Management Modal that
-handles both assignment and movement workflows. The consolidated modal replaces
-the previous separate Move and View Storage modals. **Note**: MoveSampleModal is
-largely implemented and can be used as a starting point for consolidation.
+**Architecture Decisions**:
+- Search uses OR logic: matches either SampleItem ID/External ID or Sample accession number
+- Case-insensitive partial substring matching
+- QuickFindSearch provides type-ahead autocomplete for location names/codes at any hierarchy level
 
-### Overflow Menu Component
+**Dependencies**: Phase 2 (Foundational), Phase 5 (US1 - Assignment) for initial assignment
 
-**Component**: `SampleActionsOverflowMenu.jsx`
-
-**Requirements**:
-
-- Uses Carbon Design System `OverflowMenu` component
-- Displays three menu items:
-  1. **Manage Location** - Opens consolidated Location Management Modal (replaces
-     previous Move and View Storage actions)
-  2. **Dispose** - Opens Dispose modal
-  3. **View Audit** - Placeholder (disabled or with visual indicator)
-- Accessible via keyboard navigation and screen readers
-- Integrated into samples table Actions column
-
-**Implementation**:
-
-```jsx
-import { OverflowMenu, OverflowMenuItem } from "@carbon/react";
-
-<OverflowMenu>
-  <OverflowMenuItem
-    itemText="Manage Location"
-    onClick={() => openLocationManagementModal(sample)}
-  />
-  <OverflowMenuItem
-    itemText="Dispose"
-    onClick={() => openDisposeModal(sample)}
-  />
-  <OverflowMenuItem itemText="View Audit" disabled />
-</OverflowMenu>;
-```
-
-**Testing**:
-
-- Unit test: Menu renders with all three items
-- Unit test: "View Audit" is disabled
-- E2E test: Clicking "Manage Location" opens consolidated modal
-
-### Consolidated Location Management Modal Component
-
-**Component**: `LocationManagementModal.jsx` (consolidates previous MoveSampleModal
-and ViewStorageModal)
-
-**Starting Point**: Use existing `MoveSampleModal.jsx` as foundation and extend it
-to support both assignment and movement workflows.
-
-**Requirements** (per FR-038 through FR-044, consolidated from previous Move and
-View Storage modals):
-
-- **Dynamic Title and Button Wording**:
-  - If no location assigned: Modal title "Assign Storage Location", button text
-    "Assign"
-  - If location exists: Modal title "Move Sample" with subtitle "Move sample
-    [Sample ID] to a new storage location", button text "Confirm Move"
-- **Comprehensive Sample Information** section: Highlighted/background box showing
-  Sample ID, Type, Status, Date Collected, Patient ID, Test Orders
-- **Current Location** section (conditional - only if location exists): Full
-  hierarchical path (Room > Device > Shelf > Rack > Position) in highlighted gray
-  background box. If no location exists, this section MUST NOT be displayed
-- **Visual Separator**: Downward-pointing arrow icon if location exists, or
-  horizontal line if no location
-- **Location Selection Form** in bordered box:
-  - Unified barcode input field (Quick Assign) - supports both barcode scan and type-ahead search (implemented in Phase 10)
-  - Room dropdown selector (required, marked with \*)
-  - Device dropdown selector
-  - Shelf dropdown selector
-  - Rack/Box dropdown selector
-  - Position text input field (optional, with format hint)
-  - Condition Notes textarea (optional)
-- **Selected Location** preview section: Gray background box showing selected
-  hierarchical path (displays "Not selected" until location chosen)
-- **Reason for Move** field (conditional): Textarea field that appears ONLY when:
-  (1) sample has existing location AND (2) user selects a different location.
-  Field is optional (not required) and labeled "Reason for Move (optional)"
-- Footer buttons: Cancel and action button with dynamic text ("Assign" if no
-  location, "Confirm Move" if location exists). Action button uses primary/dark
-  styling
-- Uses Carbon Design System `Modal` component with proper accessibility
-  attributes
-
-**Implementation Notes**:
-
-- **Refactor Strategy**: Start with existing `MoveSampleModal.jsx` and extend:
-  1. Add logic to detect if sample has location (determines modal mode)
-  2. Add comprehensive sample details section (Date Collected, Patient ID, Test
-     Orders)
-  3. Make Current Location section conditional (only show if location exists)
-  4. Add Condition Notes field (always visible)
-  5. Make Reason for Move field conditional (only show when moving)
-  6. Update title and button text based on location existence
-  7. Update API call to handle both assignment and movement (use same endpoint
-     with different payloads)
-- Reuses `LocationSelectorModal` component for location selection
-- Updates "Selected Location" preview in real-time as user selects location
-- Validates new location is different from current location (when moving)
-- Calls `POST /rest/storage/samples/assign` for assignment or
-  `POST /rest/storage/samples/move` for movement
-- Handles both initial assignment and location changes in single unified
-  interface
-
-**Testing**:
-
-- Unit test: Modal renders with correct title/button based on location existence
-- Unit test: Sample information section shows comprehensive details
-- Unit test: Current Location section only appears when location exists
-- Unit test: Reason for Move field appears only when moving (location exists AND
-  different location selected)
-- Unit test: Location selection updates preview
-- Unit test: Validation prevents moving to same location
-- Unit test: Condition Notes field always visible
-- E2E test: Complete assignment workflow (no location → assign)
-- E2E test: Complete movement workflow (location exists → move with reason)
-
-### Dispose Sample Modal Component
-
-**Component**: `DisposeSampleModal.jsx`
-
-**Requirements** (per FR-051a through FR-051k):
-
-- Modal title: "Dispose Sample" with subtitle "Permanently dispose of sample
-  [Sample ID]"
-- Red warning alert box at top: "This action cannot be undone. The sample will
-  be marked as disposed and removed from storage."
-- **Sample Information** section: Gray background box showing Sample ID, Type,
-  Status
-- **Current Storage Location** section:
-  - Location pin icon
-  - Full hierarchical path in gray background box
-  - Helper text: "Sample will be removed from this location upon disposal"
-- Disposal instructions info box (blue/info styling) with sample-specific
-  instructions
-- Horizontal separator line
-- Required fields:
-  - "Disposal Reason \*" dropdown (required, marked with asterisk, initially
-    shows "Select reason..." placeholder)
-  - "Disposal Method \*" dropdown (required, marked with asterisk, initially
-    shows "Select method..." placeholder)
-- Optional "Additional Notes (optional)" textarea field
-- Confirmation checkbox: "I confirm that I want to permanently dispose of this
-  sample. This action cannot be undone."
-- Footer buttons:
-  - Cancel button
-  - "Confirm Disposal" button:
-    - Red/destructive action styling (e.g., rgba(231,0,11,0.6) background)
-    - Disabled until confirmation checkbox checked
-- Uses Carbon Design System `Modal` component with proper accessibility
-  attributes
-
-**Implementation Notes**:
-
-- Dropdown values:
-  - Disposal Reason: Expired, Contaminated, Patient Request, Testing Complete,
-    Other
-  - Disposal Method: Biohazard Autoclave, Chemical Neutralization, Incineration,
-    Other
-- Date/Time auto-set to current timestamp (editable for backdating if needed)
-- Authorization check via role-based permissions
-- Calls `POST /rest/storage/samples/dispose` endpoint on confirm
-
-**Testing**:
-
-- Unit test: Modal renders with all required sections
-- Unit test: "Confirm Disposal" button disabled until checkbox checked
-- Unit test: Validation requires reason and method selection
-- E2E test: Complete disposal workflow with audit trail verification
-
-**Note**: View Storage Modal functionality is now consolidated into Location
-Management Modal. The consolidated modal handles both viewing current location and
-editing/changing assignment in a single unified interface.
-
-### Storage Location Selector Widget Structure Updates
-
-**Component Updates**: `StorageLocationSelector.jsx`, `CompactLocationView.jsx`,
-`LocationSelectorModal.jsx`, `QuickFindSearch.jsx`
-
-**Two-Tier Design**:
-
-1. **Compact Inline View** (`CompactLocationView.jsx`):
-
-   - Displays selected location hierarchical path (or "Not assigned" if no
-     location)
-   - Shows "Expand" or "Edit" button
-   - Results workflow: Includes quick-find search input (`QuickFindSearch.jsx`)
-   - Quick-find: Type-ahead autocomplete matching Room/Device/Shelf/Rack levels,
-     displays full hierarchical paths in results
-
-2. **Expanded Modal View** (`LocationSelectorModal.jsx`):
-   - Matches View Storage modal structure
-   - Sample information section
-   - Current location display
-   - Full assignment form (barcode scan input, Room/Device/Shelf/Rack/Position
-     selectors, condition notes)
-   - Cancel and action buttons
-
-**Implementation Notes**:
-
-- Same widget component used in both SamplePatientEntry (orders) and
-  LogbookResults (results)
-- Quick-find search only shown in results workflow (`showQuickFind={true}` prop)
-- Quick-find calls `GET /rest/storage/locations/search?q={term}` endpoint
-- Unified barcode input field implemented in Phase 10 (supports both barcode scan and type-ahead search)
-
-**Testing**:
-
-- Unit test: Compact view displays location path correctly
-- Unit test: Expand button opens modal
-- Unit test: Quick-find search filters locations correctly
-- Unit test: Modal structure matches View Storage modal
-- E2E test: Complete assignment workflow in both orders and results contexts
-
-## Phase 6: Location CRUD Operations Implementation
-
-### Objective
-
-Implement full CRUD operations for location tabs (Rooms, Devices, Shelves, Racks) with overflow menu actions (Edit, Delete) per FR-037f through FR-037v. Each location entity can be edited via modal dialog and deleted with validation constraints.
-
-### Requirements Summary
-
-- **Overflow Menu**: Each location table row (Rooms, Devices, Shelves, Racks) has overflow menu with Edit and Delete actions
-- **Edit Modal**: Opens modal dialog with full form for editing location fields (Code and Parent fields are read-only)
-- **Delete Operation**: Validates constraints (child locations, active samples) before deletion, shows confirmation dialog
-- **Field Constraints**: Code and Parent relationship fields are read-only to prevent structural changes
-
-### Components to Create
-
-**Frontend Components**:
-
-1. **LocationActionsOverflowMenu.jsx** - Overflow menu component for location table rows
-   - Similar to `SampleActionsOverflowMenu.jsx`
-   - Displays two menu items: Edit, Delete
-   - Uses Carbon Design System `OverflowMenu` component
-
-2. **EditLocationModal.jsx** - Modal for editing location entities
-   - Generic component that adapts to Room/Device/Shelf/Rack entity types
-   - Displays editable fields based on entity type
-   - Code and Parent fields are read-only (disabled)
-   - Validates code uniqueness and parent-child relationships
-   - Uses Carbon Design System `Modal` component
-
-3. **DeleteLocationModal.jsx** - Confirmation modal for deleting locations
-   - Validates constraints before showing confirmation
-   - Displays error message if constraints exist
-   - Shows confirmation dialog with warning if no constraints
-   - Uses Carbon Design System `Modal` component with destructive styling
-
-**Backend Updates**:
-
-1. **Update REST Controllers** - Add/update endpoints for Edit and Delete operations
-   - `PUT /rest/storage/rooms/{id}` - Update room (already exists, may need validation updates)
-   - `DELETE /rest/storage/rooms/{id}` - Delete room with constraint validation
-   - Similar for devices, shelves, racks
-
-2. **Update Service Layer** - Add constraint validation methods
-   - `validateDeleteConstraints(LocationEntity)` - Check for child locations and active samples
-   - `canDeleteLocation(LocationEntity)` - Returns boolean with reason if false
-   - `getDeleteConstraintMessage(LocationEntity)` - Returns user-friendly error message
-
-### Test Specifications
-
-#### Backend Integration Tests
-
-**File**: `src/test/java/org/openelisglobal/storage/controller/StorageLocationRestControllerTest.java`
-
-**New Test Cases**:
-
-1. **Edit Location Tests**:
-   - `testUpdateRoom_UpdatesEditableFields()` - Update room name, description, status
-   - `testUpdateRoom_CodeReadOnly()` - Attempt to update code, verify rejected or ignored
-   - `testUpdateDevice_UpdatesEditableFields()` - Update device name, type, temperature, capacity
-   - `testUpdateDevice_ParentReadOnly()` - Attempt to change parent room, verify rejected
-   - `testUpdateShelf_UpdatesEditableFields()` - Update shelf label, capacity, status
-   - `testUpdateRack_UpdatesEditableFields()` - Update rack label, dimensions, status
-   - `testUpdateLocation_CodeUniquenessValidation()` - Attempt duplicate code, verify error
-   - `testUpdateLocation_InvalidData_Returns400()` - Invalid field values return 400
-
-2. **Delete Location Tests**:
-   - `testDeleteRoom_WithChildDevices_ReturnsError()` - Cannot delete room with devices
-   - `testDeleteRoom_WithActiveSamples_ReturnsError()` - Cannot delete room with active samples
-   - `testDeleteRoom_NoConstraints_DeletesSuccessfully()` - Delete room with no children/samples
-   - `testDeleteDevice_WithChildShelves_ReturnsError()` - Cannot delete device with shelves
-   - `testDeleteDevice_WithActiveSamples_ReturnsError()` - Cannot delete device with active samples
-   - `testDeleteShelf_WithChildRacks_ReturnsError()` - Cannot delete shelf with racks
-   - `testDeleteRack_WithActiveSamples_ReturnsError()` - Cannot delete rack with active samples
-   - `testDeleteLocation_ReturnsConstraintMessage()` - Error message includes specific reason
-   - `testDeleteLocation_ConfirmationRequired()` - Successful deletion requires confirmation (handled in frontend)
-
-**Test Data Setup**:
-- Create test locations with various constraint scenarios
-- Create test samples assigned to locations
-- Verify constraint checking logic
-
-#### Backend Service Unit Tests
-
-**File**: `src/test/java/org/openelisglobal/storage/service/StorageLocationServiceImplTest.java`
-
-**New Test Cases**:
-
-1. **Constraint Validation Tests**:
-   - `testValidateDeleteConstraints_RoomWithDevices_ReturnsFalse()` - Room with devices cannot be deleted
-   - `testValidateDeleteConstraints_RoomWithActiveSamples_ReturnsFalse()` - Room with samples cannot be deleted
-   - `testValidateDeleteConstraints_DeviceWithShelves_ReturnsFalse()` - Device with shelves cannot be deleted
-   - `testValidateDeleteConstraints_LocationNoConstraints_ReturnsTrue()` - Location with no constraints can be deleted
-   - `testGetDeleteConstraintMessage_RoomWithDevices_ReturnsMessage()` - Error message for room with devices
-   - `testGetDeleteConstraintMessage_DeviceWithSamples_ReturnsMessage()` - Error message for device with samples
-
-2. **Update Validation Tests**:
-   - `testUpdateLocation_CodeUniquenessCheck()` - Verify code uniqueness validation
-   - `testUpdateLocation_ReadOnlyFieldsIgnored()` - Code and Parent fields not updated even if provided
-
-#### Frontend Unit Tests
-
-**File**: `frontend/src/components/storage/__tests__/LocationActionsOverflowMenu.test.jsx`
-
-**Test Cases**:
-- `testOverflowMenu_RendersEditAndDelete()` - Menu renders with Edit and Delete items
-- `testOverflowMenu_EditOpensModal()` - Clicking Edit opens EditLocationModal
-- `testOverflowMenu_DeleteOpensModal()` - Clicking Delete opens DeleteLocationModal
-- `testOverflowMenu_KeyboardAccessible()` - Menu accessible via keyboard navigation
-
-**File**: `frontend/src/components/storage/__tests__/EditLocationModal.test.jsx`
-
-**Test Cases**:
-- `testEditModal_RendersForRoom()` - Modal renders with Room fields
-- `testEditModal_RendersForDevice()` - Modal renders with Device fields
-- `testEditModal_CodeFieldReadOnly()` - Code field is disabled/read-only
-- `testEditModal_ParentFieldReadOnly()` - Parent field is disabled/read-only
-- `testEditModal_EditableFieldsEnabled()` - Name, description, status fields are editable
-- `testEditModal_ValidationErrors()` - Displays validation errors for duplicate code
-- `testEditModal_SaveCallsAPI()` - Save button calls PUT endpoint
-- `testEditModal_CancelClosesModal()` - Cancel button closes modal without saving
-
-**File**: `frontend/src/components/storage/__tests__/DeleteLocationModal.test.jsx`
-
-**Test Cases**:
-- `testDeleteModal_WithConstraints_ShowsError()` - Shows error message if constraints exist
-- `testDeleteModal_NoConstraints_ShowsConfirmation()` - Shows confirmation dialog if no constraints
-- `testDeleteModal_ConfirmationRequired()` - Confirm button disabled until user confirms
-- `testDeleteModal_DeleteCallsAPI()` - Delete button calls DELETE endpoint
-- `testDeleteModal_CancelClosesModal()` - Cancel button closes modal without deleting
-
-#### Frontend E2E Tests
-
-**File**: `frontend/cypress/e2e/storageLocationCRUD.cy.js` (new file)
-
-**Test Cases**:
-
-1. **Edit Location E2E**:
-   - `testEditRoom_UpdatesNameAndDescription()` - Edit room name and description
-   - `testEditDevice_UpdatesTypeAndCapacity()` - Edit device type and capacity
-   - `testEditLocation_CodeReadOnly()` - Verify code field cannot be edited
-   - `testEditLocation_ValidationErrors()` - Verify duplicate code validation
-
-2. **Delete Location E2E**:
-   - `testDeleteRoom_WithDevices_ShowsError()` - Attempt to delete room with devices
-   - `testDeleteDevice_WithSamples_ShowsError()` - Attempt to delete device with samples
-   - `testDeleteLocation_NoConstraints_Deletes()` - Delete location with no constraints
-   - `testDeleteLocation_ConfirmationRequired()` - Verify confirmation dialog appears
-
-#### Cypress Configuration (Per Constitution V.5)
-
-**File**: `frontend/cypress.config.js`
-
-**Configuration Requirements**:
-
-```javascript
-const { defineConfig } = require("cypress");
-
-module.exports = defineConfig({
-  video: false, // MUST be disabled by default (per Constitution V.5)
-  screenshotOnRunFailure: true, // MUST be enabled (per Constitution V.5)
-  defaultCommandTimeout: 30000,
-  viewportWidth: 1200,
-  viewportHeight: 700,
-  e2e: {
-    setupNodeEvents(on, config) {
-      // Browser console logging enabled by default (Cypress captures automatically)
-      // Use on('task') to forward browser console to terminal if needed
-      on('task', {
-        log(message) {
-          console.log(message);
-          return null;
-        }
-      });
-      return config;
-    },
-    baseUrl: "https://localhost",
-    testIsolation: false, // Only if shared state needed
-  },
-});
-```
-
-**Key Configuration Points**:
-- `video: false` - Disabled by default for performance (per Constitution V.5)
-- `screenshotOnRunFailure: true` - Enabled for debugging (per Constitution V.5)
-- Browser console logging automatically captured by Cypress
-- Individual test execution during development (not full suite)
-
-#### Test Refactoring Patterns
-
-**Purpose**: Fix existing anti-patterns in Cypress E2E tests to align with best practices (per Constitution V.5).
-
-**Pattern 1: Intercept Timing**
-
-**Anti-Pattern**: Setting up intercepts after actions that trigger API calls
-```javascript
-// ❌ WRONG: Intercept after action
-cy.get('[data-testid="storage-selector"]').click();
-cy.intercept("GET", "**/rest/storage/rooms").as("getRooms");
-cy.wait("@getRooms"); // May miss the request
-```
-
-**Correct Pattern**: Set up intercepts before actions
-```javascript
-// ✅ CORRECT: Intercept before action
-cy.intercept("GET", "**/rest/storage/rooms").as("getRooms");
-cy.get('[data-testid="storage-selector"]').click();
-cy.wait("@getRooms");
-```
-
-**Pattern 2: Retry-Ability**
-
-**Anti-Pattern**: Using `.then()` callbacks for state verification (no retry)
-```javascript
-// ❌ WRONG: No retry-ability
-cy.get('[data-testid="modal"]').then(($el) => {
-  expect($el).to.be.visible; // Fails immediately if not ready
-});
-```
-
-**Correct Pattern**: Use `.should()` assertions that automatically retry
-```javascript
-// ✅ CORRECT: Retry-able assertions
-cy.get('[data-testid="modal"]').should("be.visible");
-cy.get('[data-testid="form-field"]').should("have.value", "expected");
-```
-
-**Pattern 3: Element Readiness**
-
-**Anti-Pattern**: Missing element readiness checks before interaction
-```javascript
-// ❌ WRONG: No readiness check
-cy.get('[data-testid="edit-modal"]').click(); // May not be ready
-cy.get('[data-testid="name-field"]').type("new name"); // May fail
-```
-
-**Correct Pattern**: Wait for elements to be visible before interaction
-```javascript
-// ✅ CORRECT: Wait for readiness
-cy.get('[data-testid="edit-modal"]').should("be.visible");
-cy.wait("@getLocation");
-cy.get('[data-testid="name-field"]').should("be.visible").and("not.be.empty");
-```
-
-**Pattern 4: State Verification**
-
-**Anti-Pattern**: Using incorrect assertions for state verification
-```javascript
-// ❌ WRONG: Modal closure check
-cy.get('[data-testid="modal"]').should("not.be.visible"); // May still exist in DOM
-```
-
-**Correct Pattern**: Use proper assertions for state changes
-```javascript
-// ✅ CORRECT: State verification
-cy.get('[data-testid="modal"]').should("not.exist"); // Modal removed from DOM
-cy.get(`[data-testid="row-${id}"]`).should("contain.text", newValue);
-cy.get('div[role="status"]').should("be.visible").and("contain.text", "success");
-```
-
-**Pattern 5: Arbitrary Waits**
-
-**Anti-Pattern**: Using fixed time delays instead of waiting for conditions
-```javascript
-// ❌ WRONG: Arbitrary wait
-cy.wait(1000); // Fixed delay, may be too short or too long
-```
-
-**Correct Pattern**: Use Cypress's built-in waiting mechanisms
-```javascript
-// ✅ CORRECT: Wait for conditions
-cy.intercept("GET", "**/rest/storage/rooms").as("getRooms");
-cy.wait("@getRooms"); // Wait for API call
-cy.get('[data-testid="dropdown"]').should("be.visible"); // Wait for element
-```
-
-**Refactoring Checklist** (for existing tests):
-- [ ] Move all `cy.intercept()` calls to before actions that trigger them
-- [ ] Replace `.then()` callbacks with `.should()` assertions for state verification
-- [ ] Add visibility checks before all interactions (modals, form fields, buttons)
-- [ ] Replace arbitrary `cy.wait(1000)` with proper waits (`cy.wait('@alias')` or `.should()`)
-- [ ] Use proper assertions for state changes (`not.exist` instead of `not.be.visible`)
-- [ ] Ensure tests can run individually (not dependent on full suite)
-
-### API Contract Updates
-
-**Update `/contracts/storage-api.json`**:
-
-Add/update endpoints:
-
-```json
-{
-  "paths": {
-    "/rest/storage/rooms/{id}": {
-      "put": {
-        "summary": "Update room",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object",
-                "properties": {
-                  "name": { "type": "string", "description": "Room name (editable)" },
-                  "code": { "type": "string", "description": "Room code (read-only, ignored if provided)" },
-                  "description": { "type": "string", "description": "Optional description (editable)" },
-                  "active": { "type": "boolean", "description": "Active status (editable)" }
-                },
-                "required": ["name", "active"]
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": { "description": "Room updated successfully" },
-          "400": { "description": "Validation error (duplicate code, invalid data)" },
-          "404": { "description": "Room not found" }
-        }
-      },
-      "delete": {
-        "summary": "Delete room",
-        "responses": {
-          "200": { "description": "Room deleted successfully" },
-          "409": { 
-            "description": "Cannot delete - constraints exist",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "error": { "type": "string" },
-                    "message": { "type": "string", "description": "User-friendly constraint message" }
-                  }
-                }
-              }
-            }
-          },
-          "404": { "description": "Room not found" }
-        }
-      }
-    }
-  }
-}
-```
-
-Similar endpoints for `/rest/storage/devices/{id}`, `/rest/storage/shelves/{id}`, `/rest/storage/racks/{id}`.
-
-### Implementation Tasks
-
-#### Backend Implementation
-
-1. **Update Service Layer** (`StorageLocationServiceImpl.java`):
-   - Add `validateDeleteConstraints(LocationEntity)` method
-   - Add `canDeleteLocation(LocationEntity)` method
-   - Add `getDeleteConstraintMessage(LocationEntity)` method
-   - Update `update()` methods to ignore Code and Parent fields if provided
-
-2. **Update REST Controllers**:
-   - Ensure `PUT` endpoints validate editable fields only
-   - Add `DELETE` endpoints with constraint validation
-   - Return appropriate error messages (409 Conflict for constraints)
-
-3. **Constraint Validation Logic**:
-   ```java
-   public boolean canDeleteRoom(StorageRoom room) {
-       // Check for child devices
-       if (deviceDAO.countByRoomId(room.getId()) > 0) {
-           return false;
-       }
-       // Check for active samples in any child locations
-       if (sampleStorageService.hasActiveSamplesInLocation(room.getId(), "room")) {
-           return false;
-       }
-       return true;
-   }
-   ```
-
-#### Frontend Implementation
-
-1. **Create LocationActionsOverflowMenu Component**:
-   - Similar structure to `SampleActionsOverflowMenu.jsx`
-   - Two menu items: Edit, Delete
-   - Props: `location` (entity object), `onEdit`, `onDelete` callbacks
-
-2. **Create EditLocationModal Component**:
-   - Generic component that adapts to entity type (Room/Device/Shelf/Rack)
-   - Form fields based on entity type
-   - Code and Parent fields disabled/read-only
-   - Validation for code uniqueness
-   - Calls `PUT /rest/storage/{entityType}/{id}` endpoint
-
-3. **Create DeleteLocationModal Component**:
-   - Checks constraints via API call before showing confirmation
-   - Displays error message if constraints exist
-   - Shows confirmation dialog if no constraints
-   - Calls `DELETE /rest/storage/{entityType}/{id}` endpoint
-
-4. **Update StorageDashboard.jsx**:
-   - Replace placeholder action buttons with `LocationActionsOverflowMenu`
-   - Add state management for Edit and Delete modals
-   - Handle modal open/close and API calls
-
-### Testing Checklist
-
-- [ ] All backend integration tests pass
-- [ ] All backend service unit tests pass
-- [ ] All frontend unit tests pass
-- [ ] All E2E tests pass
-- [ ] Edit modal opens with correct fields for each entity type
-- [ ] Code and Parent fields are read-only in Edit modal
-- [ ] Edit saves changes correctly
-- [ ] Delete validates constraints correctly
-- [ ] Delete shows appropriate error messages
-- [ ] Delete confirmation dialog appears when no constraints
-- [ ] Delete successfully removes location when confirmed
-- [ ] Table refreshes after Edit/Delete operations
-
-### Dependencies
-
-- Existing location REST endpoints (GET, POST)
-- Existing location service layer
-- Carbon Design System OverflowMenu and Modal components
-- Existing table rendering in StorageDashboard
-
-### Success Criteria
-
-- All tests pass (integration, unit, E2E)
-- Overflow menu appears on all location table rows
-- Edit modal allows editing all editable fields
-- Code and Parent fields are read-only
-- Delete validates constraints and shows appropriate messages
-- Delete confirmation dialog works correctly
-- Table updates after Edit/Delete operations
+**Implementation Status**: [NOT STARTED] - See `tasks.md` Phase 6 for details.
 
 ---
 
-## Phase 7: Expandable Row Functionality Implementation
+## Phase 7: User Story 2B - SampleItem Movement (Priority: P2)
 
-**Date**: 2025-11-07  
-**Status**: Planning  
-**Spec Reference**: FR-059a through FR-059f  
-**Research**: [research.md Section 8](./research.md#8-carbon-datatable-expandable-rows)
+**Objective**: Lab technicians can move sample items between storage locations (single and bulk), with audit trail tracking previous/new locations.
 
-### Overview
+**Technical Approach**:
+- Implement moveSampleWithLocation() service method
+- Implement bulkMoveSamples() service method with auto-assignment of sequential positions
+- Create SampleMovementForm with fields: sampleItemId, locationId, locationType, positionCoordinate, reason
+- Create movement endpoints: POST /rest/storage/sample-items/move, POST /rest/storage/sample-items/bulk-move
+- Update audit trail (SampleStorageMovement) for all movements
 
-Add expandable row functionality to location tables (Rooms, Devices, Shelves, Racks) in StorageDashboard component. Expanded rows display additional entity fields not visible in table columns, formatted as key-value pairs in read-only format. Only one row can be expanded at a time. Expansion triggered by clicking chevron icon in dedicated first column (Carbon DataTable standard pattern).
+**Architecture Decisions**:
+- Movement uses same flexible assignment architecture (location_id + location_type)
+- Previous location freed automatically, new location recorded
+- Individual audit records created for each movement
+- Bulk movement supports manual position override
 
-### Requirements Summary
+**Dependencies**: Phase 2 (Foundational), Phase 3 (Position Hierarchy), Phase 4 (Flexible Assignment), Phase 5 (US1) for initial assignment
 
-- **FR-059a**: Location tables MUST support expandable rows using Carbon DataTable expandable row pattern
-- **FR-059b**: Expandable rows MUST be triggered by clicking chevron/expand icon in dedicated column (first column)
-- **FR-059c**: Expanded row content MUST display all entity fields not visible in table columns, formatted as key-value pairs in read-only format
-- **FR-059d**: Only one row can be expanded at a time (expanding another automatically collapses the previous)
-- **FR-059e**: Expanded row content MUST be read-only (Edit action remains in overflow menu)
-- **FR-059f**: Expanded row MUST show entity-specific additional fields:
-  - **Rooms**: Description, Created Date, Created By, Last Modified Date, Last Modified By
-  - **Devices**: Temperature Setting, Capacity Limit, Description, Created Date, Created By, Last Modified Date, Last Modified By
-  - **Shelves**: Capacity Limit, Description, Created Date, Created By, Last Modified Date, Last Modified By
-  - **Racks**: Position Schema Hint, Description, Created Date, Created By, Last Modified Date, Last Modified By
+**Implementation Status**: [NOT STARTED] - See `tasks.md` Phase 7 for details.
 
-### Technical Approach
+---
 
-**Frontend Changes**:
+## Phase 7.5: Modal Consolidation - Immediate Priority
 
-1. **Modify StorageDashboard.jsx**:
-   - Add `expandableRows` prop to DataTable components for Rooms, Devices, Shelves, Racks tabs
-   - Import `TableExpandHeader`, `TableExpandRow`, `TableExpandedRow` from `@carbon/react`
-   - Add state management for expanded row ID (`useState` for `expandedRowId`)
-   - Implement `handleRowExpand` function to manage single-row expansion
-   - Create `renderExpandedContent` function for each location type (room, device, shelf, rack)
-   - Update table structure to use `TableExpandHeader` in header row
-   - Replace `TableRow` with `TableExpandRow` for data rows
-   - Add `TableExpandedRow` after each `TableExpandRow` with expanded content
+**Objective**: Consolidate MoveSampleModal and ViewStorageModal into a single LocationManagementModal that handles both assignment and movement workflows.
 
-2. **Expanded Content Format**:
-   - Use Carbon Grid/Column components for layout
-   - Display fields as key-value pairs with labels from React Intl
-   - Format dates using `intl.formatDate()`
-   - Display "N/A" for missing optional fields
-   - Read-only display (no input fields)
+**Technical Approach**:
+- Create LocationManagementModal component consolidating previous separate modals
+- Update SampleActionsOverflowMenu to show "Manage Location" instead of separate "Move" and "View Storage" items
+- Modal dynamically adapts based on whether sample item has existing location:
+  - Assignment mode: "Assign Storage Location" title, "Assign" button
+  - Movement mode: "Move Sample Item" title, "Confirm Move" button, shows "Reason for Move" field
+- Display comprehensive sample item information (SampleItem ID/External ID, Sample ID, Type, Status, Date Collected, Patient ID, Test Orders)
+- Current Location section only appears if location exists
 
-3. **State Management**:
-   - Single `expandedRowId` state variable per tab (or shared across tabs)
-   - Toggle logic: if same row clicked, collapse; if different row, expand new and collapse previous
-   - Reset expanded state when switching tabs
+**Architecture Decisions**:
+- Single modal reduces UI complexity and maintenance burden
+- Dynamic wording and conditional fields based on assignment vs movement mode
+- Consolidation improves UX consistency
 
-**Backend Changes**: 
-- Update `StorageLocationServiceImpl.getDevicesForAPI()` to include:
-  - `totalCapacity` (calculated capacity when `capacityLimit` is null)
-  - `capacityType` ("manual" if `capacityLimit` set, "calculated" if from children, null if cannot determine)
-- Update `StorageLocationServiceImpl.getShelvesForAPI()` to include:
-  - `totalCapacity` (calculated capacity when `capacityLimit` is null)
-  - `capacityType` ("manual" if `capacityLimit` set, "calculated" if from children, null if cannot determine)
-- Add `calculateDeviceCapacity()` and `calculateShelfCapacity()` methods per FR-062a, FR-062b
+**Dependencies**: Phase 2 (Foundational). Can start immediately after foundational entities and services are in place.
 
-**API Changes**: 
-- Device API response: Add `totalCapacity` (Integer, nullable) and `capacityType` (String: "manual" | "calculated" | null)
-- Shelf API response: Add `totalCapacity` (Integer, nullable) and `capacityType` (String: "manual" | "calculated" | null)
-- Rack API response: No changes (always uses calculated capacity from rows × columns)
+**Implementation Status**: [COMPLETE] - Modal consolidation complete. See `tasks.md` Phase 7.5 for details.
 
-### Test-Driven Development Plan
+---
+
+## Phase 8: Location CRUD Operations Implementation
+
+**Objective**: Implement full CRUD operations for location tabs (Rooms, Devices, Shelves, Racks) with overflow menu actions (Edit, Delete) per FR-037f through FR-037v. Each location entity can be edited via modal dialog and deleted with validation constraints.
+
+**Technical Approach**:
+- Create LocationActionsOverflowMenu component for location table rows
+- Create EditLocationModal component (generic, adapts to Room/Device/Shelf/Rack)
+- Create DeleteLocationModal component with constraint validation
+- Update backend service layer with constraint validation methods
+- Update REST controllers with PUT and DELETE endpoints
+- Code and Parent fields are read-only in Edit modal
+
+**Architecture Decisions**:
+- Edit modal allows editing all fields except Code and Parent (read-only to prevent structural changes)
+- Delete validates constraints (child locations, active samples) before deletion
+- Constraint validation returns user-friendly error messages
+
+**Dependencies**: Phase 2 (Foundational), Phase 5 (US1 - Dashboard) for location tables
+
+**Implementation Status**: [COMPLETE] - Location CRUD operations implemented. See `tasks.md` Phase 8 for details.
+
+---
+
+## Phase 9: Expandable Row Functionality Implementation
+
+**Objective**: Add expandable row functionality to location tables (Rooms, Devices, Shelves, Racks) in StorageDashboard component. Expanded rows display additional entity fields not visible in table columns, formatted as key-value pairs in read-only format.
+
+**Technical Approach**:
+- Add expandableRows prop to DataTable components for Rooms, Devices, Shelves, Racks tabs
+- Import TableExpandHeader, TableExpandRow, TableExpandedRow from @carbon/react
+- Add state management for expanded row ID (useState for expandedRowId)
+- Implement handleRowExpand function to manage single-row expansion
+- Create renderExpandedContent function for each location type (room, device, shelf, rack)
+- Update table structure to use TableExpandHeader in header row
+- Replace TableRow with TableExpandRow for data rows
+- Add TableExpandedRow after each TableExpandRow with expanded content
+- Display fields as key-value pairs with labels from React Intl
+- Format dates using intl.formatDate()
+- Display "N/A" for missing optional fields
+
+**Architecture Decisions**:
+- Only one row can be expanded at a time (expanding another automatically collapses the previous)
+- Expanded content is read-only (Edit action remains in overflow menu)
+- Expansion triggered by clicking chevron icon in dedicated first column (Carbon DataTable standard pattern)
+- Tab switching resets expanded state
+
+**Dependencies**: Phase 5 (Dashboard) and Phase 8 (Location CRUD) must complete first
+
+**Implementation Status**: [COMPLETE] - Expandable row functionality implemented for all location tables. See `tasks.md` Phase 9 for details.
 
 **Test Order** (TDD workflow):
 
@@ -2335,6 +708,43 @@ Add expandable row functionality to location tables (Rooms, Devices, Shelves, Ra
 - [ ] All E2E tests pass
 - [ ] Accessibility verified (ARIA attributes, keyboard navigation)
 - [ ] Internationalization complete (all labels use React Intl)
+
+**Implementation Status**: [COMPLETE] - Expandable row functionality implemented for all location tables. See `tasks.md` Phase 9 for details.
+
+---
+
+## Phase 9.5: Capacity Calculation Logic Implementation
+
+**Objective**: Implement two-tier capacity calculation system (per FR-062a, FR-062b, FR-062c) for Devices and Shelves. Supports manual `capacity_limit` (static) or calculated capacity from children. When `capacity_limit` is NULL, calculate from child locations (sum if all children have defined capacities). If any child lacks defined capacity, parent capacity cannot be determined and UI displays "N/A" with tooltip.
+
+**Technical Approach**:
+- Implement `calculateDeviceCapacity()` method in StorageLocationServiceImpl:
+  - If `capacity_limit` is set, return that value (manual capacity)
+  - Otherwise, calculate from child shelves (sum if all shelves have defined capacities)
+  - Return null if any child lacks defined capacity (capacity cannot be determined)
+- Implement `calculateShelfCapacity()` method:
+  - If `capacity_limit` is set, return that value
+  - Otherwise, calculate from child racks (sum of rows × columns for all racks)
+- Update API responses to include `totalCapacity` and `capacityType` fields:
+  - `capacityType="manual"` when `capacity_limit` is set
+  - `capacityType="calculated"` when calculated from children
+  - `capacityType=null` when capacity cannot be determined
+- Update frontend occupancy display:
+  - Show "Manual Limit" badge for manual capacities
+  - Show "Calculated" badge for calculated capacities
+  - Show "N/A" with tooltip when capacity cannot be determined
+  - Hide progress bar when capacity is undetermined
+
+**Architecture Decisions**:
+- Racks always use calculated capacity (rows × columns), never `capacity_limit`
+- Capacity warnings (80%, 90%, 100%) apply to both manual and calculated capacities
+- Visual distinction (badge/tooltip) clearly indicates capacity type to users
+
+**Dependencies**: Phase 5 (Dashboard) and Phase 8 (Location CRUD) must complete first. Can be implemented in parallel with Phase 10 (Barcode Workflow).
+
+**Implementation Status**: [COMPLETE] - Two-tier capacity calculation system implemented. See `tasks.md` Phase 9.5 for details.
+
+---
 
 ## Phase 10: Barcode Workflow Implementation
 
@@ -2613,6 +1023,76 @@ Following strict test-first development with small, manageable iterations:
 - [ ] All integration tests pass
 - [ ] All E2E tests pass
 - [ ] Internationalization complete (en, fr, sw)
+
+**Implementation Status**: [IN PROGRESS] - Backend barcode parsing and validation complete (Iteration 9.1). Frontend unified input field (Iteration 9.2) and debouncing (Iteration 9.3) in progress. See `tasks.md` Phase 10 for details.
+
+---
+
+## Phase 11: Polish & Cross-Cutting Concerns
+
+**Objective**: Final integration, optimization, and validation across all user stories.
+
+**Technical Approach**:
+- Database indexes verification: Run EXPLAIN ANALYZE on common queries (sample search by location, hierarchical path lookups)
+- Internationalization completeness audit: Verify all UI components use React Intl (no hardcoded English strings)
+- Code formatting: Backend `mvn spotless:apply`, Frontend `npm run format`
+- Test coverage report: JaCoCo for backend (>70%), Jest for frontend
+- FHIR validation end-to-end: Query FHIR server, verify hierarchy complete, verify immediate sync working
+- E2E test refactoring per Constitution V.5:
+  - Update `cypress.config.js` (video: false, screenshotOnRunFailure: true)
+  - Refactor tests to use intercept timing, retry-ability, element readiness checks
+  - Remove arbitrary waits, use proper Cypress retry-ability
+  - Run tests individually during development (not full suite)
+  - Document post-run review process (console logs and screenshots)
+- Documentation updates: Add missing details to quickstart.md based on implementation learnings
+
+**Architecture Decisions**:
+- E2E tests follow Constitution V.5 best practices (individual execution, console log review)
+- Full test suite runs only in CI/CD pipeline
+- Code formatting enforced via pre-commit hooks
+
+**Dependencies**: Requires all feature phases (5, 6, 7, 8, 9, 9.5, 10) to complete first.
+
+**Implementation Status**: [NOT STARTED] - See `tasks.md` Phase 11 for details.
+
+---
+
+## Phase 12: Constitution Compliance Verification
+
+**Objective**: Verify feature adheres to all applicable constitution principles before deployment.
+
+**Technical Approach**:
+- Configuration-Driven: Verify no country-specific code branches, confirm position coordinates remain free-text
+- Carbon Design System: Audit all UI components, confirm @carbon/react used exclusively (NO Bootstrap/Tailwind)
+- FHIR/IHE Compliance: Validate FHIR Location resources against R4 profiles, verify IHE mCSD hierarchical queries work
+- Layered Architecture: Code review storage module, verify 5-layer pattern followed (NO DAO calls from controllers, NO business logic in DAOs, NO class-level variables in controllers)
+- Test Coverage: Run coverage reports, confirm >70% for new storage code
+- Schema Management: Verify ALL database changes used Liquibase changesets (NO direct SQL)
+- Internationalization: Grep for hardcoded strings, verify all use React Intl
+- Security & Compliance: Verify audit trail (sys_user_id + lastupdated), verify input validation
+- Cypress E2E Testing (Constitution V.5): Verify E2E tests follow Constitution V.5 requirements
+
+**Verification Commands**:
+```bash
+# Backend: Code formatting + build + tests
+mvn spotless:check && mvn clean install
+
+# Frontend: Formatting + linting + E2E tests (run individually per Constitution V.5)
+cd frontend && npm run format:check && npm run lint
+npm run cy:run -- --spec "cypress/e2e/storageAssignment.cy.js"
+npm run cy:run -- --spec "cypress/e2e/storageSearch.cy.js"
+npm run cy:run -- --spec "cypress/e2e/storageMovement.cy.js"
+
+# Coverage reports
+mvn verify  # JaCoCo report in target/site/jacoco/
+cd frontend && npm test -- --coverage  # Jest coverage
+```
+
+**Dependencies**: Phase 11 (Polish) must complete first. This is the FINAL phase before deployment.
+
+**Implementation Status**: [NOT STARTED] - See `tasks.md` Phase 12 for details.
+
+---
 
 ## Implementation Enhancements
 
@@ -2966,22 +1446,31 @@ Specimen entity
     └──────────> Update Specimen.container.extension[storage-position-location] reference
 ```
 
-### Sample Entity Integration
+### SampleItem Entity Integration
 
-**Existing Sample Entity**: `org.openelisglobal.sample.valueholder.Sample`
+**Storage Granularity**: Storage tracking operates at the **SampleItem level** (physical specimens), not at the Sample level (orders). Each SampleItem can be stored independently, even when multiple SampleItems belong to the same parent Sample.
 
-- **No modifications required** - Sample entity remains unchanged
-- **Integration via junction table**: SampleStorageAssignment links Sample to
-  StoragePosition
-- **Foreign key**: `SampleStorageAssignment.sample_id` → `Sample.id`
+**Existing SampleItem Entity**: `org.openelisglobal.sampleitem.valueholder.SampleItem`
+
+- **No modifications required** - SampleItem entity remains unchanged
+- **Integration via junction table**: SampleStorageAssignment links SampleItem to storage location via polymorphic `location_id` + `location_type` (device/shelf/rack)
+- **Foreign key**: `SampleStorageAssignment.sample_item_id` → `SampleItem.id`
 - **Query pattern**:
-  `JOIN sample_storage_assignment ON sample.id = sample_storage_assignment.sample_id`
+  `JOIN sample_storage_assignment ON sample_item.id = sample_storage_assignment.sample_item_id`
+- **Parent Sample context**: Dashboard and assignment workflows display SampleItem ID/External ID as primary identifier, with parent Sample accession number as secondary context for sorting/grouping
+
+**FHIR Integration**:
+
+- Each SampleItem's storage location maps to its corresponding FHIR Specimen resource `container` reference
+- Specimen.container.extension[storage-location] contains Location reference for the SampleItem's current storage location
 
 **Benefits**:
 
-- ✅ No impact on existing Sample entity code
-- ✅ Backward compatible (samples without location continue to work)
-- ✅ Easy to query samples by location (JOIN on assignment table)
-- ✅ Easy to query location for a sample (JOIN on assignment table)
+- ✅ No impact on existing SampleItem entity code
+- ✅ Backward compatible (sample items without location continue to work)
+- ✅ Supports independent storage of multiple SampleItems from same Sample
+- ✅ Easy to query sample items by location (JOIN on assignment table)
+- ✅ Easy to query location for a sample item (JOIN on assignment table)
+- ✅ Dashboard and search support both SampleItem ID/External ID and Sample accession number
 
 ### Task 1.4: Generate Quickstart (Test-First Development Guide)
