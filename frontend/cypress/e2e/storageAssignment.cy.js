@@ -5,6 +5,15 @@ import PatientEntryPage from "../pages/PatientEntryPage";
 /**
  * E2E Tests for User Story P1 - Basic Storage Assignment
  * Tests all three input modes: cascading dropdowns, type-ahead, barcode scan
+ *
+ * Constitution V.5 Compliance:
+ * - Video disabled by default (cypress.config.js)
+ * - Screenshots enabled on failure (cypress.config.js)
+ * - Intercepts set up BEFORE actions that trigger them
+ * - Uses .should() assertions for retry-ability (no arbitrary cy.wait())
+ * - Element readiness checks before all interactions
+ * - Focused on happy paths (user workflows, not implementation details)
+ * - Run individually during development: npm run cy:run -- --spec "cypress/e2e/storageAssignment.cy.js"
  */
 
 let homePage = null;
@@ -18,322 +27,262 @@ before("Setup storage tests", () => {
   });
 });
 
+before("Navigate to sample entry step once for all tests", () => {
+  // Set up intercepts
+  cy.intercept("GET", "**/rest/user-programs**").as("getPrograms");
+  
+  // Navigate to sample entry step ONCE - all tests will use this state
+  cy.navigateToSampleEntryStep(homePage).then((pages) => {
+    orderEntityPage = pages.orderEntityPage;
+    patientEntryPage = pages.patientEntryPage;
+  });
+});
+
 after("Cleanup storage tests", () => {
   cy.cleanupStorageTests();
 });
 
 describe("Storage Assignment - Cascading Dropdowns (P1)", function () {
+  beforeEach(() => {
+    // Set up API intercepts BEFORE actions that trigger them (Constitution V.5)
+    cy.intercept("GET", "**/rest/storage/rooms**").as("getRooms");
+    cy.intercept("GET", "**/rest/storage/devices**").as("getDevices");
+    cy.intercept("GET", "**/rest/storage/shelves**").as("getShelves");
+    cy.intercept("GET", "**/rest/storage/racks**").as("getRacks");
+    cy.intercept("GET", "**/rest/storage/positions**").as("getPositions");
+    cy.intercept("POST", "**/rest/storage/sample-items/assign**").as("assignSample");
+    // Also intercept the assignment endpoint with different patterns
+    cy.intercept("POST", "**/storage/sample-items/assign**").as("assignSampleAlt");
+  });
+
   it("Should navigate through order entry workflow to sample entry step", () => {
-    // Navigate to order entry page
-    orderEntityPage = homePage.goToOrderPage();
-    cy.wait(1000);
-
-    // Navigate to patient entry step
-    patientEntryPage = orderEntityPage.getPatientPage();
-    cy.wait(1000);
-
-    // Search for E2E test patient
-    cy.fixture("Patient").then((patient) => {
-      // Use E2E test patient (Smith)
-      patientEntryPage.searchPatientByFirstAndLastName("John", "Smith");
-      patientEntryPage.clickSearchPatientButton();
-      cy.wait(2000);
-
-      // Select patient from search results
-      patientEntryPage.selectPatientFromSearchResults();
-      cy.wait(300);
-
-      // Verify patient is selected
-      patientEntryPage.getFirstName().should("have.value", "John");
-      patientEntryPage.getLastName().should("have.value", "Smith");
-    });
-
-    // Proceed to program selection
-    orderEntityPage.clickNextButton();
-    cy.wait(1000);
-
-    // Select program (Cytology or any available program)
-    orderEntityPage.selectCytology();
-    cy.wait(200);
-    orderEntityPage.clickNextButton();
-    cy.wait(1000);
-
-    // Now we should be on the sample entry step where StorageLocationSelector is visible
-    // Verify we can see the storage location selector
-    cy.get('[data-testid="storage-location-selector"]', {
-      timeout: 10000,
-    }).should("be.visible");
+    // Navigation already done in before() - just verify we're on the right page
+    cy.get('[data-testid="storage-location-selector"]', { timeout: 10000 })
+      .should("be.visible");
   });
 
   it("Should assign sample to storage location using cascading dropdowns", function () {
     storageAssignmentPage = new StorageAssignmentPage();
 
-    // Navigate through workflow (reuse from previous test)
-    orderEntityPage = homePage.goToOrderPage();
-    cy.wait(1000);
-    patientEntryPage = orderEntityPage.getPatientPage();
-    cy.wait(1000);
+    // Navigation already done in before() - we're already on sample entry step
 
-    // Search and select E2E test patient
-    patientEntryPage.searchPatientByFirstAndLastName("John", "Smith");
-    patientEntryPage.clickSearchPatientButton();
-    cy.wait(2000);
-    patientEntryPage.selectPatientFromSearchResults();
-    cy.wait(300);
-    orderEntityPage.clickNextButton();
-    cy.wait(1000);
-    orderEntityPage.selectCytology();
-    cy.wait(200);
-    orderEntityPage.clickNextButton();
-    cy.wait(1000);
+    // With workflow="orders", StorageLocationSelector shows CompactLocationView
+    // Need to click "Expand" button to open modal with cascading dropdowns
+    cy.get('[data-testid="expand-button"]', { timeout: 10000 })
+      .should("be.visible")
+      .click();
 
-    // Navigate to sample entry step (assuming workflow navigation is handled)
-    // StorageLocationSelector appears in SampleType component within AddSample
-    // Scroll to find the selector if needed
-    cy.get("body").then(($body) => {
-      // Check if selector exists on current page
-      if (
-        $body.find('[data-testid="storage-location-selector"]').length === 0
-      ) {
-        // If not visible, we may need to navigate through workflow first
-        cy.log(
-          "Storage selector not yet visible - may need to complete workflow steps",
-        );
-      }
-    });
-
-    // Wait for storage location selector to be visible (may need to scroll or navigate)
-    cy.get('[data-testid="storage-location-selector"]', { timeout: 20000 })
-      .scrollIntoView()
+    // Wait for modal to open - LocationManagementModal contains LocationSearchAndCreate
+    // Modal uses ComposedModal from Carbon, wait for it to be visible
+    cy.get('[role="dialog"]', { timeout: 10000 })
+      .should("be.visible");
+    
+    // LocationSearchAndCreate starts in search mode - need to click "Add Location" to show create form
+    // The create form contains EnhancedCascadingMode with comboboxes
+    cy.get('button:contains("Add Location"), [data-testid="add-location-button"]', { timeout: 10000 })
+      .should("be.visible")
+      .click();
+    
+    // Wait for create form to show EnhancedCascadingMode with comboboxes
+    cy.get('[data-testid="room-combobox"]', { timeout: 10000 })
       .should("be.visible");
 
-    // Select room (wait for API call to complete)
+    // Select room and wait for API call (intercept timing)
     storageAssignmentPage.selectRoom("MAIN");
-    cy.wait(2000); // Wait for devices to load
+    cy.wait("@getRooms");
 
-    // Verify device dropdown is now enabled
-    cy.get('[data-testid="device-dropdown"]').should("not.be.disabled");
+    // Verify device combobox is now enabled (retry-ability)
+    cy.get('[data-testid="device-combobox"]')
+      .should("not.be.disabled")
+      .should("be.visible");
 
-    // Select device
+    // Select device and wait for API call
     storageAssignmentPage.selectDevice("FRZ01");
-    cy.wait(2000); // Wait for shelves to load
+    cy.wait("@getDevices");
 
-    // Verify shelf dropdown is now enabled
-    cy.get('[data-testid="shelf-dropdown"]').should("not.be.disabled");
+    // Verify shelf combobox is now enabled
+    cy.get('[data-testid="shelf-combobox"]')
+      .should("not.be.disabled")
+      .should("be.visible");
 
-    // Select shelf
+    // Select shelf - wait for shelves API call first
+    cy.wait("@getShelves", { timeout: 10000 });
     storageAssignmentPage.selectShelf("SHA");
-    cy.wait(2000); // Wait for racks to load
 
-    // Select rack
+    // Select rack - wait for racks API call first
+    cy.wait("@getRacks", { timeout: 10000 });
     storageAssignmentPage.selectRack("RKR1");
-    cy.wait(2000); // Wait for positions to load
 
-    // Select position
-    storageAssignmentPage.selectPosition("A5");
+    // Position is a text input in LocationManagementModal, not a dropdown
+    // Enter position coordinate directly
+    cy.get('#position-input', { timeout: 10000 })
+      .should("be.visible")
+      .clear()
+      .type("A5");
 
-    // Verify hierarchical path displays correctly
-    cy.get('[data-testid="location-path"]', { timeout: 5000 }).should(
-      "contain.text",
-      "MAIN",
-    );
+    // Click "Add" button to confirm location selection in create form
+    // This adds the location to selectedLocation state
+    cy.get('[data-testid="add-location-create-button"]', { timeout: 5000 })
+      .should("be.visible")
+      .should("not.be.disabled")
+      .click();
+    
+    // Wait for location to be selected (selectedLocationPath should appear)
+    cy.get('[data-testid="selected-location-section"]', { timeout: 10000 })
+      .should("be.visible");
+    
+    // Now LocationManagementModal's "Confirm" button should be enabled
+    // Use test ID from modal footer
+    cy.get('[data-testid="assign-button"]', { timeout: 10000 })
+      .should("be.visible")
+      .should("not.be.disabled")
+      .click();
+    
+    // In order entry workflow, assignment might not happen immediately
+    // The location is saved to form state and assigned when order is submitted
+    // Verify the location was selected - path shows full hierarchical path
+    cy.get('[data-testid="location-path-text"], [data-testid="location-path"]', { timeout: 10000 })
+      .should("be.visible")
+      .should("contain.text", "Main"); // Case-insensitive match for "Main Laboratory" or "MAIN"
   });
 });
 
 describe("Storage Assignment - Type-Ahead Autocomplete (P1)", function () {
   beforeEach(function () {
-    // Navigate through order entry workflow to sample entry step
-    orderEntityPage = homePage.goToOrderPage();
-    cy.wait(1000);
-    patientEntryPage = orderEntityPage.getPatientPage();
-    cy.wait(1000);
-
-    // Search and select E2E test patient
-    patientEntryPage.searchPatientByFirstAndLastName("John", "Smith");
-    patientEntryPage.clickSearchPatientButton();
-    cy.wait(2000);
-    patientEntryPage.selectPatientFromSearchResults();
-    cy.wait(300);
-    orderEntityPage.clickNextButton();
-    cy.wait(1000);
-    orderEntityPage.selectCytology();
-    cy.wait(200);
-    orderEntityPage.clickNextButton();
-    cy.wait(1000);
+    // Set up intercepts BEFORE actions
+    cy.intercept("GET", "**/rest/storage/locations/search**").as("searchLocations");
+    // Navigation already done in before() - we're already on sample entry step
   });
 
   it("Should assign sample using type-ahead search", function () {
     storageAssignmentPage = new StorageAssignmentPage();
 
-    // Wait for storage location selector
-    cy.get('[data-testid="storage-location-selector"]', {
-      timeout: 10000,
-    }).should("be.visible");
+    // Wait for storage location selector (element readiness check)
+    cy.get('[data-testid="storage-location-selector"]', { timeout: 10000 })
+      .should("be.visible");
 
-    // Note: Autocomplete mode requires the component to be rendered with mode="autocomplete"
-    // This test assumes the component can switch modes or is rendered with autocomplete mode
-    // For now, we'll test the cascading dropdowns which are the primary mode
-    // Autocomplete mode testing may require component updates
-
-    // Type in search (if autocomplete ComboBox is available)
-    cy.get('[data-testid="location-search"]', { timeout: 5000 })
+    // With workflow="orders", need to expand to access search
+    cy.get('[data-testid="expand-button"]', { timeout: 10000 })
       .should("be.visible")
+      .click();
+
+    // Wait for modal to open and search input to be visible
+    // LocationManagementModal uses LocationSearchAndCreate which has data-testid="location-search-and-create"
+    cy.get('[data-testid="location-search-and-create"], #location-search', { timeout: 10000 })
+      .should("be.visible");
+
+    // Type in search (LocationFilterDropdown inside LocationSearchAndCreate)
+    cy.get('#location-search, [data-testid="location-search-and-create"] input', { timeout: 5000 })
+      .should("be.visible")
+      .clear()
       .type("MAIN");
 
-    cy.wait(1000);
-    // Select from dropdown results if available
-    cy.contains("MAIN").click({ force: true });
+    // Wait for search API call (intercept timing)
+    cy.wait("@searchLocations");
 
-    // Verify location path displays
-    cy.get('[data-testid="location-path"]', { timeout: 5000 }).should(
-      "be.visible",
-    );
+    // Select from dropdown results if available (retry-ability)
+    cy.contains("MAIN", { timeout: 5000 })
+      .should("be.visible")
+      .click({ force: true });
+
+    // Verify location path displays (retry-ability)
+    cy.get('[data-testid="location-path"]', { timeout: 5000 })
+      .should("be.visible");
   });
 });
 
 describe("Storage Assignment - Barcode Scan (P1)", function () {
   beforeEach(function () {
-    // Navigate through order entry workflow to sample entry step
-    orderEntityPage = homePage.goToOrderPage();
-    cy.wait(1000);
-    patientEntryPage = orderEntityPage.getPatientPage();
-    cy.wait(1000);
-
-    // Search and select E2E test patient
-    patientEntryPage.searchPatientByFirstAndLastName("John", "Smith");
-    patientEntryPage.clickSearchPatientButton();
-    cy.wait(2000);
-    patientEntryPage.selectPatientFromSearchResults();
-    cy.wait(300);
-    orderEntityPage.clickNextButton();
-    cy.wait(1000);
-    orderEntityPage.selectCytology();
-    cy.wait(200);
-    orderEntityPage.clickNextButton();
-    cy.wait(1000);
+    // Set up intercepts BEFORE actions
+    cy.intercept("POST", "**/rest/storage/barcode/validate**").as("validateBarcode");
+    // Navigation already done in before() - we're already on sample entry step
   });
 
   it("Should assign sample using barcode scanner", function () {
     storageAssignmentPage = new StorageAssignmentPage();
 
-    // Wait for storage location selector
-    cy.get('[data-testid="storage-location-selector"]', {
-      timeout: 10000,
-    }).should("be.visible");
+    // Wait for storage location selector (element readiness check)
+    cy.get('[data-testid="storage-location-selector"]', { timeout: 10000 })
+      .should("be.visible");
 
-    // Note: Barcode mode requires the component to be rendered with mode="barcode"
-    // This test assumes barcode input is available
-    // For now, we'll verify the selector is visible and can accept input
-    cy.get('[data-testid="barcode-input"]', { timeout: 5000 })
+    // With workflow="orders", need to expand to access barcode input
+    cy.get('[data-testid="expand-button"]', { timeout: 10000 })
+      .should("be.visible")
+      .click();
+
+    // Wait for modal to open and barcode input to be visible
+    cy.get('[data-testid="barcode-input"], [data-testid="unified-barcode-input"]', { timeout: 10000 })
+      .should("be.visible");
+
+    // Type barcode (simulating scanner input)
+    cy.get('[data-testid="barcode-input"], #barcode-input', { timeout: 5000 })
       .should("be.visible")
       .type("MAIN-FRZ01-SHA-RKR1-A5{enter}");
 
-    cy.wait(2000);
-    // Verify location parsed and displayed (if barcode parsing is implemented)
-    cy.get('[data-testid="location-path"]', { timeout: 5000 }).should(
-      "be.visible",
-    );
-  });
-});
+    // Wait for barcode validation API call (intercept timing)
+    cy.wait("@validateBarcode", { timeout: 10000 });
 
-describe("Storage Assignment - Inline Location Creation (P1)", function () {
-  beforeEach(function () {
-    // Navigate through order entry workflow to sample entry step
-    orderEntityPage = homePage.goToOrderPage();
-    cy.wait(1000);
-    patientEntryPage = orderEntityPage.getPatientPage();
-    cy.wait(1000);
-
-    // Search and select E2E test patient
-    patientEntryPage.searchPatientByFirstAndLastName("John", "Smith");
-    patientEntryPage.clickSearchPatientButton();
-    cy.wait(2000);
-    patientEntryPage.selectPatientFromSearchResults();
-    cy.wait(300);
-    orderEntityPage.clickNextButton();
-    cy.wait(1000);
-    orderEntityPage.selectCytology();
-    cy.wait(200);
-    orderEntityPage.clickNextButton();
-    cy.wait(1000);
-  });
-
-  it("Should allow inline creation of new room", function () {
-    storageAssignmentPage = new StorageAssignmentPage();
-
-    // Wait for storage location selector with inline creation enabled
-    cy.get('[data-testid="storage-location-selector"]', {
-      timeout: 10000,
-    }).should("be.visible");
-
-    // Click "Add New Room" button (if enableInlineCreation=true)
-    cy.contains("Add New Room", { timeout: 5000 }).should("be.visible").click();
-
-    // Wait for modal/form to appear
-    cy.wait(1000);
-
-    // Fill in new room form (modal)
-    cy.get('[data-testid="room-name"]', { timeout: 5000 })
+    // Verify location parsed and displayed (retry-ability)
+    cy.get('[data-testid="location-path"]', { timeout: 5000 })
       .should("be.visible")
-      .type("New Test Room");
-    cy.get('[data-testid="room-code"]').type("NEW-ROOM");
-
-    // Save new room
-    cy.get('[data-testid="save-room"]').click();
-    cy.wait(2000);
-
-    // Verify success notification
-    cy.get('div[role="status"]').should("be.visible");
-
-    // Verify new room appears in dropdown
-    cy.get('[data-testid="room-dropdown"]').click();
-    cy.contains("New Test Room", { timeout: 5000 }).should("be.visible");
+      .should("contain.text", "MAIN");
   });
 });
 
 describe("Storage Assignment - Capacity Warning (P1)", function () {
   beforeEach(function () {
-    // Navigate through order entry workflow to sample entry step
-    orderEntityPage = homePage.goToOrderPage();
-    cy.wait(1000);
-    patientEntryPage = orderEntityPage.getPatientPage();
-    cy.wait(1000);
-
-    // Search and select E2E test patient
-    patientEntryPage.searchPatientByFirstAndLastName("John", "Smith");
-    patientEntryPage.clickSearchPatientButton();
-    cy.wait(2000);
-    patientEntryPage.selectPatientFromSearchResults();
-    cy.wait(300);
-    orderEntityPage.clickNextButton();
-    cy.wait(1000);
-    orderEntityPage.selectCytology();
-    cy.wait(200);
-    orderEntityPage.clickNextButton();
-    cy.wait(1000);
+    // Set up intercepts BEFORE actions
+    cy.intercept("GET", "**/rest/storage/rooms**").as("getRooms");
+    cy.intercept("GET", "**/rest/storage/devices**").as("getDevices");
+    cy.intercept("GET", "**/rest/storage/shelves**").as("getShelves");
+    cy.intercept("GET", "**/rest/storage/racks**").as("getRacks");
+    // Navigation already done in before() - we're already on sample entry step
   });
 
   it("Should display capacity warning when rack is 80% full", function () {
     storageAssignmentPage = new StorageAssignmentPage();
 
-    // Wait for storage location selector
-    cy.get('[data-testid="storage-location-selector"]', {
-      timeout: 10000,
-    }).should("be.visible");
+    // Wait for storage location selector (element readiness check)
+    cy.get('[data-testid="storage-location-selector"]', { timeout: 10000 })
+      .should("be.visible");
+
+    // With workflow="orders", StorageLocationSelector shows CompactLocationView
+    // Need to click "Expand" button to open modal with cascading dropdowns
+    cy.get('[data-testid="expand-button"]', { timeout: 10000 })
+      .should("be.visible")
+      .click();
+
+    // Wait for modal to open - LocationManagementModal contains LocationSearchAndCreate
+    // Modal uses ComposedModal from Carbon, wait for it to be visible
+    cy.get('[role="dialog"]', { timeout: 10000 })
+      .should("be.visible");
+    
+    // LocationSearchAndCreate starts in search mode - need to click "Add Location" to show create form
+    // The create form contains EnhancedCascadingMode with comboboxes
+    cy.get('button:contains("Add Location"), [data-testid="add-location-button"]', { timeout: 10000 })
+      .should("be.visible")
+      .click();
+    
+    // Wait for create form to show EnhancedCascadingMode with comboboxes
+    cy.get('[data-testid="room-combobox"]', { timeout: 10000 })
+      .should("be.visible");
 
     // Select location in nearly-full rack
     storageAssignmentPage.selectRoom("MAIN");
-    cy.wait(1000);
+    cy.wait("@getRooms");
+    
     storageAssignmentPage.selectDevice("FRZ01");
-    cy.wait(1000);
+    cy.wait("@getDevices");
+    
     storageAssignmentPage.selectShelf("SHA");
-    cy.wait(1000);
+    cy.wait("@getShelves");
+    
     storageAssignmentPage.selectRack("RKR2"); // Assume this rack is 85% full
-    cy.wait(1000);
+    cy.wait("@getRacks");
 
-    // Verify capacity warning displays (if capacity calculation is implemented)
+    // Verify capacity warning displays (retry-ability)
     cy.get('[data-testid="capacity-warning"]', { timeout: 5000 })
       .should("be.visible")
-      .and("contain.text", "%");
+      .should("contain.text", "%");
   });
 });

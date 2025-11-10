@@ -649,8 +649,8 @@ procurement of additional storage equipment.
 
    **Rooms Tab**:
 
-   - Shows: [Expand] | Name | Code | Devices (count) | Samples (count) | Status | Actions
-   - Example row: [▶] | "Main Laboratory" | MAIN | 8 devices | 1,234 samples | Active
+   - Shows: [Expand] | Name | Code | Devices (count) | Sample Items (count) | Status | Actions
+   - Example row: [▶] | "Main Laboratory" | MAIN | 8 devices | 1,234 sample items | Active
      | [⋮]
    - Expandable row: Clicking expand icon (▶) reveals additional fields below row:
      Description, Created Date, Created By, Last Modified Date, Last Modified By

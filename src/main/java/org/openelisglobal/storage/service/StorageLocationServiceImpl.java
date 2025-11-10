@@ -534,8 +534,9 @@ public class StorageLocationServiceImpl implements StorageLocationService {
                 List<StorageDevice> devices = storageDeviceDAO.findByParentRoomId(room.getId());
                 map.put("deviceCount", devices != null ? devices.size() : 0);
 
-                // Count unique samples assigned to locations within this room
-                // This counts distinct samples from sample_storage_assignment, not occupied positions
+                // Count unique sample items assigned to locations within this room
+                // This counts distinct sample items from sample_storage_assignment, not occupied positions
+                // Storage tracking operates at SampleItem level (physical specimens), not Sample level (orders)
                 int sampleCount = countUniqueSamplesInRoom(room.getId(), devices);
                 map.put("sampleCount", sampleCount);
             } catch (Exception e) {
@@ -1076,13 +1077,14 @@ public class StorageLocationServiceImpl implements StorageLocationService {
     }
 
     /**
-     * Count unique samples assigned to locations within a room.
-     * This counts distinct samples from sample_storage_assignment table,
-     * not occupied positions, to get accurate sample counts.
+     * Count unique sample items assigned to locations within a room.
+     * This counts distinct sample items from sample_storage_assignment table,
+     * not occupied positions, to get accurate sample item counts.
+     * Storage tracking operates at SampleItem level (physical specimens), not Sample level (orders).
      * 
      * @param roomId The room ID
      * @param devices List of devices in the room (can be null)
-     * @return Count of unique samples assigned to locations in this room
+     * @return Count of unique sample items assigned to locations in this room
      */
     @Transactional(readOnly = true)
     private int countUniqueSamplesInRoom(Integer roomId, List<StorageDevice> devices) {
@@ -1133,16 +1135,16 @@ public class StorageLocationServiceImpl implements StorageLocationService {
                 return 0;
             }
             
-            // Count distinct samples from assignments where location matches
-            // Use HQL to count distinct sample IDs
-            String hql = "SELECT COUNT(DISTINCT ssa.sample.id) FROM SampleStorageAssignment ssa "
+            // Count distinct sample items from assignments where location matches
+            // Use HQL to count distinct sample item IDs (not sample IDs)
+            String hql = "SELECT COUNT(DISTINCT ssa.sampleItem.id) FROM SampleStorageAssignment ssa "
                     + "WHERE ssa.locationId IN :locationIds";
             jakarta.persistence.Query query = entityManager.createQuery(hql);
             query.setParameter("locationIds", locationIds);
             Long count = (Long) query.getSingleResult();
             return count != null ? count.intValue() : 0;
         } catch (Exception e) {
-            // If query fails, return 0 (data will show but sample count will be 0)
+            // If query fails, return 0 (data will show but sample item count will be 0)
             return 0;
         }
     }

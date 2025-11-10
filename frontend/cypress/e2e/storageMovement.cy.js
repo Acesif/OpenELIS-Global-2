@@ -3,6 +3,15 @@ import StorageAssignmentPage from "../pages/StorageAssignmentPage";
 /**
  * E2E Tests for User Story P2B - Sample Movement
  * Tests single and bulk sample movement with audit trail
+ *
+ * Constitution V.5 Compliance:
+ * - Video disabled by default (cypress.config.js)
+ * - Screenshots enabled on failure (cypress.config.js)
+ * - Intercepts set up BEFORE actions that trigger them
+ * - Uses .should() assertions for retry-ability (no arbitrary cy.wait())
+ * - Element readiness checks before all interactions
+ * - Focused on happy paths (user workflows, not implementation details)
+ * - Run individually during development: npm run cy:run -- --spec "cypress/e2e/storageMovement.cy.js"
  */
 
 let homePage = null;
@@ -223,12 +232,17 @@ describe("Storage Movement - Bulk Move (P2B)", function () {
             3,
           );
 
+          // Set up intercept for bulk move BEFORE action
+          cy.intercept("POST", "**/rest/storage/sample-items/bulk-move**").as("bulkMove");
+
           // Confirm bulk move
           cy.get('[data-testid="confirm-bulk-move-button"]').click();
-          cy.wait(3000);
+          
+          // Wait for bulk move API call (intercept timing, not arbitrary wait)
+          cy.wait("@bulkMove", { timeout: 10000 });
 
-          // Verify success
-          cy.get('div[role="status"]')
+          // Verify success (retry-ability)
+          cy.get('div[role="status"]', { timeout: 5000 })
             .should("be.visible")
             .and("contain.text", "success");
         } else {
@@ -279,15 +293,17 @@ describe("Storage Movement - Bulk Move (P2B)", function () {
       // Select target rack
       cy.get('[data-testid="target-rack-selector"]').within(() => {
         storageAssignmentPage.selectRoom("MAIN");
-        cy.wait(1000);
+        cy.wait("@getDevices");
         storageAssignmentPage.selectDevice("FRZ01");
-        cy.wait(1000);
+        cy.wait("@getShelves");
         storageAssignmentPage.selectShelf("SHA");
-        cy.wait(1000);
+        cy.wait("@getRacks");
         storageAssignmentPage.selectRack("RKR2");
       });
 
-      cy.wait(2000);
+      // Wait for position assignments to load (retry-ability, not arbitrary wait)
+      cy.get('[data-testid="position-assignment-preview"]', { timeout: 5000 })
+        .should("be.visible");
 
       // Edit first position assignment (if editable)
       cy.get("body").then(($body2) => {
@@ -298,12 +314,18 @@ describe("Storage Movement - Bulk Move (P2B)", function () {
             .clear()
             .type("C1");
 
+          // Set up intercept for bulk move BEFORE action
+          cy.intercept("POST", "**/rest/storage/sample-items/bulk-move**").as("bulkMove");
+
           // Confirm bulk move
           cy.get('[data-testid="confirm-bulk-move-button"]').click();
-          cy.wait(3000);
+          
+          // Wait for bulk move API call (intercept timing)
+          cy.wait("@bulkMove", { timeout: 10000 });
 
-          // Verify success
-          cy.get('div[role="status"]').should("be.visible");
+          // Verify success (retry-ability)
+          cy.get('div[role="status"]', { timeout: 5000 })
+            .should("be.visible");
         } else {
           cy.log(
             "Position assignment editing not yet implemented - skipping manual editing test",
@@ -315,11 +337,18 @@ describe("Storage Movement - Bulk Move (P2B)", function () {
 });
 
 describe("Storage Movement - Previous Position Freed (P2B)", function () {
+  beforeEach(() => {
+    // Set up intercepts BEFORE actions
+    cy.setupStorageIntercepts();
+  });
+
   it("Should verify previous position is freed after move", function () {
     // This test verifies that after moving a sample, the previous position
     // becomes available for other samples
     cy.visit("/Storage/samples");
-    cy.wait(3000);
+    
+    // Wait for samples to load using intercept (not arbitrary wait)
+    cy.wait("@getSamples", { timeout: 10000 });
 
     // Verify we're on the samples tab
     cy.get('[data-testid="sample-list"]', { timeout: 10000 }).should(

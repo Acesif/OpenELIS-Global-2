@@ -9,9 +9,9 @@ module.exports = defineConfig({
   defaultCommandTimeout: 30000, // Increased timeout for slow operations
   viewportWidth: 1200,
   viewportHeight: 700,
-  video: true, // Enable video recording for debugging
+  video: false, // Disabled by default per Constitution V.5 (enable only for debugging specific failures)
   watchForFileChanges: false,
-  screenshotOnRunFailure: true, // Take screenshots on failure
+  screenshotOnRunFailure: true, // Take screenshots on failure (required per Constitution V.5)
   env: {
     // Control whether test fixtures are cleaned up after tests
     // Set CYPRESS_CLEANUP_FIXTURES=false to keep fixtures for manual testing/debugging
