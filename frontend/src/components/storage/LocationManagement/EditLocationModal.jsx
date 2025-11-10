@@ -12,7 +12,10 @@ import {
   InlineNotification,
 } from "@carbon/react";
 import { FormattedMessage, useIntl } from "react-intl";
-import { putToOpenElisServer, getFromOpenElisServerV2 } from "../../utils/Utils";
+import {
+  putToOpenElisServer,
+  getFromOpenElisServerV2,
+} from "../../utils/Utils";
 import "./EditLocationModal.css";
 
 /**
@@ -101,20 +104,20 @@ const EditLocationModal = ({
   // First initialize from location prop (synchronous), then fetch full data from API
   useEffect(() => {
     let isMounted = true;
-    
+
     if (open && location && location.id && locationType) {
       // Initialize immediately from location prop to avoid undefined values
       setFormData(initializeFormDataFromLocation(location));
       setIsLoading(true);
       setError(null);
-      
+
       // Fetch full location data from API when modal opens
       const endpoint = `/rest/storage/${getPluralType(locationType)}/${location.id}`;
       getFromOpenElisServerV2(endpoint)
         .then((fullLocation) => {
           // Only update state if component is still mounted
           if (!isMounted) return;
-          
+
           if (fullLocation) {
             setFormData({
               name: fullLocation.name || "",
@@ -139,7 +142,7 @@ const EditLocationModal = ({
         .catch((err) => {
           // Only update state if component is still mounted
           if (!isMounted) return;
-          
+
           console.warn("Failed to fetch location data, using prop data:", err);
           // Keep the formData that was initialized from location prop
           // (already set above, so no need to set again)
@@ -167,7 +170,7 @@ const EditLocationModal = ({
       });
       setIsLoading(false);
     }
-    
+
     // Cleanup function to prevent state updates after unmount
     return () => {
       isMounted = false;
@@ -222,38 +225,34 @@ const EditLocationModal = ({
 
       // Use putToOpenElisServer utility
       await new Promise((resolve, reject) => {
-        putToOpenElisServer(
-          endpoint,
-          JSON.stringify(payload),
-          (status) => {
-            setIsSubmitting(false);
-            if (status >= 200 && status < 300) {
-              // Success - fetch updated location
-              fetch(`${window.location.origin}${endpoint}`)
-                .then((res) => res.json())
-                .then((data) => {
-                  if (onSave) {
-                    onSave(data);
-                  }
-                  handleClose();
-                  resolve(data);
-                })
-                .catch((err) => {
-                  // Even if fetch fails, consider update successful if status is OK
-                  if (onSave) {
-                    onSave(payload);
-                  }
-                  handleClose();
-                  resolve(payload);
-                });
-            } else {
-              // Error
-              const errorMessage = `Failed to update location (status: ${status})`;
-              setError(errorMessage);
-              reject(new Error(errorMessage));
-            }
-          },
-        );
+        putToOpenElisServer(endpoint, JSON.stringify(payload), (status) => {
+          setIsSubmitting(false);
+          if (status >= 200 && status < 300) {
+            // Success - fetch updated location
+            fetch(`${window.location.origin}${endpoint}`)
+              .then((res) => res.json())
+              .then((data) => {
+                if (onSave) {
+                  onSave(data);
+                }
+                handleClose();
+                resolve(data);
+              })
+              .catch((err) => {
+                // Even if fetch fails, consider update successful if status is OK
+                if (onSave) {
+                  onSave(payload);
+                }
+                handleClose();
+                resolve(payload);
+              });
+          } else {
+            // Error
+            const errorMessage = `Failed to update location (status: ${status})`;
+            setError(errorMessage);
+            reject(new Error(errorMessage));
+          }
+        });
       });
     } catch (error) {
       setIsSubmitting(false);
@@ -551,7 +550,9 @@ const EditLocationModal = ({
                   defaultMessage: "Rows",
                 })}
                 value={formData.rows || ""}
-                onChange={(e) => handleFieldChange("rows", parseInt(e.target.value) || 0)}
+                onChange={(e) =>
+                  handleFieldChange("rows", parseInt(e.target.value) || 0)
+                }
                 type="number"
                 min="0"
                 required
@@ -564,7 +565,9 @@ const EditLocationModal = ({
                   defaultMessage: "Columns",
                 })}
                 value={formData.columns || ""}
-                onChange={(e) => handleFieldChange("columns", parseInt(e.target.value) || 0)}
+                onChange={(e) =>
+                  handleFieldChange("columns", parseInt(e.target.value) || 0)
+                }
                 type="number"
                 min="0"
                 required
@@ -596,9 +599,9 @@ const EditLocationModal = ({
         </div>
       </ModalBody>
       <ModalFooter>
-        <Button 
-          kind="secondary" 
-          onClick={handleClose} 
+        <Button
+          kind="secondary"
+          onClick={handleClose}
           disabled={isSubmitting}
           data-testid="edit-location-cancel-button"
         >
@@ -612,7 +615,8 @@ const EditLocationModal = ({
             (locationType === "room" && !formData.name) ||
             (locationType === "device" && !formData.name) ||
             (locationType === "shelf" && !formData.label) ||
-            (locationType === "rack" && (!formData.label || !formData.rows || !formData.columns))
+            (locationType === "rack" &&
+              (!formData.label || !formData.rows || !formData.columns))
           }
           data-testid="edit-location-save-button"
         >
@@ -627,4 +631,3 @@ const EditLocationModal = ({
 };
 
 export default EditLocationModal;
-

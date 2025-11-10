@@ -130,4 +130,3 @@ describe("LocationActionsOverflowMenu", () => {
     expect(menuButton.getAttribute("aria-label")).toBeTruthy();
   });
 });
-

@@ -145,7 +145,9 @@ describe("EditLocationModal", () => {
       />,
     );
 
-    const parentField = await screen.findByTestId("edit-location-device-parent-room");
+    const parentField = await screen.findByTestId(
+      "edit-location-device-parent-room",
+    );
     const inputElement = parentField.querySelector("input") || parentField;
     expect(inputElement.disabled || inputElement.readOnly).toBe(true);
   });
@@ -165,7 +167,9 @@ describe("EditLocationModal", () => {
     );
 
     const nameField = await screen.findByTestId("edit-location-room-name");
-    const descriptionField = screen.getByTestId("edit-location-room-description");
+    const descriptionField = screen.getByTestId(
+      "edit-location-room-description",
+    );
 
     expect(nameField.disabled).toBe(false);
     expect(descriptionField.disabled).toBe(false);
@@ -191,10 +195,12 @@ describe("EditLocationModal", () => {
     // Wait for form to load, then check toggle
     await screen.findByTestId("edit-location-room-name");
     // Carbon Toggle button has ID "room-active" - query it directly
-    const toggleButton = await screen.findByRole("button", { name: /active/i }, { timeout: 2000 }).catch(() => {
-      // Fallback: find by ID
-      return document.getElementById("room-active");
-    });
+    const toggleButton = await screen
+      .findByRole("button", { name: /active/i }, { timeout: 2000 })
+      .catch(() => {
+        // Fallback: find by ID
+        return document.getElementById("room-active");
+      });
     expect(toggleButton).toBeTruthy();
     // Check aria-pressed or class for toggle state
     const ariaPressed = toggleButton.getAttribute("aria-pressed");
@@ -288,10 +294,12 @@ describe("EditLocationModal", () => {
    * T106: Test displays validation errors for duplicate code
    */
   test("testEditModal_ValidationErrors", async () => {
-    Utils.putToOpenElisServer.mockImplementation((endpoint, payload, callback) => {
-      // Use process.nextTick to ensure callback runs in next event loop tick
-      process.nextTick(() => callback(400));
-    });
+    Utils.putToOpenElisServer.mockImplementation(
+      (endpoint, payload, callback) => {
+        // Use process.nextTick to ensure callback runs in next event loop tick
+        process.nextTick(() => callback(400));
+      },
+    );
 
     renderWithIntl(
       <EditLocationModal
@@ -310,9 +318,11 @@ describe("EditLocationModal", () => {
     fireEvent.click(saveButton);
 
     // Wait for error to appear
-    const errorElement = await screen.findByText(/failed to update/i, {}, { timeout: 2000 }).catch(() => {
-      return screen.queryByText(/error/i);
-    });
+    const errorElement = await screen
+      .findByText(/failed to update/i, {}, { timeout: 2000 })
+      .catch(() => {
+        return screen.queryByText(/error/i);
+      });
     expect(errorElement).toBeTruthy();
   });
 
@@ -320,9 +330,11 @@ describe("EditLocationModal", () => {
    * T106: Test save button calls PUT endpoint
    */
   test("testEditModal_SaveCallsAPI", async () => {
-    Utils.putToOpenElisServer.mockImplementation((endpoint, payload, callback) => {
-      process.nextTick(() => callback(200));
-    });
+    Utils.putToOpenElisServer.mockImplementation(
+      (endpoint, payload, callback) => {
+        process.nextTick(() => callback(200));
+      },
+    );
 
     global.fetch = jest.fn(() =>
       Promise.resolve({
@@ -349,7 +361,7 @@ describe("EditLocationModal", () => {
 
     // Wait for API call
     await new Promise((resolve) => process.nextTick(resolve));
-    
+
     expect(Utils.putToOpenElisServer).toHaveBeenCalledWith(
       expect.stringContaining("/rest/storage/rooms/1"),
       expect.stringContaining("Updated Name"),
@@ -375,7 +387,9 @@ describe("EditLocationModal", () => {
       />,
     );
 
-    const cancelButton = await screen.findByTestId("edit-location-cancel-button");
+    const cancelButton = await screen.findByTestId(
+      "edit-location-cancel-button",
+    );
     fireEvent.click(cancelButton);
 
     expect(mockOnClose).toHaveBeenCalledTimes(1);

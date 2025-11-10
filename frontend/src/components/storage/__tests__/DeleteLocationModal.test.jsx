@@ -51,7 +51,8 @@ describe("DeleteLocationModal", () => {
           status: 409,
           data: {
             error: "Cannot delete room",
-            message: "Cannot delete Room 'Main Laboratory' because it contains 8 device(s)",
+            message:
+              "Cannot delete Room 'Main Laboratory' because it contains 8 device(s)",
           },
         });
       }, 0);
@@ -69,10 +70,14 @@ describe("DeleteLocationModal", () => {
 
     // Wait for constraint check to complete
     await new Promise((resolve) => setTimeout(resolve, 100));
-    
-    const constraintsError = screen.getByTestId("delete-location-constraints-error");
+
+    const constraintsError = screen.getByTestId(
+      "delete-location-constraints-error",
+    );
     expect(constraintsError).toBeTruthy();
-    const constraintsMessage = screen.getByTestId("delete-location-constraints-message");
+    const constraintsMessage = screen.getByTestId(
+      "delete-location-constraints-message",
+    );
     expect(constraintsMessage.textContent).toContain("contains 8 device");
 
     // Delete button should not be available when constraints exist
@@ -105,12 +110,14 @@ describe("DeleteLocationModal", () => {
 
     // Wait for constraint check to complete
     await new Promise((resolve) => setTimeout(resolve, 100));
-    
+
     expect(screen.getByTestId("delete-location-are-you-sure")).toBeTruthy();
     expect(screen.getByTestId("delete-location-cannot-be-undone")).toBeTruthy();
 
     // Confirmation checkbox and delete button should be present
-    expect(screen.getByTestId("delete-location-confirmation-checkbox")).toBeTruthy();
+    expect(
+      screen.getByTestId("delete-location-confirmation-checkbox"),
+    ).toBeTruthy();
     expect(screen.getByTestId("delete-location-confirm-button")).toBeTruthy();
   });
 
@@ -138,12 +145,14 @@ describe("DeleteLocationModal", () => {
     );
 
     await new Promise((resolve) => setTimeout(resolve, 100));
-    
+
     const confirmButton = screen.getByTestId("delete-location-confirm-button");
     expect(confirmButton.disabled).toBe(true);
 
     // Check the confirmation checkbox
-    const checkbox = screen.getByTestId("delete-location-confirmation-checkbox");
+    const checkbox = screen.getByTestId(
+      "delete-location-confirmation-checkbox",
+    );
     const checkboxInput = checkbox.querySelector("input") || checkbox;
     fireEvent.click(checkboxInput);
 
@@ -165,7 +174,7 @@ describe("DeleteLocationModal", () => {
         });
       }, 0);
     });
-    
+
     // Mock fetch for DELETE request
     global.fetch = jest.fn(() =>
       Promise.resolve({
@@ -186,18 +195,20 @@ describe("DeleteLocationModal", () => {
     );
 
     await new Promise((resolve) => setTimeout(resolve, 100));
-    
-    const checkbox = screen.getByTestId("delete-location-confirmation-checkbox");
+
+    const checkbox = screen.getByTestId(
+      "delete-location-confirmation-checkbox",
+    );
     const checkboxInput = checkbox.querySelector("input") || checkbox;
     fireEvent.click(checkboxInput);
 
     await new Promise((resolve) => setTimeout(resolve, 100));
-    
+
     const confirmButton = screen.getByTestId("delete-location-confirm-button");
     fireEvent.click(confirmButton);
 
     await new Promise((resolve) => setTimeout(resolve, 200));
-    
+
     // Note: The component uses fetch directly, not postToOpenElisServer
     // So we need to mock fetch instead
     expect(mockOnDelete).toHaveBeenCalled();
@@ -227,7 +238,7 @@ describe("DeleteLocationModal", () => {
     );
 
     await new Promise((resolve) => setTimeout(resolve, 100));
-    
+
     const cancelButton = screen.getByTestId("delete-location-cancel-button");
     fireEvent.click(cancelButton);
 
@@ -235,4 +246,3 @@ describe("DeleteLocationModal", () => {
     expect(mockOnDelete).not.toHaveBeenCalled();
   });
 });
-

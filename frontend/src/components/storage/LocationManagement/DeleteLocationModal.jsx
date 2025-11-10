@@ -71,11 +71,22 @@ const DeleteLocationModal = ({
         setIsCheckingConstraints(false);
         // Test mocks getFromOpenElisServer to return { status, data }
         // In real implementation, response would be the JSON data
-        if (response && (response.status === 409 || response.error || response.message)) {
+        if (
+          response &&
+          (response.status === 409 || response.error || response.message)
+        ) {
           // Constraints exist
-          const errorMsg = response.message || response.error || response.data?.message || response.data?.error || "Cannot delete location";
+          const errorMsg =
+            response.message ||
+            response.error ||
+            response.data?.message ||
+            response.data?.error ||
+            "Cannot delete location";
           setConstraints({
-            error: response.error || response.data?.error || "Cannot delete location",
+            error:
+              response.error ||
+              response.data?.error ||
+              "Cannot delete location",
             message: errorMsg,
           });
         } else if (response && response.status === 200) {
@@ -103,17 +114,14 @@ const DeleteLocationModal = ({
     const endpoint = `/rest/storage/${locationType}s/${location.id}`;
 
     // Use fetch directly for DELETE
-    fetch(
-      `${window.location.origin}${endpoint}`,
-      {
-        credentials: "include",
-        method: "DELETE",
-        headers: {
-          "Content-Type": "application/json",
-          "X-CSRF-Token": localStorage.getItem("CSRF"),
-        },
+    fetch(`${window.location.origin}${endpoint}`, {
+      credentials: "include",
+      method: "DELETE",
+      headers: {
+        "Content-Type": "application/json",
+        "X-CSRF-Token": localStorage.getItem("CSRF"),
       },
-    )
+    })
       .then(async (response) => {
         setIsDeleting(false);
 
@@ -126,7 +134,10 @@ const DeleteLocationModal = ({
         } else if (response.status === 409) {
           // Constraints exist
           const errorData = await response.json().catch(() => ({}));
-          const errorMessage = errorData.message || errorData.error || "Cannot delete location due to constraints";
+          const errorMessage =
+            errorData.message ||
+            errorData.error ||
+            "Cannot delete location due to constraints";
           setError(errorMessage);
           setConstraints({
             error: errorData.error || "Cannot delete location",
@@ -136,10 +147,12 @@ const DeleteLocationModal = ({
           // Other error
           const errorData = await response.json().catch(() => ({}));
           setError(
-            errorData.message || errorData.error || intl.formatMessage({
-              id: "storage.delete.error",
-              defaultMessage: "Failed to delete location",
-            }),
+            errorData.message ||
+              errorData.error ||
+              intl.formatMessage({
+                id: "storage.delete.error",
+                defaultMessage: "Failed to delete location",
+              }),
           );
         }
       })
@@ -163,7 +176,8 @@ const DeleteLocationModal = ({
     onClose();
   };
 
-  const locationName = location?.name || location?.label || location?.code || "Location";
+  const locationName =
+    location?.name || location?.label || location?.code || "Location";
   const canDelete = !isCheckingConstraints && !constraints && confirmed;
 
   return (
@@ -228,10 +242,8 @@ const DeleteLocationModal = ({
                   id: "storage.delete.are.you.sure",
                   defaultMessage: "Are you sure you want to delete",
                 })}
-              </span>
-              {" "}
-              <strong>{locationName}</strong>?
-              {" "}
+              </span>{" "}
+              <strong>{locationName}</strong>?{" "}
               <span data-testid="delete-location-cannot-be-undone">
                 {intl.formatMessage({
                   id: "storage.delete.cannot.be.undone",
@@ -281,4 +293,3 @@ const DeleteLocationModal = ({
 };
 
 export default DeleteLocationModal;
-
