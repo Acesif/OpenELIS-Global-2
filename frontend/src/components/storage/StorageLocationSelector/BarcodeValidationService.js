@@ -1,4 +1,4 @@
-import { getFromOpenElisServer } from '../../../utils/Utils';
+import { getFromOpenElisServer } from "../../../utils/Utils";
 
 /**
  * BarcodeValidationService - Client-side barcode validation service
@@ -22,17 +22,17 @@ import { getFromOpenElisServer } from '../../../utils/Utils';
  * Returns true if format is valid (2-5 levels with hyphen delimiter)
  */
 export const validateBarcodeFormat = (barcode) => {
-  if (!barcode || typeof barcode !== 'string') {
+  if (!barcode || typeof barcode !== "string") {
     return false;
   }
 
   // Must contain hyphens (hierarchical format)
-  if (!barcode.includes('-')) {
+  if (!barcode.includes("-")) {
     return false;
   }
 
   // Split by hyphen delimiter
-  const components = barcode.split('-');
+  const components = barcode.split("-");
 
   // Must have 2-5 components (minimum: room+device, maximum: room+device+shelf+rack+position)
   if (components.length < 2 || components.length > 5) {
@@ -40,7 +40,7 @@ export const validateBarcodeFormat = (barcode) => {
   }
 
   // All components must be non-empty
-  if (components.some(component => !component || component.trim() === '')) {
+  if (components.some((component) => !component || component.trim() === "")) {
     return false;
   }
 
@@ -56,7 +56,7 @@ export const parseBarcodeComponents = (barcode) => {
     return null;
   }
 
-  const components = barcode.split('-').map(c => c.trim());
+  const components = barcode.split("-").map((c) => c.trim());
 
   return {
     room: components[0] || null,
@@ -81,8 +81,9 @@ export const validateBarcode = (barcode, onSuccess, onError) => {
   if (!validateBarcodeFormat(barcode)) {
     const error = {
       valid: false,
-      errorMessage: 'Invalid barcode format. Expected format: ROOM-DEVICE or ROOM-DEVICE-SHELF-RACK-POSITION',
-      errorType: 'INVALID_FORMAT',
+      errorMessage:
+        "Invalid barcode format. Expected format: ROOM-DEVICE or ROOM-DEVICE-SHELF-RACK-POSITION",
+      errorType: "INVALID_FORMAT",
     };
     if (onError) {
       onError(error);
@@ -104,7 +105,7 @@ export const validateBarcode = (barcode, onSuccess, onError) => {
       if (onError) {
         onError(error);
       }
-    }
+    },
   );
 };
 
@@ -118,10 +119,10 @@ export const getBarcodeLevel = (barcode) => {
   }
 
   const levels = {
-    2: 'Device',
-    3: 'Shelf',
-    4: 'Rack',
-    5: 'Position',
+    2: "Device",
+    3: "Shelf",
+    4: "Rack",
+    5: "Position",
   };
 
   return levels[parsed.level] || null;
@@ -140,7 +141,7 @@ export const isMinimumLevel = (barcode) => {
  */
 export const buildHierarchicalPath = (validationResponse) => {
   if (!validationResponse || !validationResponse.valid) {
-    return '';
+    return "";
   }
 
   const parts = [];
@@ -149,7 +150,9 @@ export const buildHierarchicalPath = (validationResponse) => {
     parts.push(validationResponse.room.name || validationResponse.room.code);
   }
   if (validationResponse.device) {
-    parts.push(validationResponse.device.name || validationResponse.device.code);
+    parts.push(
+      validationResponse.device.name || validationResponse.device.code,
+    );
   }
   if (validationResponse.shelf) {
     parts.push(validationResponse.shelf.label || validationResponse.shelf.code);
@@ -158,10 +161,13 @@ export const buildHierarchicalPath = (validationResponse) => {
     parts.push(validationResponse.rack.label || validationResponse.rack.code);
   }
   if (validationResponse.position) {
-    parts.push(validationResponse.position.coordinate || validationResponse.position.code);
+    parts.push(
+      validationResponse.position.coordinate ||
+        validationResponse.position.code,
+    );
   }
 
-  return parts.join(' > ');
+  return parts.join(" > ");
 };
 
 /**

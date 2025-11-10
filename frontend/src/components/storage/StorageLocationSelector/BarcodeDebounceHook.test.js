@@ -1,6 +1,6 @@
-import React from 'react';
-import { render, act } from '@testing-library/react';
-import useBarcodeDebounce from './BarcodeDebounceHook';
+import React from "react";
+import { render, act } from "@testing-library/react";
+import useBarcodeDebounce from "./BarcodeDebounceHook";
 
 // Helper component to test the hook
 const HookWrapper = ({ callback, cooldown, warning, children }) => {
@@ -17,12 +17,12 @@ const renderHook = (callback, cooldown = 500, warning = null) => {
         hookResult = result;
         return null;
       }}
-    </HookWrapper>
+    </HookWrapper>,
   );
   return { result: { current: hookResult } };
 };
 
-describe('useBarcodeDebounce Hook', () => {
+describe("useBarcodeDebounce Hook", () => {
   beforeEach(() => {
     jest.clearAllMocks();
     jest.useFakeTimers();
@@ -32,12 +32,12 @@ describe('useBarcodeDebounce Hook', () => {
     jest.useRealTimers();
   });
 
-  describe('testDuplicateBarcodeWithin500msIgnored', () => {
-    it('should ignore duplicate barcode within 500ms cooldown', () => {
+  describe("testDuplicateBarcodeWithin500msIgnored", () => {
+    it("should ignore duplicate barcode within 500ms cooldown", () => {
       const mockCallback = jest.fn();
       const { result } = renderHook(mockCallback);
 
-      const barcode = 'MAIN-FRZ01';
+      const barcode = "MAIN-FRZ01";
 
       // First scan
       act(() => {
@@ -58,11 +58,11 @@ describe('useBarcodeDebounce Hook', () => {
       expect(mockCallback).not.toHaveBeenCalled();
     });
 
-    it('should process duplicate barcode after 500ms cooldown', () => {
+    it("should process duplicate barcode after 500ms cooldown", () => {
       const mockCallback = jest.fn();
       const { result } = renderHook(mockCallback);
 
-      const barcode = 'MAIN-FRZ01';
+      const barcode = "MAIN-FRZ01";
 
       // First scan
       act(() => {
@@ -84,14 +84,14 @@ describe('useBarcodeDebounce Hook', () => {
     });
   });
 
-  describe('testDifferentBarcodeWithin500msShowsWarning', () => {
-    it('should show warning when different barcode scanned within cooldown', () => {
+  describe("testDifferentBarcodeWithin500msShowsWarning", () => {
+    it("should show warning when different barcode scanned within cooldown", () => {
       const mockCallback = jest.fn();
       const mockWarningCallback = jest.fn();
       const { result } = renderHook(mockCallback, 500, mockWarningCallback);
 
-      const barcode1 = 'MAIN-FRZ01';
-      const barcode2 = 'MAIN-FRZ02';
+      const barcode1 = "MAIN-FRZ01";
+      const barcode2 = "MAIN-FRZ02";
 
       // First scan
       act(() => {
@@ -111,18 +111,18 @@ describe('useBarcodeDebounce Hook', () => {
 
       expect(mockWarningCallback).toHaveBeenCalledTimes(1);
       expect(mockWarningCallback).toHaveBeenCalledWith(
-        expect.stringContaining('Please wait')
+        expect.stringContaining("Please wait"),
       );
       expect(mockCallback).not.toHaveBeenCalled();
     });
 
-    it('should process different barcode after cooldown without warning', () => {
+    it("should process different barcode after cooldown without warning", () => {
       const mockCallback = jest.fn();
       const mockWarningCallback = jest.fn();
       const { result } = renderHook(mockCallback, 500, mockWarningCallback);
 
-      const barcode1 = 'MAIN-FRZ01';
-      const barcode2 = 'MAIN-FRZ02';
+      const barcode1 = "MAIN-FRZ01";
+      const barcode2 = "MAIN-FRZ02";
 
       // First scan
       act(() => {
@@ -145,13 +145,13 @@ describe('useBarcodeDebounce Hook', () => {
     });
   });
 
-  describe('testBarcodeAfter500msProcessed', () => {
-    it('should process barcode after 500ms cooldown expires', () => {
+  describe("testBarcodeAfter500msProcessed", () => {
+    it("should process barcode after 500ms cooldown expires", () => {
       const mockCallback = jest.fn();
       const { result } = renderHook(mockCallback);
 
-      const barcode1 = 'MAIN-FRZ01';
-      const barcode2 = 'MAIN-FRZ02';
+      const barcode1 = "MAIN-FRZ01";
+      const barcode2 = "MAIN-FRZ02";
 
       // First scan
       act(() => {
@@ -175,11 +175,11 @@ describe('useBarcodeDebounce Hook', () => {
       expect(mockCallback).toHaveBeenCalledWith(barcode2);
     });
 
-    it('should process barcodes in sequence with proper cooldown', () => {
+    it("should process barcodes in sequence with proper cooldown", () => {
       const mockCallback = jest.fn();
       const { result } = renderHook(mockCallback);
 
-      const barcodes = ['MAIN-FRZ01', 'MAIN-FRZ02', 'MAIN-FRZ03'];
+      const barcodes = ["MAIN-FRZ01", "MAIN-FRZ02", "MAIN-FRZ03"];
 
       barcodes.forEach((barcode, index) => {
         act(() => {
@@ -197,13 +197,13 @@ describe('useBarcodeDebounce Hook', () => {
     });
   });
 
-  describe('testCooldownTimerResets', () => {
-    it('should reset cooldown timer on each scan', () => {
+  describe("testCooldownTimerResets", () => {
+    it("should reset cooldown timer on each scan", () => {
       const mockCallback = jest.fn();
       const { result } = renderHook(mockCallback);
 
-      const barcode1 = 'MAIN-FRZ01';
-      const barcode2 = 'MAIN-FRZ02';
+      const barcode1 = "MAIN-FRZ01";
+      const barcode2 = "MAIN-FRZ02";
 
       // First scan
       act(() => {
@@ -240,11 +240,11 @@ describe('useBarcodeDebounce Hook', () => {
       expect(mockCallback).toHaveBeenCalledWith(barcode2);
     });
 
-    it('should maintain separate cooldown for each unique barcode', () => {
+    it("should maintain separate cooldown for each unique barcode", () => {
       const mockCallback = jest.fn();
       const { result } = renderHook(mockCallback);
 
-      const barcode1 = 'MAIN-FRZ01';
+      const barcode1 = "MAIN-FRZ01";
 
       // First scan
       act(() => {
@@ -281,13 +281,13 @@ describe('useBarcodeDebounce Hook', () => {
     });
   });
 
-  describe('testMultipleRapidScansHandled', () => {
-    it('should handle multiple rapid scans correctly', () => {
+  describe("testMultipleRapidScansHandled", () => {
+    it("should handle multiple rapid scans correctly", () => {
       const mockCallback = jest.fn();
       const mockWarningCallback = jest.fn();
       const { result } = renderHook(mockCallback, 500, mockWarningCallback);
 
-      const barcodes = ['MAIN-FRZ01', 'MAIN-FRZ02', 'MAIN-FRZ03', 'MAIN-FRZ04'];
+      const barcodes = ["MAIN-FRZ01", "MAIN-FRZ02", "MAIN-FRZ03", "MAIN-FRZ04"];
 
       // Rapid scans (all within 500ms)
       barcodes.forEach((barcode, index) => {
@@ -305,12 +305,12 @@ describe('useBarcodeDebounce Hook', () => {
       expect(mockWarningCallback).toHaveBeenCalled();
     });
 
-    it('should process scans in batches with cooldown periods', () => {
+    it("should process scans in batches with cooldown periods", () => {
       const mockCallback = jest.fn();
       const { result } = renderHook(mockCallback);
 
-      const batch1 = ['MAIN-FRZ01', 'MAIN-FRZ02'];
-      const batch2 = ['MAIN-FRZ03', 'MAIN-FRZ04'];
+      const batch1 = ["MAIN-FRZ01", "MAIN-FRZ02"];
+      const batch2 = ["MAIN-FRZ03", "MAIN-FRZ04"];
 
       // First batch (rapid scans)
       batch1.forEach((barcode, index) => {
@@ -345,11 +345,11 @@ describe('useBarcodeDebounce Hook', () => {
       expect(mockCallback).toHaveBeenCalledWith(batch2[0]);
     });
 
-    it('should clear state after extended idle period', () => {
+    it("should clear state after extended idle period", () => {
       const mockCallback = jest.fn();
       const { result } = renderHook(mockCallback);
 
-      const barcode = 'MAIN-FRZ01';
+      const barcode = "MAIN-FRZ01";
 
       // Scan
       act(() => {
@@ -374,19 +374,19 @@ describe('useBarcodeDebounce Hook', () => {
     });
   });
 
-  describe('edge cases', () => {
-    it('should handle empty barcode', () => {
+  describe("edge cases", () => {
+    it("should handle empty barcode", () => {
       const mockCallback = jest.fn();
       const { result } = renderHook(mockCallback);
 
       act(() => {
-        result.current.handleScan('');
+        result.current.handleScan("");
       });
 
       expect(mockCallback).not.toHaveBeenCalled();
     });
 
-    it('should handle null barcode', () => {
+    it("should handle null barcode", () => {
       const mockCallback = jest.fn();
       const { result } = renderHook(mockCallback);
 
@@ -397,7 +397,7 @@ describe('useBarcodeDebounce Hook', () => {
       expect(mockCallback).not.toHaveBeenCalled();
     });
 
-    it('should handle undefined barcode', () => {
+    it("should handle undefined barcode", () => {
       const mockCallback = jest.fn();
       const { result } = renderHook(mockCallback);
 
@@ -408,12 +408,12 @@ describe('useBarcodeDebounce Hook', () => {
       expect(mockCallback).not.toHaveBeenCalled();
     });
 
-    it('should handle whitespace-only barcode', () => {
+    it("should handle whitespace-only barcode", () => {
       const mockCallback = jest.fn();
       const { result } = renderHook(mockCallback);
 
       act(() => {
-        result.current.handleScan('   ');
+        result.current.handleScan("   ");
       });
 
       expect(mockCallback).not.toHaveBeenCalled();

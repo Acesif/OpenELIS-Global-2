@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback } from 'react';
+import { useState, useRef, useCallback } from "react";
 
 /**
  * useBarcodeDebounce - Custom React hook for barcode scan debouncing
@@ -27,7 +27,7 @@ const useBarcodeDebounce = (onScan, cooldownMs = 500, onWarning = null) => {
   const handleScan = useCallback(
     (barcode) => {
       // Validate barcode
-      if (!barcode || typeof barcode !== 'string' || barcode.trim() === '') {
+      if (!barcode || typeof barcode !== "string" || barcode.trim() === "") {
         return;
       }
 
@@ -48,7 +48,7 @@ const useBarcodeDebounce = (onScan, cooldownMs = 500, onWarning = null) => {
             if (onWarning) {
               const remainingCooldown = cooldownMs - timeSinceLastScan;
               onWarning(
-                `Please wait ${Math.ceil(remainingCooldown / 1000)} second(s) before scanning another barcode.`
+                `Please wait ${Math.ceil(remainingCooldown / 1000)} second(s) before scanning another barcode.`,
               );
             }
             return;
@@ -77,7 +77,7 @@ const useBarcodeDebounce = (onScan, cooldownMs = 500, onWarning = null) => {
         cooldownTimerRef.current = null;
       }, cooldownMs);
     },
-    [onScan, onWarning, cooldownMs, lastScannedBarcode]
+    [onScan, onWarning, cooldownMs, lastScannedBarcode],
   );
 
   /**

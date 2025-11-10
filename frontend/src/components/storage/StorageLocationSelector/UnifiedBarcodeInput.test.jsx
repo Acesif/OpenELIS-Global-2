@@ -1,33 +1,33 @@
-import React from 'react';
-import { render, screen, fireEvent, act } from '@testing-library/react';
-import { IntlProvider } from 'react-intl';
-import '@testing-library/jest-dom';
-import UnifiedBarcodeInput from './UnifiedBarcodeInput';
-import { getFromOpenElisServer } from '../../utils/Utils';
+import React from "react";
+import { render, screen, fireEvent, act } from "@testing-library/react";
+import { IntlProvider } from "react-intl";
+import "@testing-library/jest-dom";
+import UnifiedBarcodeInput from "./UnifiedBarcodeInput";
+import { getFromOpenElisServer } from "../../utils/Utils";
 
 // Mock API utilities
-jest.mock('../../utils/Utils', () => ({
+jest.mock("../../utils/Utils", () => ({
   getFromOpenElisServer: jest.fn(),
 }));
 
 // Mock translations
 const messages = {
-  'barcode.scanOrType': 'Scan barcode or type location',
-  'barcode.ready': 'Ready to scan',
-  'barcode.success': 'Location found',
-  'barcode.error': 'Invalid barcode',
-  'barcode.invalidFormat': 'Invalid barcode format',
+  "barcode.scanOrType": "Scan barcode or type location",
+  "barcode.ready": "Ready to scan",
+  "barcode.success": "Location found",
+  "barcode.error": "Invalid barcode",
+  "barcode.invalidFormat": "Invalid barcode format",
 };
 
 const renderWithIntl = (component) => {
   return render(
     <IntlProvider locale="en" messages={messages}>
       {component}
-    </IntlProvider>
+    </IntlProvider>,
   );
 };
 
-describe('UnifiedBarcodeInput', () => {
+describe("UnifiedBarcodeInput", () => {
   let mockOnScan;
   let mockOnTypeAhead;
 
@@ -41,45 +41,47 @@ describe('UnifiedBarcodeInput', () => {
     jest.clearAllTimers();
   });
 
-  describe('Keyboard Input', () => {
-    it('should accept manual keyboard input', () => {
+  describe("Keyboard Input", () => {
+    it("should accept manual keyboard input", () => {
       renderWithIntl(
         <UnifiedBarcodeInput
           onScan={mockOnScan}
           onTypeAhead={mockOnTypeAhead}
           validationState="ready"
-        />
+        />,
       );
 
-      const input = screen.getByRole('textbox');
-      fireEvent.change(input, { target: { value: 'MAIN-FRZ01' } });
+      const input = screen.getByRole("textbox");
+      fireEvent.change(input, { target: { value: "MAIN-FRZ01" } });
 
-      expect(input.value).toBe('MAIN-FRZ01');
+      expect(input.value).toBe("MAIN-FRZ01");
     });
 
-    it('should allow typing slowly (normal user input)', () => {
+    it("should allow typing slowly (normal user input)", () => {
       renderWithIntl(
         <UnifiedBarcodeInput
           onScan={mockOnScan}
           onTypeAhead={mockOnTypeAhead}
           validationState="ready"
-        />
+        />,
       );
 
-      const input = screen.getByRole('textbox');
+      const input = screen.getByRole("textbox");
 
       // Type characters slowly (simulate user typing)
-      const text = 'MAIN';
+      const text = "MAIN";
       for (let i = 0; i < text.length; i++) {
-        fireEvent.change(input, { target: { value: text.substring(0, i + 1) } });
+        fireEvent.change(input, {
+          target: { value: text.substring(0, i + 1) },
+        });
       }
 
-      expect(input.value).toBe('MAIN');
+      expect(input.value).toBe("MAIN");
     });
   });
 
-  describe('Rapid Character Input (Barcode Scanner)', () => {
-    it('should detect rapid character input as barcode scan', () => {
+  describe("Rapid Character Input (Barcode Scanner)", () => {
+    it("should detect rapid character input as barcode scan", () => {
       jest.useFakeTimers();
 
       renderWithIntl(
@@ -87,24 +89,24 @@ describe('UnifiedBarcodeInput', () => {
           onScan={mockOnScan}
           onTypeAhead={mockOnTypeAhead}
           validationState="ready"
-        />
+        />,
       );
 
-      const input = screen.getByRole('textbox');
+      const input = screen.getByRole("textbox");
 
       // Simulate rapid barcode scan input (all characters within 50ms)
-      const barcode = 'MAIN-FRZ01-SHA-RKR1';
+      const barcode = "MAIN-FRZ01-SHA-RKR1";
       fireEvent.change(input, { target: { value: barcode } });
 
       // Simulate Enter key immediately after scan
-      fireEvent.keyDown(input, { key: 'Enter', code: 'Enter' });
+      fireEvent.keyDown(input, { key: "Enter", code: "Enter" });
 
       expect(mockOnScan).toHaveBeenCalledWith(barcode);
 
       jest.useRealTimers();
     });
 
-    it('should handle rapid character input with timing detection', () => {
+    it("should handle rapid character input with timing detection", () => {
       jest.useFakeTimers();
 
       renderWithIntl(
@@ -112,11 +114,11 @@ describe('UnifiedBarcodeInput', () => {
           onScan={mockOnScan}
           onTypeAhead={mockOnTypeAhead}
           validationState="ready"
-        />
+        />,
       );
 
-      const input = screen.getByRole('textbox');
-      const barcode = 'MAIN-FRZ01';
+      const input = screen.getByRole("textbox");
+      const barcode = "MAIN-FRZ01";
 
       // Simulate very fast input (scanner speed)
       fireEvent.change(input, { target: { value: barcode } });
@@ -126,7 +128,7 @@ describe('UnifiedBarcodeInput', () => {
         jest.advanceTimersByTime(30);
       });
 
-      fireEvent.keyDown(input, { key: 'Enter', code: 'Enter' });
+      fireEvent.keyDown(input, { key: "Enter", code: "Enter" });
 
       expect(mockOnScan).toHaveBeenCalled();
 
@@ -134,186 +136,186 @@ describe('UnifiedBarcodeInput', () => {
     });
   });
 
-  describe('Format-Based Detection', () => {
-    it('should detect barcode format (with hyphens)', () => {
+  describe("Format-Based Detection", () => {
+    it("should detect barcode format (with hyphens)", () => {
       renderWithIntl(
         <UnifiedBarcodeInput
           onScan={mockOnScan}
           onTypeAhead={mockOnTypeAhead}
           validationState="ready"
-        />
+        />,
       );
 
-      const input = screen.getByRole('textbox');
-      const barcodeWithHyphens = 'MAIN-FRZ01-SHA';
+      const input = screen.getByRole("textbox");
+      const barcodeWithHyphens = "MAIN-FRZ01-SHA";
 
       fireEvent.change(input, { target: { value: barcodeWithHyphens } });
-      fireEvent.keyDown(input, { key: 'Enter', code: 'Enter' });
+      fireEvent.keyDown(input, { key: "Enter", code: "Enter" });
 
       expect(mockOnScan).toHaveBeenCalledWith(barcodeWithHyphens);
     });
 
-    it('should detect type-ahead format (without hyphens)', () => {
+    it("should detect type-ahead format (without hyphens)", () => {
       renderWithIntl(
         <UnifiedBarcodeInput
           onScan={mockOnScan}
           onTypeAhead={mockOnTypeAhead}
           validationState="ready"
-        />
+        />,
       );
 
-      const input = screen.getByRole('textbox');
-      const typeAheadText = 'Freezer';
+      const input = screen.getByRole("textbox");
+      const typeAheadText = "Freezer";
 
       fireEvent.change(input, { target: { value: typeAheadText } });
-      fireEvent.keyDown(input, { key: 'Enter', code: 'Enter' });
+      fireEvent.keyDown(input, { key: "Enter", code: "Enter" });
 
       expect(mockOnTypeAhead).toHaveBeenCalledWith(typeAheadText);
     });
 
-    it('should distinguish between hyphenated barcode and text search', () => {
+    it("should distinguish between hyphenated barcode and text search", () => {
       renderWithIntl(
         <UnifiedBarcodeInput
           onScan={mockOnScan}
           onTypeAhead={mockOnTypeAhead}
           validationState="ready"
-        />
+        />,
       );
 
-      const input = screen.getByRole('textbox');
+      const input = screen.getByRole("textbox");
 
       // Barcode with hyphens
-      fireEvent.change(input, { target: { value: 'ROOM-DEVICE' } });
-      fireEvent.keyDown(input, { key: 'Enter', code: 'Enter' });
-      expect(mockOnScan).toHaveBeenCalledWith('ROOM-DEVICE');
+      fireEvent.change(input, { target: { value: "ROOM-DEVICE" } });
+      fireEvent.keyDown(input, { key: "Enter", code: "Enter" });
+      expect(mockOnScan).toHaveBeenCalledWith("ROOM-DEVICE");
 
       mockOnScan.mockClear();
       mockOnTypeAhead.mockClear();
 
       // Text without hyphens
-      fireEvent.change(input, { target: { value: 'Main Lab' } });
-      fireEvent.keyDown(input, { key: 'Enter', code: 'Enter' });
-      expect(mockOnTypeAhead).toHaveBeenCalledWith('Main Lab');
+      fireEvent.change(input, { target: { value: "Main Lab" } });
+      fireEvent.keyDown(input, { key: "Enter", code: "Enter" });
+      expect(mockOnTypeAhead).toHaveBeenCalledWith("Main Lab");
     });
   });
 
-  describe('Enter Key Validation', () => {
-    it('should trigger onScan when Enter pressed on barcode', () => {
+  describe("Enter Key Validation", () => {
+    it("should trigger onScan when Enter pressed on barcode", () => {
       renderWithIntl(
         <UnifiedBarcodeInput
           onScan={mockOnScan}
           onTypeAhead={mockOnTypeAhead}
           validationState="ready"
-        />
+        />,
       );
 
-      const input = screen.getByRole('textbox');
-      const barcode = 'MAIN-FRZ01';
+      const input = screen.getByRole("textbox");
+      const barcode = "MAIN-FRZ01";
 
       fireEvent.change(input, { target: { value: barcode } });
-      fireEvent.keyDown(input, { key: 'Enter', code: 'Enter' });
+      fireEvent.keyDown(input, { key: "Enter", code: "Enter" });
 
       expect(mockOnScan).toHaveBeenCalledWith(barcode);
       expect(mockOnScan).toHaveBeenCalledTimes(1);
     });
 
-    it('should trigger onTypeAhead when Enter pressed on text', () => {
+    it("should trigger onTypeAhead when Enter pressed on text", () => {
       renderWithIntl(
         <UnifiedBarcodeInput
           onScan={mockOnScan}
           onTypeAhead={mockOnTypeAhead}
           validationState="ready"
-        />
+        />,
       );
 
-      const input = screen.getByRole('textbox');
-      const searchText = 'Freezer';
+      const input = screen.getByRole("textbox");
+      const searchText = "Freezer";
 
       fireEvent.change(input, { target: { value: searchText } });
-      fireEvent.keyDown(input, { key: 'Enter', code: 'Enter' });
+      fireEvent.keyDown(input, { key: "Enter", code: "Enter" });
 
       expect(mockOnTypeAhead).toHaveBeenCalledWith(searchText);
       expect(mockOnTypeAhead).toHaveBeenCalledTimes(1);
     });
 
-    it('should not trigger validation on other keys', () => {
+    it("should not trigger validation on other keys", () => {
       renderWithIntl(
         <UnifiedBarcodeInput
           onScan={mockOnScan}
           onTypeAhead={mockOnTypeAhead}
           validationState="ready"
-        />
+        />,
       );
 
-      const input = screen.getByRole('textbox');
+      const input = screen.getByRole("textbox");
 
-      fireEvent.change(input, { target: { value: 'MAIN-FRZ01' } });
-      fireEvent.keyDown(input, { key: 'Tab', code: 'Tab' });
+      fireEvent.change(input, { target: { value: "MAIN-FRZ01" } });
+      fireEvent.keyDown(input, { key: "Tab", code: "Tab" });
 
       expect(mockOnScan).not.toHaveBeenCalled();
       expect(mockOnTypeAhead).not.toHaveBeenCalled();
     });
   });
 
-  describe('Field Blur Validation', () => {
+  describe("Field Blur Validation", () => {
     // Note: Blur event testing with Carbon components in jsdom is unreliable.
     // The validation logic tested here is also covered by Enter key tests above.
     // These tests verify the component structure and handler attachment.
 
-    it('should have onBlur handler attached', () => {
+    it("should have onBlur handler attached", () => {
       const { container } = renderWithIntl(
         <UnifiedBarcodeInput
           onScan={mockOnScan}
           onTypeAhead={mockOnTypeAhead}
           validationState="ready"
-        />
+        />,
       );
 
-      const input = screen.getByRole('textbox');
+      const input = screen.getByRole("textbox");
       // Verify input exists and can receive blur events
       expect(input).toBeTruthy();
-      expect(container.querySelector('#barcode-input')).toBeTruthy();
+      expect(container.querySelector("#barcode-input")).toBeTruthy();
     });
 
-    it('should not trigger validation with empty input', () => {
+    it("should not trigger validation with empty input", () => {
       renderWithIntl(
         <UnifiedBarcodeInput
           onScan={mockOnScan}
           onTypeAhead={mockOnTypeAhead}
           validationState="ready"
-        />
+        />,
       );
 
-      const input = screen.getByRole('textbox');
+      const input = screen.getByRole("textbox");
 
       // Empty input - no validation should occur
-      expect(input.value).toBe('');
+      expect(input.value).toBe("");
       expect(mockOnScan).not.toHaveBeenCalled();
       expect(mockOnTypeAhead).not.toHaveBeenCalled();
     });
   });
 
-  describe('Visual Feedback States', () => {
-    it('should display ready state initially', () => {
+  describe("Visual Feedback States", () => {
+    it("should display ready state initially", () => {
       const { container } = renderWithIntl(
         <UnifiedBarcodeInput
           onScan={mockOnScan}
           onTypeAhead={mockOnTypeAhead}
           validationState="ready"
-        />
+        />,
       );
 
       // Check for ready state visual indicator
       expect(container.querySelector('[data-state="ready"]')).toBeTruthy();
     });
 
-    it('should display success state after successful validation', () => {
+    it("should display success state after successful validation", () => {
       const { rerender, container } = renderWithIntl(
         <UnifiedBarcodeInput
           onScan={mockOnScan}
           onTypeAhead={mockOnTypeAhead}
           validationState="ready"
-        />
+        />,
       );
 
       // Update to success state
@@ -324,20 +326,20 @@ describe('UnifiedBarcodeInput', () => {
             onTypeAhead={mockOnTypeAhead}
             validationState="success"
           />
-        </IntlProvider>
+        </IntlProvider>,
       );
 
       expect(container.querySelector('[data-state="success"]')).toBeTruthy();
     });
 
-    it('should display error state with error message', () => {
-      const errorMessage = 'Invalid barcode format';
+    it("should display error state with error message", () => {
+      const errorMessage = "Invalid barcode format";
       const { rerender, container } = renderWithIntl(
         <UnifiedBarcodeInput
           onScan={mockOnScan}
           onTypeAhead={mockOnTypeAhead}
           validationState="ready"
-        />
+        />,
       );
 
       // Update to error state
@@ -349,20 +351,20 @@ describe('UnifiedBarcodeInput', () => {
             validationState="error"
             errorMessage={errorMessage}
           />
-        </IntlProvider>
+        </IntlProvider>,
       );
 
       expect(container.querySelector('[data-state="error"]')).toBeTruthy();
       expect(screen.getByText(errorMessage)).toBeTruthy();
     });
 
-    it('should transition between states correctly', () => {
+    it("should transition between states correctly", () => {
       const { rerender, container } = renderWithIntl(
         <UnifiedBarcodeInput
           onScan={mockOnScan}
           onTypeAhead={mockOnTypeAhead}
           validationState="ready"
-        />
+        />,
       );
 
       // Ready -> Success
@@ -373,7 +375,7 @@ describe('UnifiedBarcodeInput', () => {
             onTypeAhead={mockOnTypeAhead}
             validationState="success"
           />
-        </IntlProvider>
+        </IntlProvider>,
       );
       expect(container.querySelector('[data-state="success"]')).toBeTruthy();
 
@@ -386,7 +388,7 @@ describe('UnifiedBarcodeInput', () => {
             validationState="error"
             errorMessage="Test error"
           />
-        </IntlProvider>
+        </IntlProvider>,
       );
       expect(container.querySelector('[data-state="error"]')).toBeTruthy();
 
@@ -398,14 +400,14 @@ describe('UnifiedBarcodeInput', () => {
             onTypeAhead={mockOnTypeAhead}
             validationState="ready"
           />
-        </IntlProvider>
+        </IntlProvider>,
       );
       expect(container.querySelector('[data-state="ready"]')).toBeTruthy();
     });
   });
 
-  describe('Auto-Clear After Success', () => {
-    it('should clear input after successful validation', () => {
+  describe("Auto-Clear After Success", () => {
+    it("should clear input after successful validation", () => {
       jest.useFakeTimers();
 
       const { rerender } = renderWithIntl(
@@ -413,18 +415,18 @@ describe('UnifiedBarcodeInput', () => {
           onScan={mockOnScan}
           onTypeAhead={mockOnTypeAhead}
           validationState="ready"
-        />
+        />,
       );
 
-      const input = screen.getByRole('textbox');
-      const barcode = 'MAIN-FRZ01';
+      const input = screen.getByRole("textbox");
+      const barcode = "MAIN-FRZ01";
 
       // Enter barcode
       fireEvent.change(input, { target: { value: barcode } });
       expect(input.value).toBe(barcode);
 
       // Trigger validation
-      fireEvent.keyDown(input, { key: 'Enter', code: 'Enter' });
+      fireEvent.keyDown(input, { key: "Enter", code: "Enter" });
 
       // Update to success state
       rerender(
@@ -434,7 +436,7 @@ describe('UnifiedBarcodeInput', () => {
             onTypeAhead={mockOnTypeAhead}
             validationState="success"
           />
-        </IntlProvider>
+        </IntlProvider>,
       );
 
       // Wait for auto-clear timeout (e.g., 2 seconds)
@@ -442,12 +444,12 @@ describe('UnifiedBarcodeInput', () => {
         jest.advanceTimersByTime(2000);
       });
 
-      expect(input.value).toBe('');
+      expect(input.value).toBe("");
 
       jest.useRealTimers();
     });
 
-    it('should not clear input after error state', () => {
+    it("should not clear input after error state", () => {
       jest.useFakeTimers();
 
       const { rerender } = renderWithIntl(
@@ -455,11 +457,11 @@ describe('UnifiedBarcodeInput', () => {
           onScan={mockOnScan}
           onTypeAhead={mockOnTypeAhead}
           validationState="ready"
-        />
+        />,
       );
 
-      const input = screen.getByRole('textbox');
-      const barcode = 'INVALID';
+      const input = screen.getByRole("textbox");
+      const barcode = "INVALID";
 
       // Enter invalid barcode
       fireEvent.change(input, { target: { value: barcode } });
@@ -474,7 +476,7 @@ describe('UnifiedBarcodeInput', () => {
             validationState="error"
             errorMessage="Invalid barcode"
           />
-        </IntlProvider>
+        </IntlProvider>,
       );
 
       // Wait (input should NOT clear on error)
@@ -487,7 +489,7 @@ describe('UnifiedBarcodeInput', () => {
       jest.useRealTimers();
     });
 
-    it('should reset to ready state after auto-clear', () => {
+    it("should reset to ready state after auto-clear", () => {
       jest.useFakeTimers();
 
       const { rerender, container } = renderWithIntl(
@@ -495,7 +497,7 @@ describe('UnifiedBarcodeInput', () => {
           onScan={mockOnScan}
           onTypeAhead={mockOnTypeAhead}
           validationState="success"
-        />
+        />,
       );
 
       // Wait for auto-clear and state reset
@@ -510,7 +512,7 @@ describe('UnifiedBarcodeInput', () => {
             onTypeAhead={mockOnTypeAhead}
             validationState="ready"
           />
-        </IntlProvider>
+        </IntlProvider>,
       );
 
       expect(container.querySelector('[data-state="ready"]')).toBeTruthy();
