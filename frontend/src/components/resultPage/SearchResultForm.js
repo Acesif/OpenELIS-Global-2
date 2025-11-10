@@ -1266,6 +1266,7 @@ export function SearchResults(props) {
   };
 
   // Fetch location for a sample when expanded
+  // Search by parent Sample accession number to find SampleItems
   const fetchSampleLocation = (accessionNumber) => {
     if (!accessionNumber || sampleLocations[accessionNumber]) {
       return; // Already fetched or no accession number
@@ -1274,11 +1275,18 @@ export function SearchResults(props) {
       `/rest/storage/sample-items/search?q=${encodeURIComponent(accessionNumber)}`,
       (response) => {
         if (response && response.length > 0) {
+          // Get first SampleItem (or could allow user to select which SampleItem if multiple)
           const sampleItem = response[0];
           const locationPath = sampleItem.hierarchicalPath || sampleItem.location || "";
+          // Store SampleItem data for later use in assignment
           setSampleLocations((prev) => ({
             ...prev,
-            [accessionNumber]: locationPath,
+            [accessionNumber]: {
+              locationPath,
+              sampleItemId: sampleItem.sampleItemId || sampleItem.id,
+              sampleItemExternalId: sampleItem.sampleItemExternalId || null,
+              sampleAccessionNumber: sampleItem.sampleAccessionNumber || accessionNumber,
+            },
           }));
         }
       },
@@ -1290,26 +1298,33 @@ export function SearchResults(props) {
   };
 
   // Handle location assignment
+  // Uses SampleItem ID from stored location data or from locationData
   const handleLocationAssignment = async (locationData, accessionNumber) => {
     // locationData format: { sample, newLocation, reason?, conditionNotes?, positionCoordinate? }
     const newLocation = locationData?.newLocation || locationData;
     
-    // Extract sample ID from accession number if needed
-    const sampleId = locationData?.sample?.id || locationData?.sample?.sampleId;
+    // Get SampleItem ID from stored location data (from fetchSampleLocation) or from locationData
+    const storedLocationData = sampleLocations[accessionNumber];
+    const sampleItemId = 
+      locationData?.sample?.sampleItemId || 
+      locationData?.sample?.id || 
+      locationData?.sample?.sampleId ||
+      (storedLocationData && typeof storedLocationData === 'object' ? storedLocationData.sampleItemId : null) ||
+      null;
     
-    if (!sampleId || !newLocation) {
-      console.error("Missing sample ID or location for assignment");
+    if (!sampleItemId || !newLocation) {
+      console.error("Missing SampleItem ID or location for assignment", { sampleItemId, newLocation, locationData });
       return;
     }
 
     try {
-      // Call assignment API
+      // Call assignment API with SampleItem ID
       const assignmentData = {
-        sampleItemId: sampleId,
+        sampleItemId: sampleItemId,
         locationId: newLocation.rack?.id || newLocation.shelf?.id || newLocation.device?.id,
         locationType: newLocation.rack ? "rack" : newLocation.shelf ? "shelf" : "device",
         positionCoordinate: locationData.positionCoordinate || newLocation.position?.coordinate || "",
-        conditionNotes: locationData.conditionNotes || "",
+        notes: locationData.conditionNotes || "", // Assignment form uses "notes" field
       };
 
       postToOpenElisServerJsonResponse(
@@ -1317,11 +1332,14 @@ export function SearchResults(props) {
         JSON.stringify(assignmentData),
         (response) => {
           if (response && response.success) {
-            // Update local state
+            // Update local state with location path
             const locationPath = response.hierarchicalPath || "";
+            const storedData = sampleLocations[accessionNumber];
             setSampleLocations((prev) => ({
               ...prev,
-              [accessionNumber]: locationPath,
+              [accessionNumber]: storedData && typeof storedData === 'object' 
+                ? { ...storedData, locationPath }
+                : locationPath,
             }));
             addNotification({
               title: intl.formatMessage({ id: "notification.title" }),
@@ -1367,7 +1385,11 @@ export function SearchResults(props) {
       fetchSampleLocation(accessionNumber);
     }
 
-    const currentLocationPath = sampleLocations[accessionNumber] || "";
+    // Get location path from stored data (can be string or object)
+    const locationData = sampleLocations[accessionNumber];
+    const currentLocationPath = typeof locationData === 'object' 
+      ? (locationData.locationPath || "") 
+      : (locationData || "");
 
     return (
       <>
@@ -1504,7 +1526,11 @@ export function SearchResults(props) {
               workflow="results"
               showQuickFind={true}
               sampleInfo={{
-                sampleId: accessionNumber,
+                // Use SampleItem data if available, otherwise fall back to Sample accession number
+                sampleItemId: locationData && typeof locationData === 'object' ? locationData.sampleItemId : null,
+                sampleItemExternalId: locationData && typeof locationData === 'object' ? locationData.sampleItemExternalId : null,
+                sampleAccessionNumber: locationData && typeof locationData === 'object' ? locationData.sampleAccessionNumber : accessionNumber,
+                sampleId: locationData && typeof locationData === 'object' ? locationData.sampleItemId : accessionNumber, // Legacy fallback
                 type: data.sampleType || "",
                 status: data.sampleStatus || "Active",
               }}

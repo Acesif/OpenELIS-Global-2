@@ -16,10 +16,10 @@
             <column name="id" type="numeric(10,0)">
                 <constraints primaryKey="true" nullable="false"/>
             </column>
-            <column name="sample_id" type="numeric(10,0)">
+            <column name="sample_item_id" type="numeric(10,0)">
                 <constraints nullable="false" unique="true"
-                    foreignKeyName="fk_assignment_sample"
-                    references="sample(id)"
+                    foreignKeyName="fk_assignment_sample_item"
+                    references="sample_item(id)"
                     deleteCascade="true"/>
             </column>
             <column name="location_id" type="numeric(10,0)">
@@ -63,10 +63,10 @@
             <column name="id" type="numeric(10,0)">
                 <constraints primaryKey="true" nullable="false"/>
             </column>
-            <column name="sample_id" type="numeric(10,0)">
+            <column name="sample_item_id" type="numeric(10,0)">
                 <constraints nullable="false"
-                    foreignKeyName="fk_movement_sample"
-                    references="sample(id)"
+                    foreignKeyName="fk_movement_sample_item"
+                    references="sample_item(id)"
                     deleteCascade="true"/>
             </column>
             <column name="previous_location_id" type="numeric(10,0)"/>

@@ -26,15 +26,15 @@
     },
     {
       "name": "Sample Assignment",
-      "description": "Assign samples to storage locations"
+      "description": "Assign SampleItems (physical specimens) to storage locations. Storage tracking operates at SampleItem level, not Sample level."
     },
     {
       "name": "Sample Search",
-      "description": "Search and filter samples by location"
+      "description": "Search and filter SampleItems by ID, External ID, parent Sample accession number, or location"
     },
     {
       "name": "Sample Movement",
-      "description": "Move samples between storage locations"
+      "description": "Move SampleItems (physical specimens) between storage locations"
     }
   ],
   "paths": {
@@ -397,26 +397,36 @@
         }
       }
     },
-    "/storage/samples/assign": {
+    "/storage/sample-items/assign": {
       "post": {
         "tags": ["Sample Assignment"],
-        "summary": "Assign sample to storage position (P1)",
-        "operationId": "assignSample",
+        "summary": "Assign SampleItem to storage location (P1)",
+        "operationId": "assignSampleItem",
         "requestBody": {
           "required": true,
           "content": {
             "application/json": {
               "schema": {
                 "type": "object",
-                "required": ["sampleId", "positionId"],
+                "required": ["sampleItemId", "locationId", "locationType"],
                 "properties": {
-                  "sampleId": {
+                  "sampleItemId": {
                     "type": "string",
-                    "description": "Sample ID to assign"
+                    "description": "SampleItem ID (physical specimen) to assign"
                   },
-                  "positionId": {
+                  "locationId": {
                     "type": "string",
-                    "description": "Storage position ID"
+                    "description": "Location ID (device, shelf, or rack ID)"
+                  },
+                  "locationType": {
+                    "type": "string",
+                    "enum": ["device", "shelf", "rack"],
+                    "description": "Location type: 'device', 'shelf', or 'rack'"
+                  },
+                  "positionCoordinate": {
+                    "type": "string",
+                    "maxLength": 50,
+                    "description": "Optional text-based position coordinate"
                   },
                   "notes": {
                     "type": "string",
@@ -429,7 +439,7 @@
         },
         "responses": {
           "201": {
-            "description": "Sample assigned successfully",
+            "description": "SampleItem assigned successfully",
             "content": {
               "application/json": {
                 "schema": {
@@ -453,45 +463,45 @@
             "description": "Validation error (position occupied, location inactive, etc.)"
           },
           "404": {
-            "description": "Sample or position not found"
+            "description": "SampleItem or location not found"
           }
         }
       }
     },
-    "/storage/samples/search": {
+    "/storage/sample-items/search": {
       "get": {
         "tags": ["Sample Search"],
-        "summary": "Search samples by ID (P2A)",
-        "operationId": "searchSampleById",
+        "summary": "Search SampleItems by ID, External ID, parent Sample accession, or location (P2A)",
+        "operationId": "searchSampleItems",
         "parameters": [
           {
-            "name": "sampleId",
+            "name": "q",
             "in": "query",
             "required": true,
             "schema": { "type": "string" },
-            "description": "Sample ID to search"
+            "description": "Search query - matches SampleItem ID, External ID, parent Sample accession number, or location path (OR logic, case-insensitive partial match)"
           }
         ],
         "responses": {
           "200": {
-            "description": "Sample location details",
+            "description": "List of matching SampleItems with location details",
             "content": {
               "application/json": {
-                "schema": { "$ref": "#/components/schemas/SampleLocationDetails" }
+                "schema": {
+                  "type": "array",
+                  "items": { "$ref": "#/components/schemas/SampleItemLocationDetails" }
+                }
               }
             }
-          },
-          "404": {
-            "description": "Sample not found or not assigned to storage"
           }
         }
       }
     },
-    "/storage/samples": {
+    "/storage/sample-items": {
       "get": {
         "tags": ["Sample Search"],
-        "summary": "Filter samples by location/status (P2A)",
-        "operationId": "filterSamples",
+        "summary": "Get all SampleItems with storage assignments, optionally filtered by location/status (P2A)",
+        "operationId": "getSampleItems",
         "parameters": [
           {
             "name": "roomId",
@@ -534,12 +544,12 @@
         ],
         "responses": {
           "200": {
-            "description": "List of samples matching filters",
+            "description": "List of SampleItems matching filters",
             "content": {
               "application/json": {
                 "schema": {
                   "type": "array",
-                  "items": { "$ref": "#/components/schemas/SampleLocationSummary" }
+                  "items": { "$ref": "#/components/schemas/SampleItemLocationSummary" }
                 }
               }
             }
@@ -547,26 +557,36 @@
         }
       }
     },
-    "/storage/samples/move": {
+    "/storage/sample-items/move": {
       "post": {
         "tags": ["Sample Movement"],
-        "summary": "Move sample to new storage position (P2B)",
-        "operationId": "moveSample",
+        "summary": "Move SampleItem to new storage location (P2B)",
+        "operationId": "moveSampleItem",
         "requestBody": {
           "required": true,
           "content": {
             "application/json": {
               "schema": {
                 "type": "object",
-                "required": ["sampleId", "targetPositionId"],
+                "required": ["sampleItemId", "locationId", "locationType"],
                 "properties": {
-                  "sampleId": {
+                  "sampleItemId": {
                     "type": "string",
-                    "description": "Sample ID to move"
+                    "description": "SampleItem ID (physical specimen) to move"
                   },
-                  "targetPositionId": {
+                  "locationId": {
                     "type": "string",
-                    "description": "Target storage position ID"
+                    "description": "Target location ID (device, shelf, or rack ID)"
+                  },
+                  "locationType": {
+                    "type": "string",
+                    "enum": ["device", "shelf", "rack"],
+                    "description": "Target location type: 'device', 'shelf', or 'rack'"
+                  },
+                  "positionCoordinate": {
+                    "type": "string",
+                    "maxLength": 50,
+                    "description": "Optional text-based position coordinate"
                   },
                   "reason": {
                     "type": "string",
@@ -579,7 +599,7 @@
         },
         "responses": {
           "200": {
-            "description": "Sample moved successfully",
+            "description": "SampleItem moved successfully",
             "content": {
               "application/json": {
                 "schema": {
@@ -594,6 +614,10 @@
                       "type": "string",
                       "description": "Hierarchical path of new location"
                     },
+                    "newHierarchicalPath": {
+                      "type": "string",
+                      "description": "Hierarchical path of new location (same as newLocation for backward compatibility)"
+                    },
                     "movedDate": {
                       "type": "string",
                       "format": "date-time"
@@ -604,28 +628,31 @@
             }
           },
           "400": {
-            "description": "Validation error (target occupied, location inactive, etc.)"
+            "description": "Validation error (location inactive, etc.)"
+          },
+          "404": {
+            "description": "SampleItem or target location not found"
           }
         }
       }
     },
-    "/storage/samples/bulk-move": {
+    "/storage/sample-items/bulk-move": {
       "post": {
         "tags": ["Sample Movement"],
-        "summary": "Move multiple samples to target rack (P2B)",
-        "operationId": "bulkMoveSamples",
+        "summary": "Move multiple SampleItems to target rack (P2B)",
+        "operationId": "bulkMoveSampleItems",
         "requestBody": {
           "required": true,
           "content": {
             "application/json": {
               "schema": {
                 "type": "object",
-                "required": ["sampleIds", "targetRackId"],
+                "required": ["sampleItemIds", "targetRackId"],
                 "properties": {
-                  "sampleIds": {
+                  "sampleItemIds": {
                     "type": "array",
                     "items": { "type": "string" },
-                    "description": "Array of sample IDs to move"
+                    "description": "Array of SampleItem IDs (physical specimens) to move"
                   },
                   "targetRackId": {
                     "type": "string",
@@ -635,9 +662,9 @@
                     "type": "array",
                     "items": {
                       "type": "object",
-                      "required": ["sampleId", "positionCoordinate"],
+                      "required": ["sampleItemId", "positionCoordinate"],
                       "properties": {
-                        "sampleId": { "type": "string" },
+                        "sampleItemId": { "type": "string" },
                         "positionCoordinate": { "type": "string" }
                       }
                     },
@@ -677,7 +704,7 @@
                       "items": {
                         "type": "object",
                         "properties": {
-                          "sampleId": { "type": "string" },
+                          "sampleItemId": { "type": "string" },
                           "error": { "type": "string" }
                         }
                       }
@@ -824,43 +851,42 @@
           "parentRackId": { "type": "string" }
         }
       },
-      "SampleLocationDetails": {
+      "SampleItemLocationDetails": {
         "type": "object",
         "properties": {
-          "sampleId": { "type": "string" },
-          "accessionNumber": { "type": "string" },
-          "sampleType": { "type": "string" },
+          "id": { "type": "string", "description": "SampleItem ID" },
+          "sampleItemId": { "type": "string", "description": "SampleItem ID (same as id)" },
+          "sampleItemExternalId": { "type": "string", "description": "SampleItem external ID (optional)" },
+          "sampleAccessionNumber": { "type": "string", "description": "Parent Sample accession number" },
+          "type": { "type": "string", "description": "SampleItem type (e.g., 'Blood', 'Serum')" },
           "status": { "type": "string", "enum": ["active", "disposed"] },
           "location": {
-            "type": "object",
-            "properties": {
-              "roomId": { "type": "string" },
-              "roomName": { "type": "string" },
-              "deviceId": { "type": "string" },
-              "deviceName": { "type": "string" },
-              "shelfId": { "type": "string" },
-              "shelfLabel": { "type": "string" },
-              "rackId": { "type": "string" },
-              "rackLabel": { "type": "string" },
-              "positionId": { "type": "string" },
-              "positionCoordinate": { "type": "string" },
-              "hierarchicalPath": {
-                "type": "string",
-                "example": "Main Laboratory > Freezer Unit 1 > Shelf-A > Rack R1 > Position A5"
-              }
-            }
+            "type": "string",
+            "description": "Hierarchical path of storage location",
+            "example": "Main Laboratory > Freezer Unit 1 > Shelf-A > Rack R1 > Position A5"
           },
-          "assignedBy": { "type": "string" },
-          "assignedDate": { "type": "string", "format": "date-time" }
+          "hierarchicalPath": {
+            "type": "string",
+            "description": "Hierarchical path of storage location (same as location)",
+            "example": "Main Laboratory > Freezer Unit 1 > Shelf-A > Rack R1 > Position A5"
+          },
+          "assignedBy": { "type": "string", "description": "User ID who assigned the location" },
+          "date": { "type": "string", "format": "date-time", "description": "Assignment date" }
         }
       },
-      "SampleLocationSummary": {
+      "SampleItemLocationSummary": {
         "type": "object",
         "properties": {
-          "sampleId": { "type": "string" },
-          "accessionNumber": { "type": "string" },
-          "hierarchicalPath": { "type": "string" },
-          "assignedDate": { "type": "string", "format": "date-time" }
+          "id": { "type": "string", "description": "SampleItem ID" },
+          "sampleItemId": { "type": "string", "description": "SampleItem ID (same as id)" },
+          "sampleItemExternalId": { "type": "string", "description": "SampleItem external ID (optional)" },
+          "sampleAccessionNumber": { "type": "string", "description": "Parent Sample accession number" },
+          "type": { "type": "string", "description": "SampleItem type" },
+          "status": { "type": "string", "enum": ["active", "disposed"] },
+          "location": { "type": "string", "description": "Hierarchical path" },
+          "hierarchicalPath": { "type": "string", "description": "Hierarchical path (same as location)" },
+          "assignedBy": { "type": "string" },
+          "date": { "type": "string", "format": "date-time" }
         }
       }
     },

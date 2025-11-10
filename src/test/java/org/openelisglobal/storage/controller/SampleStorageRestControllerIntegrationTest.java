@@ -17,7 +17,7 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.web.servlet.MvcResult;
 
 /**
- * Integration test for SampleStorageRestController.getSamples() endpoint.
+ * Integration test for SampleStorageRestController.getSampleItems() endpoint.
  * 
  * CRITICAL: This test verifies that the API endpoint returns samples with
  * complete hierarchical paths WITHOUT lazy loading exceptions. This catches the
@@ -111,8 +111,8 @@ public class SampleStorageRestControllerIntegrationTest extends BaseWebContextSe
         // Note: parent_device_id is required (NOT NULL constraint)
         // If parent_rack_id is set, parent_shelf_id is also required (check constraint)
         jdbcTemplate.update(
-                "INSERT INTO storage_position (id, coordinate, parent_rack_id, parent_shelf_id, parent_device_id, occupied, sys_user_id, last_updated, fhir_uuid) VALUES (?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, gen_random_uuid())",
-                baseId, "A1", rackId, shelfId, deviceId, false, 1);
+                "INSERT INTO storage_position (id, coordinate, parent_rack_id, parent_shelf_id, parent_device_id, sys_user_id, last_updated, fhir_uuid) VALUES (?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, gen_random_uuid())",
+                baseId, "A1", rackId, shelfId, deviceId, 1);
         Integer positionId = baseId;
 
         // Create sample with unique ID
@@ -121,14 +121,24 @@ public class SampleStorageRestControllerIntegrationTest extends BaseWebContextSe
                 "INSERT INTO sample (id, accession_number, entered_date, received_date, lastupdated) VALUES (?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)",
                 sampleId, "TEST-SAMPLE-" + timestamp);
 
-        // Assign sample to position using flexible assignment API
+        // Create SampleItem for the sample
+        // Use numeric ID (sample_item.id is numeric in DB, but Hibernate treats it as String)
+        int sampleItemId = 20000 + (int) timestamp;
+        // Get default status_id and typeosamp_id from database
+        Integer statusId = jdbcTemplate.queryForObject("SELECT id FROM status_of_sample ORDER BY id LIMIT 1", Integer.class);
+        Integer typeOfSampleId = jdbcTemplate.queryForObject("SELECT id FROM type_of_sample ORDER BY id LIMIT 1", Integer.class);
+        jdbcTemplate.update(
+                "INSERT INTO sample_item (id, samp_id, sort_order, sampitem_id, external_id, typeosamp_id, status_id, lastupdated) VALUES (?, ?, 1, NULL, ?, ?, ?, CURRENT_TIMESTAMP)",
+                sampleItemId, sampleId, "TEST-SAMPLE-" + timestamp + "-TUBE-1", typeOfSampleId, statusId);
+
+        // Assign SampleItem to position using flexible assignment API
         // API expects locationId (rack ID) and locationType="rack", with positionCoordinate
         // Positions are coordinates within a rack, not separate entities
         MvcResult assignmentResult = mockMvc
-                .perform(post("/rest/storage/samples/assign").contentType(MediaType.APPLICATION_JSON)
+                .perform(post("/rest/storage/sample-items/assign").contentType(MediaType.APPLICATION_JSON)
                         .content(String.format(
-                                "{\"sampleId\":\"%d\",\"locationId\":\"%d\",\"locationType\":\"rack\",\"positionCoordinate\":\"A1\",\"notes\":\"Integration test assignment\"}",
-                                sampleId, rackId)))
+                                "{\"sampleItemId\":\"%s\",\"locationId\":\"%d\",\"locationType\":\"rack\",\"positionCoordinate\":\"A1\",\"notes\":\"Integration test assignment\"}",
+                                String.valueOf(sampleItemId), rackId)))
                 .andReturn();
         
         int status = assignmentResult.getResponse().getStatus();
@@ -137,7 +147,7 @@ public class SampleStorageRestControllerIntegrationTest extends BaseWebContextSe
         if (status != 201) {
             System.err.println("Assignment failed with status " + status);
             System.err.println("Response body: " + responseBody);
-            System.err.println("Sample ID: " + sampleId);
+            System.err.println("SampleItem ID: " + sampleItemId);
             System.err.println("Position ID: " + positionId);
         }
         
@@ -146,7 +156,7 @@ public class SampleStorageRestControllerIntegrationTest extends BaseWebContextSe
     }
 
     /**
-     * CRITICAL TEST: Verify GET /rest/storage/samples returns samples with complete
+     * CRITICAL TEST: Verify GET /rest/storage/sample-items returns SampleItems with complete
      * hierarchical paths WITHOUT lazy loading exceptions.
      * 
      * This test will FAIL if: - Service layer doesn't eagerly fetch all
@@ -158,8 +168,8 @@ public class SampleStorageRestControllerIntegrationTest extends BaseWebContextSe
         // Setup: Create test data with full hierarchy
         cleanStorageTestData();
         createTestStorageHierarchyWithSamples();
-        // When: Call GET /rest/storage/samples
-        MvcResult result = mockMvc.perform(get("/rest/storage/samples")).andExpect(status().isOk())
+        // When: Call GET /rest/storage/sample-items
+        MvcResult result = mockMvc.perform(get("/rest/storage/sample-items")).andExpect(status().isOk())
                 .andExpect(content().contentType(MediaType.APPLICATION_JSON)).andReturn();
 
         // Then: Response should be valid JSON array
@@ -177,7 +187,7 @@ public class SampleStorageRestControllerIntegrationTest extends BaseWebContextSe
         JsonNode firstSample = responseJson.get(0);
         assertNotNull("First sample should not be null", firstSample);
         assertTrue("Sample should have 'id' field", firstSample.has("id"));
-        assertTrue("Sample should have 'sampleId' field", firstSample.has("sampleId"));
+        assertTrue("SampleItem should have 'sampleItemId' field", firstSample.has("sampleItemId"));
         assertTrue("Sample should have 'location' field", firstSample.has("location"));
 
         // CRITICAL: Verify hierarchical path is complete (contains ">")
@@ -203,16 +213,16 @@ public class SampleStorageRestControllerIntegrationTest extends BaseWebContextSe
     }
 
     /**
-     * Verify GET /rest/storage/samples returns correct data structure for all
-     * samples.
+     * Verify GET /rest/storage/sample-items returns correct data structure for all
+     * SampleItems.
      */
     @Test
     public void testGetSamples_ReturnsCorrectDataStructure() throws Exception {
         // Setup: Create test data with full hierarchy
         cleanStorageTestData();
         createTestStorageHierarchyWithSamples();
-        // When: Call GET /rest/storage/samples
-        MvcResult result = mockMvc.perform(get("/rest/storage/samples")).andExpect(status().isOk()).andReturn();
+        // When: Call GET /rest/storage/sample-items
+        MvcResult result = mockMvc.perform(get("/rest/storage/sample-items")).andExpect(status().isOk()).andReturn();
 
         // Then: Parse and verify response structure
         String responseContent = result.getResponse().getContentAsString();
@@ -221,7 +231,7 @@ public class SampleStorageRestControllerIntegrationTest extends BaseWebContextSe
         // Verify all samples have required fields
         for (JsonNode sample : responseJson) {
             assertTrue("Sample should have 'id' field", sample.has("id"));
-            assertTrue("Sample should have 'sampleId' field", sample.has("sampleId"));
+            assertTrue("SampleItem should have 'sampleItemId' field", sample.has("sampleItemId"));
             assertTrue("Sample should have 'type' field", sample.has("type"));
             assertTrue("Sample should have 'status' field", sample.has("status"));
             assertTrue("Sample should have 'location' field", sample.has("location"));
@@ -236,15 +246,15 @@ public class SampleStorageRestControllerIntegrationTest extends BaseWebContextSe
     }
 
     /**
-     * Verify GET /rest/storage/samples?countOnly=true returns metrics correctly.
+     * Verify GET /rest/storage/sample-items?countOnly=true returns metrics correctly.
      */
     @Test
     public void testGetSamples_CountOnly_ReturnsMetrics() throws Exception {
         // Setup: Create test data with full hierarchy
         cleanStorageTestData();
         createTestStorageHierarchyWithSamples();
-        // When: Call GET /rest/storage/samples?countOnly=true
-        MvcResult result = mockMvc.perform(get("/rest/storage/samples?countOnly=true")).andExpect(status().isOk())
+        // When: Call GET /rest/storage/sample-items?countOnly=true
+        MvcResult result = mockMvc.perform(get("/rest/storage/sample-items?countOnly=true")).andExpect(status().isOk())
                 .andExpect(content().contentType(MediaType.APPLICATION_JSON)).andReturn();
 
         // Then: Response should contain metrics
@@ -254,12 +264,12 @@ public class SampleStorageRestControllerIntegrationTest extends BaseWebContextSe
         assertTrue("Response should contain metrics", responseJson.size() > 0);
 
         JsonNode metrics = responseJson.get(0);
-        assertTrue("Metrics should have 'totalSamples' field", metrics.has("totalSamples"));
+        assertTrue("Metrics should have 'totalSampleItems' field", metrics.has("totalSampleItems"));
         assertTrue("Metrics should have 'active' field", metrics.has("active"));
         assertTrue("Metrics should have 'disposed' field", metrics.has("disposed"));
         assertTrue("Metrics should have 'storageLocations' field", metrics.has("storageLocations"));
 
         // Verify counts are non-negative
-        assertTrue("totalSamples should be >= 0", metrics.get("totalSamples").asInt() >= 0);
+        assertTrue("totalSampleItems should be >= 0", metrics.get("totalSampleItems").asInt() >= 0);
     }
 }

@@ -588,14 +588,14 @@ public class StorageLocationRestControllerTest extends BaseWebContextSensitiveTe
         positionForm.setRowIndex(1);
         positionForm.setColumnIndex(5);
         positionForm.setParentRackId(rackId);
-        positionForm.setOccupied(false);
+        // Occupancy is now calculated dynamically from SampleStorageAssignment records
 
         // When: POST to /rest/storage/positions
         // Then: Expect 201 Created
         mockMvc.perform(post("/rest/storage/positions").contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(positionForm))).andExpect(status().isCreated())
                 .andExpect(jsonPath("$.id").exists()).andExpect(jsonPath("$.coordinate").value("A5"))
-                .andExpect(jsonPath("$.occupied").value(false)).andExpect(jsonPath("$.fhirUuid").exists());
+                .andExpect(jsonPath("$.fhirUuid").exists());
     }
 
     /**
@@ -647,7 +647,7 @@ public class StorageLocationRestControllerTest extends BaseWebContextSensitiveTe
         StoragePositionForm occupiedPosition = new StoragePositionForm();
         occupiedPosition.setCoordinate("A1");
         occupiedPosition.setParentRackId(rackId);
-        occupiedPosition.setOccupied(true);
+        // Occupancy is now calculated dynamically from SampleStorageAssignment records
 
         mockMvc.perform(post("/rest/storage/positions").contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(occupiedPosition))).andExpect(status().isCreated());
@@ -656,16 +656,15 @@ public class StorageLocationRestControllerTest extends BaseWebContextSensitiveTe
         StoragePositionForm unoccupiedPosition = new StoragePositionForm();
         unoccupiedPosition.setCoordinate("A2");
         unoccupiedPosition.setParentRackId(rackId);
-        unoccupiedPosition.setOccupied(false);
+        // Occupancy is now calculated dynamically from SampleStorageAssignment records
 
         mockMvc.perform(post("/rest/storage/positions").contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(unoccupiedPosition))).andExpect(status().isCreated());
 
-        // When: GET unoccupied positions in rack
-        // Then: Expect only unoccupied positions returned
-        mockMvc.perform(get("/rest/storage/positions").param("rackId", rackId).param("occupied", "false")
-                .contentType(MediaType.APPLICATION_JSON)).andExpect(status().isOk()).andExpect(jsonPath("$").isArray())
-                .andExpect(jsonPath("$[0].occupied").value(false));
+        // When: GET positions in rack
+        // Then: Expect positions returned (occupancy is now calculated dynamically from SampleStorageAssignment)
+        mockMvc.perform(get("/rest/storage/positions").param("rackId", rackId)
+                .contentType(MediaType.APPLICATION_JSON)).andExpect(status().isOk()).andExpect(jsonPath("$").isArray());
     }
 
     // ========== Helper Methods for Test Setup ==========
@@ -1171,11 +1170,16 @@ public class StorageLocationRestControllerTest extends BaseWebContextSensitiveTe
                             + "VALUES (?, 'TEST-SAMPLE-' || ?, gen_random_uuid(), 'H', 1, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, false) "
                             + "ON CONFLICT (id) DO NOTHING",
                     sampleId, i);
+            String sampleItemId = "SI-" + sampleId;
             jdbcTemplate.update(
-                    "INSERT INTO sample_storage_assignment (id, sample_id, location_id, location_type, position_coordinate, assigned_date, assigned_by_user_id, notes, last_updated) "
+                    "INSERT INTO sample_item (id, sample_id, sys_user_id, last_updated) VALUES (?, ?, '1', CURRENT_TIMESTAMP) "
+                            + "ON CONFLICT (id) DO NOTHING",
+                    sampleItemId, sampleId);
+            jdbcTemplate.update(
+                    "INSERT INTO sample_storage_assignment (id, sample_item_id, location_id, location_type, position_coordinate, assigned_date, assigned_by_user_id, notes, last_updated) "
                             + "VALUES (?, ?, ?::integer, 'rack', 'A' || ?, CURRENT_TIMESTAMP, 1, 'Test assignment', CURRENT_TIMESTAMP) "
                             + "ON CONFLICT (id) DO UPDATE SET location_id = EXCLUDED.location_id",
-                    1000 + i, sampleId, rack1Id, i);
+                    1000 + i, sampleItemId, rack1Id, i);
         }
 
         // Create 4 sample assignments to rack 2
@@ -1186,11 +1190,16 @@ public class StorageLocationRestControllerTest extends BaseWebContextSensitiveTe
                             + "VALUES (?, 'TEST-SAMPLE-' || ?, gen_random_uuid(), 'H', 1, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, false) "
                             + "ON CONFLICT (id) DO NOTHING",
                     sampleId, 5 + i);
+            String sampleItemId = "SI-" + sampleId;
             jdbcTemplate.update(
-                    "INSERT INTO sample_storage_assignment (id, sample_id, location_id, location_type, position_coordinate, assigned_date, assigned_by_user_id, notes, last_updated) "
+                    "INSERT INTO sample_item (id, sample_id, sys_user_id, last_updated) VALUES (?, ?, '1', CURRENT_TIMESTAMP) "
+                            + "ON CONFLICT (id) DO NOTHING",
+                    sampleItemId, sampleId);
+            jdbcTemplate.update(
+                    "INSERT INTO sample_storage_assignment (id, sample_item_id, location_id, location_type, position_coordinate, assigned_date, assigned_by_user_id, notes, last_updated) "
                             + "VALUES (?, ?, ?::integer, 'rack', '1-' || ?, CURRENT_TIMESTAMP, 1, 'Test assignment', CURRENT_TIMESTAMP) "
                             + "ON CONFLICT (id) DO UPDATE SET location_id = EXCLUDED.location_id",
-                    1005 + i, sampleId, rack2Id, i);
+                    1005 + i, sampleItemId, rack2Id, i);
         }
 
         // When: Get shelves for API (which includes occupiedCount)

@@ -492,22 +492,44 @@ capabilities.
 
 ---
 
-## 6. Sample-to-Location Link via Specimen Resource
+## 6. SampleItem-to-Location Link via Specimen Resource
 
-**OpenELIS Entity**: `SampleStorageAssignment`  
-**FHIR Resource**: `Specimen` (existing resource type for samples)
+**OpenELIS Entity**: `SampleStorageAssignment` (references `SampleItem`, not `Sample`)  
+**FHIR Resource**: `Specimen` (represents physical specimen, aligns with SampleItem)
+
+**⚠️ CRITICAL**: Storage tracking operates at the **SampleItem level** (physical specimens), not Sample level (orders). Each SampleItem maps to a FHIR Specimen resource, and the storage location is recorded in `Specimen.container`.
+
+**Note**: In OpenELIS, a Sample (order) may have multiple SampleItems (physical specimens). Each SampleItem can be stored independently, even if they belong to the same Sample. The FHIR Specimen resource represents the physical specimen (SampleItem), and the parent Sample accession number is included in the Specimen identifier for traceability.
 
 ```json
 {
   "resourceType": "Specimen",
-  "id": "{sample_fhir_uuid}",
+  "id": "{sample_item_fhir_uuid}",
   "identifier": [
     {
+      "system": "http://openelis.org/sample-item-id",
+      "value": "{sample_item_id}"
+    },
+    {
+      "system": "http://openelis.org/sample-item-external-id",
+      "value": "{sample_item_external_id}"
+    },
+    {
       "system": "http://openelis.org/accession-number",
-      "value": "{accession_number}"
+      "value": "{parent_sample_accession_number}",
+      "display": "Parent Sample Accession"
     }
   ],
   "status": "available",
+  "type": {
+    "coding": [
+      {
+        "system": "http://snomed.info/sct",
+        "code": "{type_of_sample_code}",
+        "display": "{type_of_sample_name}"
+      }
+    ]
+  },
   "container": [
     {
       "identifier": {
@@ -517,9 +539,18 @@ capabilities.
         {
           "url": "http://openelis.org/fhir/extension/storage-position-location",
           "valueReference": {
-            "reference": "Location/{position_fhir_uuid}",
-            "display": "{hierarchical_path_to_position}"
+            "reference": "Location/{location_fhir_uuid}",
+            "display": "{hierarchical_path_to_location}"
           }
+        },
+        {
+          "url": "http://openelis.org/fhir/extension/storage-location-type",
+          "valueCode": "{location_type}",
+          "display": "device" | "shelf" | "rack"
+        },
+        {
+          "url": "http://openelis.org/fhir/extension/storage-position-coordinate",
+          "valueString": "{position_coordinate}"
         },
         {
           "url": "http://openelis.org/fhir/extension/storage-assigned-by",
@@ -540,14 +571,19 @@ capabilities.
 
 **Mapping Table**:
 
-| OpenELIS Field               | FHIR Specimen Field                                       | Notes                                                                |
-| ---------------------------- | --------------------------------------------------------- | -------------------------------------------------------------------- |
-| `sample.fhir_uuid`           | `Specimen.id`                                             | Sample FHIR identifier                                               |
-| `sample.accession_number`    | `Specimen.identifier[0].value`                            | Accession number                                                     |
-| Full hierarchical path       | `Specimen.container.identifier.value`                     | "Main Laboratory > Freezer Unit 1 > Shelf-A > Rack R1 > Position A5" |
-| `storage_position.fhir_uuid` | `Specimen.container.extension[storage-position-location]` | Reference to Position Location resource                              |
-| `assigned_by_user.fhir_uuid` | `Specimen.container.extension[storage-assigned-by]`       | User who assigned                                                    |
-| `assigned_date`              | `Specimen.container.extension[storage-assigned-date]`     | Assignment timestamp                                                 |
+| OpenELIS Field                        | FHIR Specimen Field                                       | Notes                                                                 |
+| ------------------------------------- | --------------------------------------------------------- | --------------------------------------------------------------------- |
+| `sample_item.fhir_uuid`              | `Specimen.id`                                             | SampleItem FHIR identifier (physical specimen)                       |
+| `sample_item.id`                      | `Specimen.identifier[0].value`                            | SampleItem ID (system: `http://openelis.org/sample-item-id`)         |
+| `sample_item.external_id`             | `Specimen.identifier[1].value`                            | SampleItem External ID (system: `http://openelis.org/sample-item-external-id`, optional) |
+| `sample.accession_number`             | `Specimen.identifier[2].value`                            | Parent Sample accession number (system: `http://openelis.org/accession-number`) |
+| `sample_item.type_of_sample`          | `Specimen.type`                                           | Type of sample (e.g., Blood, Serum)                                   |
+| Full hierarchical path                | `Specimen.container.identifier.value`                     | "Main Laboratory > Freezer Unit 1 > Shelf-A > Rack R1 > Position A5"  |
+| `location.fhir_uuid`                  | `Specimen.container.extension[storage-position-location]` | Reference to Location resource (device, shelf, or rack)               |
+| `assignment.location_type`            | `Specimen.container.extension[storage-location-type]`     | Location type: "device", "shelf", or "rack"                           |
+| `assignment.position_coordinate`      | `Specimen.container.extension[storage-position-coordinate]` | Optional text-based position coordinate                               |
+| `assigned_by_user.fhir_uuid`          | `Specimen.container.extension[storage-assigned-by]`       | User who assigned                                                     |
+| `assigned_date`                       | `Specimen.container.extension[storage-assigned-date]`     | Assignment timestamp                                                  |
 
 **Example**:
 
@@ -557,8 +593,17 @@ capabilities.
   "id": "e5f6a7b8-c9d0-1234-efgh-i34567890123",
   "identifier": [
     {
+      "system": "http://openelis.org/sample-item-id",
+      "value": "10001"
+    },
+    {
+      "system": "http://openelis.org/sample-item-external-id",
+      "value": "SI-2025-001-TUBE-1"
+    },
+    {
       "system": "http://openelis.org/accession-number",
-      "value": "S-2025-001"
+      "value": "S-2025-001",
+      "display": "Parent Sample Accession"
     }
   ],
   "status": "available",
@@ -581,7 +626,23 @@ capabilities.
           "url": "http://openelis.org/fhir/extension/storage-position-location",
           "valueReference": {
             "reference": "Location/e5f6a7b8-c9d0-1234-efgh-i34567890124",
-            "display": "Main Laboratory > Freezer Unit 1 > Shelf-A > Rack R1 > Position A5"
+            "display": "Main Laboratory > Freezer Unit 1 > Shelf-A > Rack R1"
+          }
+        },
+        {
+          "url": "http://openelis.org/fhir/extension/storage-location-type",
+          "valueCode": "rack",
+          "display": "rack"
+        },
+        {
+          "url": "http://openelis.org/fhir/extension/storage-position-coordinate",
+          "valueString": "A5"
+        },
+        {
+          "url": "http://openelis.org/fhir/extension/storage-assigned-by",
+          "valueReference": {
+            "reference": "Practitioner/user-123",
+            "display": "John Doe"
           }
         },
         {
@@ -593,6 +654,20 @@ capabilities.
   ]
 }
 ```
+
+**Key Points**:
+
+1. **SampleItem-Level Tracking**: Each `SampleStorageAssignment` references a `SampleItem` (physical specimen), not a `Sample` (order). This allows multiple SampleItems from the same Sample to be stored in different locations.
+
+2. **Specimen Resource**: The FHIR Specimen resource represents the physical specimen (SampleItem). The `Specimen.id` is the SampleItem's `fhir_uuid`.
+
+3. **Parent Sample Context**: The parent Sample accession number is included in `Specimen.identifier` for traceability, but storage location is tracked per SampleItem.
+
+4. **Container Extension**: The `Specimen.container` extension includes:
+   - Location reference (device, shelf, or rack FHIR UUID)
+   - Location type ("device", "shelf", or "rack")
+   - Optional position coordinate (text-based)
+   - Assignment metadata (user, date)
 
 ---
 
@@ -678,18 +753,24 @@ queue infrastructure needed.
 
 ### Specimen Container Sync
 
-**Trigger**: On sample assignment or movement
+**Trigger**: On SampleItem assignment or movement (SampleItem-level operations)
 
 **Process**:
 
-1. Assignment/movement complete → Update existing Specimen resource
-2. Set `Specimen.container.extension[storage-position-location]` to position
-   FHIR UUID
-3. Set `Specimen.container.identifier.value` to hierarchical path string
-4. `FhirPersistanceService.update(specimen)` → sync to FHIR server
+1. SampleItem assignment/movement complete → Update or create Specimen resource for SampleItem
+2. Set `Specimen.id` to SampleItem's `fhir_uuid` (create if doesn't exist)
+3. Set `Specimen.identifier` to include:
+   - SampleItem ID (system: `http://openelis.org/sample-item-id`)
+   - SampleItem External ID (if available, system: `http://openelis.org/sample-item-external-id`)
+   - Parent Sample accession number (system: `http://openelis.org/accession-number`)
+4. Set `Specimen.container.extension[storage-position-location]` to location FHIR UUID (device, shelf, or rack)
+5. Set `Specimen.container.extension[storage-location-type]` to location type ("device", "shelf", or "rack")
+6. Set `Specimen.container.extension[storage-position-coordinate]` to position coordinate (if provided)
+7. Set `Specimen.container.identifier.value` to hierarchical path string
+8. Set `Specimen.container.extension[storage-assigned-by]` and `[storage-assigned-date]` to assignment metadata
+9. `FhirPersistanceService.createOrUpdate(specimen)` → sync to FHIR server
 
-**Note**: Specimen sync is immediate (existing OpenELIS pattern for sample
-updates)
+**Note**: Specimen sync is immediate (existing OpenELIS pattern). Each SampleItem has its own Specimen resource, allowing independent storage tracking even when multiple SampleItems belong to the same Sample.
 
 ---
 
@@ -702,7 +783,7 @@ updates)
 | StorageShelf            | Location                     | co (container)         | ✅ Yes                            |
 | StorageRack             | Location                     | co (container)         | ✅ Yes                            |
 | StoragePosition         | Location                     | co (container)         | ✅ Yes (with occupancy extension) |
-| SampleStorageAssignment | Specimen.container extension | N/A                    | ✅ Yes (via Specimen update)      |
+| SampleStorageAssignment (SampleItem-level) | Specimen.container extension | N/A                    | ✅ Yes (via Specimen create/update per SampleItem)      |
 
 **Extension URLs**:
 
@@ -721,8 +802,12 @@ updates)
 - `http://openelis.org/fhir/extension/position-grid-column` - Position column
   index (integer)
 - `http://openelis.org/fhir/extension/storage-position-location` - Specimen
-  position Location reference
+  storage Location reference (device, shelf, or rack)
+- `http://openelis.org/fhir/extension/storage-location-type` - Location type
+  ("device", "shelf", or "rack")
+- `http://openelis.org/fhir/extension/storage-position-coordinate` - Optional
+  text-based position coordinate
 - `http://openelis.org/fhir/extension/storage-assigned-by` - User who assigned
-  sample
+  SampleItem to storage location
 - `http://openelis.org/fhir/extension/storage-assigned-date` - Assignment
   timestamp

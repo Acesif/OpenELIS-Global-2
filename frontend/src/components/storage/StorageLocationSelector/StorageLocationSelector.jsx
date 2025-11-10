@@ -98,10 +98,15 @@ const StorageLocationSelector = ({
       : null;
 
     // Convert sampleInfo format to sample format for LocationManagementModal
+    // Support both SampleItem context (sampleItemId, sampleItemExternalId, sampleAccessionNumber)
+    // and legacy Sample context (sampleId) for backward compatibility
     const sample = sampleInfo
       ? {
-          id: sampleInfo.sampleId || sampleInfo.id,
-          sampleId: sampleInfo.sampleId || sampleInfo.id,
+          id: sampleInfo.sampleItemId || sampleInfo.sampleId || sampleInfo.id,
+          sampleId: sampleInfo.sampleItemId || sampleInfo.sampleId || sampleInfo.id,
+          sampleItemId: sampleInfo.sampleItemId || sampleInfo.sampleId || sampleInfo.id,
+          sampleItemExternalId: sampleInfo.sampleItemExternalId || null,
+          sampleAccessionNumber: sampleInfo.sampleAccessionNumber || null,
           type: sampleInfo.type || "",
           status: sampleInfo.status || "Active",
         }

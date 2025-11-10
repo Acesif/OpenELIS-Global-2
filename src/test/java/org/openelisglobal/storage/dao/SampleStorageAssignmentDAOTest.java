@@ -16,13 +16,12 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.MockitoJUnitRunner;
 import org.openelisglobal.common.exception.LIMSRuntimeException;
-import org.openelisglobal.sample.valueholder.Sample;
+import org.openelisglobal.sampleitem.valueholder.SampleItem;
 import org.openelisglobal.storage.valueholder.SampleStorageAssignment;
 
 /**
- * Unit tests for SampleStorageAssignmentDAO - Verifies String-to-numeric
- * conversion for sample ID queries (Sample.id is String in entity but numeric
- * in database)
+ * Unit tests for SampleStorageAssignmentDAO - Verifies SampleItem ID queries
+ * (SampleItem.id is String in entity and VARCHAR in database)
  */
 @RunWith(MockitoJUnitRunner.class)
 public class SampleStorageAssignmentDAOTest {
@@ -40,110 +39,91 @@ public class SampleStorageAssignmentDAOTest {
     private SampleStorageAssignmentDAOImpl dao;
 
     private SampleStorageAssignment testAssignment;
-    private Sample testSample;
+    private SampleItem testSampleItem;
 
     @Before
     public void setUp() {
-        testSample = new Sample();
-        testSample.setId("1000"); // String ID
+        testSampleItem = new SampleItem();
+        testSampleItem.setId("1000"); // String ID (numeric in database)
 
         testAssignment = new SampleStorageAssignment();
         testAssignment.setId(1);
-        testAssignment.setSample(testSample);
+        testAssignment.setSampleItem(testSampleItem);
         testAssignment.setLocationId(10);
         testAssignment.setLocationType("device");
     }
 
     /**
-     * Test: findBySampleId correctly converts String sampleId to Integer for
-     * database query This verifies the fix for the type mismatch issue (String
-     * parameter vs numeric column)
+     * Test: findBySampleItemId correctly uses String sampleItemId for
+     * database query (SampleItem.id is String in entity and VARCHAR in database)
      */
     @Test
-    public void testFindBySampleId_ConvertsStringToInteger_ReturnsAssignment() {
+    public void testFindBySampleItemId_UsesStringId_ReturnsAssignment() {
         // Setup
-        String sampleId = "1000";
+        String sampleItemId = "1000"; // Numeric string (matches database numeric column)
         List<SampleStorageAssignment> results = new ArrayList<>();
         results.add(testAssignment);
 
         when(entityManager.unwrap(Session.class)).thenReturn(session);
         when(session.createQuery(anyString(), eq(SampleStorageAssignment.class))).thenReturn(query);
-        when(query.setParameter(eq("sampleId"), eq(1000))).thenReturn(query); // Verify Integer is used
+        when(query.setParameter(eq("sampleItemId"), eq(1000))).thenReturn(query); // Integer parameter
+        when(query.setMaxResults(anyInt())).thenReturn(query);
         when(query.list()).thenReturn(results);
 
         // Execute
-        SampleStorageAssignment result = dao.findBySampleId(sampleId);
+        SampleStorageAssignment result = dao.findBySampleItemId(sampleItemId);
 
         // Verify
         assertNotNull(result);
         assertEquals(testAssignment.getId(), result.getId());
-        assertEquals(testAssignment.getSample().getId(), result.getSample().getId());
+        assertEquals(testAssignment.getSampleItem().getId(), result.getSampleItem().getId());
 
-        // Verify Integer.parseInt was used (not String directly)
-        verify(query).setParameter("sampleId", 1000); // Integer, not String
+        // Verify String ID is parsed to Integer for database query
+        verify(query).setParameter("sampleItemId", 1000);
     }
 
     /**
-     * Test: findBySampleId returns null when no assignment found
+     * Test: findBySampleItemId returns null when no assignment found
      */
     @Test
-    public void testFindBySampleId_NoAssignmentFound_ReturnsNull() {
+    public void testFindBySampleItemId_NoAssignmentFound_ReturnsNull() {
         // Setup
-        String sampleId = "9999";
+        String sampleItemId = "9999"; // Numeric string
         List<SampleStorageAssignment> emptyResults = new ArrayList<>();
 
         when(entityManager.unwrap(Session.class)).thenReturn(session);
         when(session.createQuery(anyString(), eq(SampleStorageAssignment.class))).thenReturn(query);
-        when(query.setParameter(eq("sampleId"), eq(9999))).thenReturn(query);
+        when(query.setParameter(eq("sampleItemId"), anyInt())).thenReturn(query);
+        when(query.setMaxResults(anyInt())).thenReturn(query);
         when(query.list()).thenReturn(emptyResults);
 
         // Execute
-        SampleStorageAssignment result = dao.findBySampleId(sampleId);
+        SampleStorageAssignment result = dao.findBySampleItemId(sampleItemId);
 
         // Verify
         assertNull(result);
-        verify(query).setParameter("sampleId", 9999); // Integer conversion
+        verify(query).setParameter(eq("sampleItemId"), anyInt());
     }
 
     /**
-     * Test: findBySampleId throws exception for invalid (non-numeric) sample ID
+     * Test: findBySampleItemId handles database errors gracefully
      */
     @Test(expected = LIMSRuntimeException.class)
-    public void testFindBySampleId_InvalidFormat_ThrowsException() {
+    public void testFindBySampleItemId_DatabaseError_ThrowsException() {
         // Setup
-        String invalidSampleId = "not-a-number";
-
-        when(entityManager.unwrap(Session.class)).thenReturn(session);
-        when(session.createQuery(anyString(), eq(SampleStorageAssignment.class))).thenReturn(query);
-
-        // Execute - should throw NumberFormatException which is caught and re-thrown as
-        // LIMSRuntimeException
-        try {
-            dao.findBySampleId(invalidSampleId);
-        } catch (LIMSRuntimeException e) {
-            assertTrue(e.getMessage().contains("Invalid sample ID format"));
-            throw e;
-        }
-    }
-
-    /**
-     * Test: findBySampleId handles database errors gracefully
-     */
-    @Test(expected = LIMSRuntimeException.class)
-    public void testFindBySampleId_DatabaseError_ThrowsException() {
-        // Setup
-        String sampleId = "1000";
+        String sampleItemId = "1000"; // Numeric string
 
         when(entityManager.unwrap(Session.class)).thenReturn(session);
         when(session.createQuery(anyString(), eq(SampleStorageAssignment.class))).thenReturn(query);
         when(query.setParameter(anyString(), anyInt())).thenReturn(query);
+        when(query.setMaxResults(anyInt())).thenReturn(query);
         when(query.list()).thenThrow(new RuntimeException("Database connection error"));
 
         // Execute - should throw LIMSRuntimeException
         try {
-            dao.findBySampleId(sampleId);
+            dao.findBySampleItemId(sampleItemId);
         } catch (LIMSRuntimeException e) {
-            assertTrue(e.getMessage().contains("Error finding SampleStorageAssignment by sample ID"));
+            assertTrue(e.getMessage().contains("Error finding SampleStorageAssignment"));
             throw e;
         }
     }

@@ -36,27 +36,37 @@ public class StorageSearchServiceImpl implements StorageSearchService {
         String normalizedQuery = query.trim().toLowerCase();
         List<Map<String, Object>> filtered = new ArrayList<>();
 
-        for (Map<String, Object> sample : allSamples) {
-            // Search by sample ID (exact match or substring)
-            // Handle both Integer and String IDs
-            Object idObj = sample.get("id");
-            boolean matchesId = false;
+        for (Map<String, Object> sampleItem : allSamples) {
+            // Search by SampleItem ID (id or sampleItemId field)
+            Object idObj = sampleItem.get("id");
+            Object sampleItemIdObj = sampleItem.get("sampleItemId");
+            boolean matchesSampleItemId = false;
             if (idObj != null) {
                 String idStr = idObj instanceof Integer ? String.valueOf(idObj) : String.valueOf(idObj);
-                matchesId = idStr.toLowerCase().contains(normalizedQuery);
+                matchesSampleItemId = idStr.toLowerCase().contains(normalizedQuery);
+            }
+            if (!matchesSampleItemId && sampleItemIdObj != null) {
+                String sampleItemIdStr = sampleItemIdObj instanceof Integer ? String.valueOf(sampleItemIdObj) : String.valueOf(sampleItemIdObj);
+                matchesSampleItemId = sampleItemIdStr.toLowerCase().contains(normalizedQuery);
             }
 
-            // Search by accession prefix (type field)
-            String type = (String) sample.get("type");
-            boolean matchesType = type != null && type.toLowerCase().contains(normalizedQuery);
+            // Search by SampleItem External ID
+            String sampleItemExternalId = (String) sampleItem.get("sampleItemExternalId");
+            boolean matchesExternalId = sampleItemExternalId != null && !sampleItemExternalId.isEmpty()
+                    && sampleItemExternalId.toLowerCase().contains(normalizedQuery);
+
+            // Search by parent Sample accession number
+            String sampleAccessionNumber = (String) sampleItem.get("sampleAccessionNumber");
+            boolean matchesAccessionNumber = sampleAccessionNumber != null && !sampleAccessionNumber.isEmpty()
+                    && sampleAccessionNumber.toLowerCase().contains(normalizedQuery);
 
             // Search by location path (full hierarchical path)
-            String location = (String) sample.get("location");
+            String location = (String) sampleItem.get("location");
             boolean matchesLocation = location != null && location.toLowerCase().contains(normalizedQuery);
 
             // OR logic: matches if ANY field matches
-            if (matchesId || matchesType || matchesLocation) {
-                filtered.add(sample);
+            if (matchesSampleItemId || matchesExternalId || matchesAccessionNumber || matchesLocation) {
+                filtered.add(sampleItem);
             }
         }
 
@@ -109,15 +119,16 @@ public class StorageSearchServiceImpl implements StorageSearchService {
         List<Map<String, Object>> filtered = new ArrayList<>();
 
         for (Map<String, Object> device : allDevices) {
-            // Search by name OR code OR type (OR logic)
+            // Search by name OR code OR deviceType (OR logic)
+            // Note: "type" field is hierarchy level ("device"), "deviceType" is physical type ("freezer", "refrigerator", etc.)
             String name = (String) device.get("name");
             String code = (String) device.get("code");
-            String type = (String) device.get("type");
+            String deviceType = (String) device.get("deviceType");
             boolean matchesName = name != null && name.toLowerCase().contains(normalizedQuery);
             boolean matchesCode = code != null && code.toLowerCase().contains(normalizedQuery);
-            boolean matchesType = type != null && type.toLowerCase().contains(normalizedQuery);
+            boolean matchesDeviceType = deviceType != null && deviceType.toLowerCase().contains(normalizedQuery);
 
-            if (matchesName || matchesCode || matchesType) {
+            if (matchesName || matchesCode || matchesDeviceType) {
                 filtered.add(device);
             }
         }

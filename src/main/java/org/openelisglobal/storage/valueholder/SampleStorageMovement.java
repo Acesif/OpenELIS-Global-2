@@ -13,10 +13,10 @@ import jakarta.persistence.Table;
 import java.sql.Timestamp;
 import org.hibernate.annotations.Immutable;
 import org.openelisglobal.common.valueholder.BaseObject;
-import org.openelisglobal.sample.valueholder.Sample;
+import org.openelisglobal.sampleitem.valueholder.SampleItem;
 
 /**
- * SampleStorageMovement entity - Immutable audit log of sample movements
+ * SampleStorageMovement entity - Immutable audit log of SampleItem movements
  * Insert-only, no updates/deletes allowed Uses flexible assignment model:
  * locationId + locationType (no StoragePosition references)
  */
@@ -32,8 +32,8 @@ public class SampleStorageMovement extends BaseObject<Integer> {
     private Integer id;
 
     @ManyToOne(fetch = jakarta.persistence.FetchType.EAGER)
-    @JoinColumn(name = "SAMPLE_ID", nullable = false)
-    private Sample sample;
+    @JoinColumn(name = "SAMPLE_ITEM_ID", nullable = false)
+    private SampleItem sampleItem;
 
     // Previous location (flexible assignment model)
     @Column(name = "PREVIOUS_LOCATION_ID")
@@ -74,12 +74,12 @@ public class SampleStorageMovement extends BaseObject<Integer> {
         this.id = id;
     }
 
-    public Sample getSample() {
-        return sample;
+    public SampleItem getSampleItem() {
+        return sampleItem;
     }
 
-    public void setSample(Sample sample) {
-        this.sample = sample;
+    public void setSampleItem(SampleItem sampleItem) {
+        this.sampleItem = sampleItem;
     }
 
     public Integer getPreviousLocationId() {

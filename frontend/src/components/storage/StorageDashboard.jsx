@@ -57,8 +57,8 @@ const StorageDashboard = () => {
   const { notificationVisible, setNotificationVisible, addNotification } =
     useContext(NotificationContext);
   const {
-    assignSample,
-    moveSample,
+    assignSampleItem,
+    moveSampleItem,
     isSubmitting: isMovingSample,
   } = useSampleStorage();
 
@@ -1984,8 +1984,11 @@ const StorageDashboard = () => {
       actions: (
         <SampleActionsContainer
           sample={{
-            id: String(sample.sampleId || sample.id || ""),
-            sampleId: String(sample.sampleId || sample.id || ""),
+            id: String(sample.sampleItemId || sample.id || sample.sampleId || ""),
+            sampleId: String(sample.sampleItemId || sample.id || sample.sampleId || ""),
+            sampleItemId: String(sample.sampleItemId || sample.id || sample.sampleId || ""),
+            sampleItemExternalId: sample.sampleItemExternalId || null,
+            sampleAccessionNumber: sample.sampleAccessionNumber || null,
             type: sample.type || sample.sampleType || "",
             status: sample.status || "Active",
             location: sample.location || sample.hierarchicalPath || "",
@@ -2109,15 +2112,15 @@ const StorageDashboard = () => {
               let locationPayload;
               if (isAssignment) {
                 // Assignment mode - use assign endpoint
-                // SampleAssignmentForm expects: sampleId, locationId, locationType, positionCoordinate, notes
+                // SampleAssignmentForm expects: sampleItemId, locationId, locationType, positionCoordinate, notes
                 locationPayload = {
-                  sampleId: sample.sampleId || sample.id,
+                  sampleItemId: sample.sampleItemId || sample.id, // Use sampleItemId (SampleItem-level tracking)
                   locationId: locationId,
                   locationType: locationType,
                   positionCoordinate: finalPositionCoordinate || null,
                   notes: conditionNotes || null, // Assignment form uses "notes" field
                 };
-                const response = await assignSample(locationPayload);
+                const response = await assignSampleItem(locationPayload);
 
                 // Refresh samples table and metrics after successful assignment
                 loadSamples();
@@ -2145,16 +2148,16 @@ const StorageDashboard = () => {
                 }
               } else {
                 // Movement mode - use move endpoint
-                // SampleMovementForm expects: sampleId, locationId, locationType, positionCoordinate, reason
+                // SampleMovementForm expects: sampleItemId, locationId, locationType, positionCoordinate, reason
                 // Note: conditionNotes is NOT supported in movement form
                 locationPayload = {
-                  sampleId: sample.sampleId || sample.id,
+                  sampleItemId: sample.sampleItemId || sample.id, // Use sampleItemId (SampleItem-level tracking)
                   locationId: locationId,
                   locationType: locationType,
                   positionCoordinate: finalPositionCoordinate || null,
                   reason: reason || null, // Movement form uses "reason" field
                 };
-                const response = await moveSample(locationPayload);
+                const response = await moveSampleItem(locationPayload);
 
                 // Refresh samples table and metrics after successful move
                 loadSamples();

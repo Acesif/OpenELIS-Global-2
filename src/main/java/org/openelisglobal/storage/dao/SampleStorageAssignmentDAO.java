@@ -5,7 +5,7 @@ import org.openelisglobal.storage.valueholder.SampleStorageAssignment;
 import org.openelisglobal.storage.valueholder.StoragePosition;
 
 public interface SampleStorageAssignmentDAO extends BaseDAO<SampleStorageAssignment, Integer> {
-    SampleStorageAssignment findBySampleId(String sampleId);
+    SampleStorageAssignment findBySampleItemId(String sampleItemId);
 
     /**
      * Find assignment by storage position (for barcode validation)

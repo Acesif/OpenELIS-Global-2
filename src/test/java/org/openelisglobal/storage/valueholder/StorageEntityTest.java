@@ -107,7 +107,7 @@ public class StorageEntityTest {
         StoragePosition position = new StoragePosition();
 
         // Then: Occupied should default to false (or null)
-        assertTrue(position.getOccupied() == null || !position.getOccupied());
+        // Occupancy is now calculated dynamically from SampleStorageAssignment records
     }
 
     @Test

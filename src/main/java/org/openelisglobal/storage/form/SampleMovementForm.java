@@ -4,13 +4,13 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 
 /**
- * Form object for sample movement Supports flexible hierarchy: move to
+ * Form object for SampleItem movement Supports flexible hierarchy: move to
  * device/shelf/rack level with optional position coordinate
  */
 public class SampleMovementForm {
 
-    @NotBlank(message = "Sample ID is required")
-    private String sampleId;
+    @NotBlank(message = "SampleItem ID is required")
+    private String sampleItemId;
 
     // Simplified polymorphic location
     @NotBlank(message = "Location ID is required")
@@ -27,12 +27,12 @@ public class SampleMovementForm {
 
     // Getters and Setters
 
-    public String getSampleId() {
-        return sampleId;
+    public String getSampleItemId() {
+        return sampleItemId;
     }
 
-    public void setSampleId(String sampleId) {
-        this.sampleId = sampleId;
+    public void setSampleItemId(String sampleItemId) {
+        this.sampleItemId = sampleItemId;
     }
 
     public String getLocationId() {

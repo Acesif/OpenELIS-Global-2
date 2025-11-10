@@ -1,5 +1,6 @@
 package org.openelisglobal.storage.controller;
 
+import static org.junit.Assert.assertTrue;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
@@ -144,6 +145,17 @@ public class SampleStorageRestControllerTest extends BaseWebContextSensitiveTest
                 .andExpect(status().isCreated()).andReturn().getResponse().getContentAsString();
 
         return objectMapper.readTree(response).get("id").asInt() + "";
+    }
+
+    /**
+     * Placeholder test to prevent initialization error.
+     * All actual tests are in SampleStorageRestControllerFlexibleAssignmentTest.java
+     */
+    @org.junit.Test
+    public void testPlaceholder() {
+        // This test file is kept for reference but all tests moved to
+        // SampleStorageRestControllerFlexibleAssignmentTest.java
+        assertTrue(true);
     }
 
 }

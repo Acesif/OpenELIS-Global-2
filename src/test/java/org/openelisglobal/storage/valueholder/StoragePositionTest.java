@@ -59,7 +59,6 @@ public class StoragePositionTest {
         // Given: Position with only parent device
         StoragePosition position = new StoragePosition();
         position.setId(40);
-        position.setOccupied(false);
         position.setParentDevice(testDevice);
 
         // When: Validating hierarchy
@@ -78,7 +77,6 @@ public class StoragePositionTest {
         // Given: Position with device and shelf
         StoragePosition position = new StoragePosition();
         position.setId(40);
-        position.setOccupied(false);
         position.setParentDevice(testDevice);
         position.setParentShelf(testShelf);
 
@@ -99,7 +97,6 @@ public class StoragePositionTest {
         // Given: Position with device, shelf, and rack
         StoragePosition position = new StoragePosition();
         position.setId(40);
-        position.setOccupied(false);
         position.setParentDevice(testDevice);
         position.setParentShelf(testShelf);
         position.setParentRack(testRack);
@@ -120,7 +117,6 @@ public class StoragePositionTest {
         // Given: Position with full hierarchy including coordinate
         StoragePosition position = new StoragePosition();
         position.setId(40);
-        position.setOccupied(false);
         position.setParentDevice(testDevice);
         position.setParentShelf(testShelf);
         position.setParentRack(testRack);
@@ -144,7 +140,6 @@ public class StoragePositionTest {
         // Given: Position without parent device
         StoragePosition position = new StoragePosition();
         position.setId(40);
-        position.setOccupied(false);
         // No parent device set
 
         // When: Validating hierarchy
@@ -162,7 +157,6 @@ public class StoragePositionTest {
         // Given: Position with rack but no shelf
         StoragePosition position = new StoragePosition();
         position.setId(40);
-        position.setOccupied(false);
         position.setParentDevice(testDevice);
         // Shelf is null
         position.setParentRack(testRack);
@@ -184,7 +178,6 @@ public class StoragePositionTest {
         // Given: Position with coordinate but no rack
         StoragePosition position = new StoragePosition();
         position.setId(40);
-        position.setOccupied(false);
         position.setParentDevice(testDevice);
         position.setParentShelf(testShelf);
         // Rack is null

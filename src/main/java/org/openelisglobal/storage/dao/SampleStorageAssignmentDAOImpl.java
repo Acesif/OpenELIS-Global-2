@@ -24,26 +24,24 @@ public class SampleStorageAssignmentDAOImpl extends BaseDAOImpl<SampleStorageAss
 
     @Override
     @Transactional(readOnly = true)
-    public SampleStorageAssignment findBySampleId(String sampleId) {
+    public SampleStorageAssignment findBySampleItemId(String sampleItemId) {
         try {
-            // Note: Sample.id is String in entity but stored as numeric in database
-            // Pattern used throughout codebase: parse String sampleId to Integer for
-            // database queries
-            // This matches the approach in SampleItemDAOImpl, SampleAdditionalFieldDAOImpl,
-            // etc.
-            String hql = "SELECT ssa FROM SampleStorageAssignment ssa JOIN ssa.sample s WHERE s.id = :sampleId";
+            // Note: SampleItem.id uses LIMSStringNumberUserType (String in Java, numeric in DB)
+            // When querying through relationships, we must parse String to Integer for the parameter
+            // This matches the pattern in SampleItemDAOImpl.getSampleItemsBySampleId()
+            String hql = "FROM SampleStorageAssignment ssa WHERE ssa.sampleItem.id = :sampleItemId";
             Query<SampleStorageAssignment> query = entityManager.unwrap(Session.class).createQuery(hql,
                     SampleStorageAssignment.class);
-            // Parse String to Integer to match database column type (numeric)
-            query.setParameter("sampleId", Integer.parseInt(sampleId));
+            query.setParameter("sampleItemId", Integer.parseInt(sampleItemId));
+            query.setMaxResults(1);
             List<SampleStorageAssignment> results = query.list();
             return results.isEmpty() ? null : results.get(0);
         } catch (NumberFormatException e) {
-            logger.error("Invalid sample ID format (not numeric): " + sampleId, e);
-            throw new LIMSRuntimeException("Invalid sample ID format: " + sampleId, e);
+            logger.error("Invalid SampleItem ID format (must be numeric): " + sampleItemId, e);
+            return null;
         } catch (Exception e) {
-            logger.error("Error finding SampleStorageAssignment by sample ID: " + sampleId, e);
-            throw new LIMSRuntimeException("Error finding SampleStorageAssignment by sample ID: " + sampleId, e);
+            logger.error("Error finding SampleStorageAssignment by SampleItem ID: " + sampleItemId, e);
+            throw new LIMSRuntimeException("Error finding SampleStorageAssignment by SampleItem ID: " + sampleItemId, e);
         }
     }
 
@@ -54,12 +52,19 @@ public class SampleStorageAssignmentDAOImpl extends BaseDAOImpl<SampleStorageAss
             if (position == null) {
                 return null;
             }
-            String hql = "FROM SampleStorageAssignment ssa WHERE ssa.storagePosition.id = :positionId";
-            Query<SampleStorageAssignment> query = entityManager.unwrap(Session.class).createQuery(hql, SampleStorageAssignment.class);
-            query.setParameter("positionId", position.getId());
-            query.setMaxResults(1);
-            List<SampleStorageAssignment> results = query.list();
-            return results.isEmpty() ? null : results.get(0);
+            // Note: This method is deprecated - assignments now use location_id + location_type
+            // instead of StoragePosition references. This method is kept for backward compatibility
+            // but may not work correctly with the new flexible assignment model.
+            // TODO: Consider removing this method or updating it to work with location_id + location_type
+            String hql = "FROM SampleStorageAssignment ssa WHERE ssa.locationType = 'rack' AND ssa.locationId = :rackId";
+            if (position.getParentRack() != null) {
+                Query<SampleStorageAssignment> query = entityManager.unwrap(Session.class).createQuery(hql, SampleStorageAssignment.class);
+                query.setParameter("rackId", position.getParentRack().getId());
+                query.setMaxResults(1);
+                List<SampleStorageAssignment> results = query.list();
+                return results.isEmpty() ? null : results.get(0);
+            }
+            return null;
         } catch (Exception e) {
             logger.error("Error finding SampleStorageAssignment by storage position", e);
             throw new LIMSRuntimeException("Error finding SampleStorageAssignment by storage position", e);

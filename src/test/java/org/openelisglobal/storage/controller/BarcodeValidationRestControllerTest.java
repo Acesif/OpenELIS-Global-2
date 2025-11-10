@@ -85,7 +85,7 @@ public class BarcodeValidationRestControllerTest extends BaseWebContextSensitive
 
         // Create position (Note: coordinate is singular, no active column)
         jdbcTemplate.update(
-            "INSERT INTO storage_position (id, coordinate, parent_rack_id, parent_shelf_id, parent_device_id, occupied, sys_user_id, last_updated, fhir_uuid) " +
+            "INSERT INTO storage_position (id, coordinate, parent_rack_id, parent_shelf_id, parent_device_id, sys_user_id, last_updated, fhir_uuid) " +
             "VALUES (?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, gen_random_uuid())",
             baseId + 4, "A1", baseId + 3, baseId + 2, baseId + 1, false, 1);
     }

@@ -15,15 +15,22 @@ import UnifiedBarcodeInput from "../StorageLocationSelector/UnifiedBarcodeInput"
 import "./LocationManagementModal.css";
 
 /**
- * Consolidated modal for managing sample storage location (assignment and movement)
+ * Consolidated modal for managing SampleItem storage location (assignment and movement)
  * Handles both initial assignment (no location) and movement (existing location) workflows
+ * Storage tracking operates at SampleItem level (physical specimens), not Sample level (orders)
  *
  * Props:
  * - open: boolean - Whether modal is open
- * - sample: object - { id, sampleId, type, status, dateCollected?, patientId?, testOrders? }
+ * - sample: object - { id, sampleItemId, sampleItemExternalId?, sampleAccessionNumber?, type, status, dateCollected?, patientId?, testOrders? }
+ *   - id/sampleItemId: SampleItem ID (primary identifier)
+ *   - sampleItemExternalId: SampleItem external ID (optional, displayed if available)
+ *   - sampleAccessionNumber: Parent Sample accession number (secondary identifier)
+ *   - type: SampleItem type (e.g., "Blood", "Serum")
+ *   - status: SampleItem status
  * - currentLocation: object - { path, position } or null
  * - onClose: function - Callback when modal closes
- * - onConfirm: function - Callback when location is confirmed with { sample, newLocation, reason?, conditionNotes? }
+ * - onConfirm: function - Callback when location is confirmed with { sample, newLocation, reason?, conditionNotes?, positionCoordinate? }
+ *   - The sample object should include sampleItemId for API calls
  */
 const LocationManagementModal = ({
   open,
@@ -182,7 +189,7 @@ const LocationManagementModal = ({
       console.log(
         "[LocationManagementModal] handleConfirm: Calling onConfirm with:",
         {
-          sample: sample?.id || sample?.sampleId,
+          sampleItemId: sample?.sampleItemId || sample?.id || sample?.sampleId,
           hasNewLocation: !!locationToUse,
           reason: isMovementMode ? reason : undefined,
           positionCoordinate: positionCoordinate || undefined,
@@ -440,17 +447,17 @@ const LocationManagementModal = ({
                 {
                   id: "storage.move.sample.subtitle",
                   defaultMessage:
-                    "Move sample {sampleId} to a new storage location",
+                    "Move sample item {sampleItemId} to a new storage location",
                 },
-                { sampleId: sample?.sampleId || "" },
+                { sampleItemId: sample?.sampleItemExternalId || sample?.sampleItemId || sample?.id || sample?.sampleId || "" },
               )
             : intl.formatMessage(
                 {
                   id: "storage.assign.location.subtitle",
                   defaultMessage:
-                    "Assign storage location for sample {sampleId}",
+                    "Assign storage location for sample item {sampleItemId}",
                 },
-                { sampleId: sample?.sampleId || "" },
+                { sampleItemId: sample?.sampleItemExternalId || sample?.sampleItemId || sample?.id || sample?.sampleId || "" },
               )
         }
       />
@@ -462,13 +469,26 @@ const LocationManagementModal = ({
             data-testid="sample-info-section"
           >
             <div className="info-box">
+              {/* SampleItem ID/External ID (primary identifier) */}
               <div className="info-row">
                 <span className="info-label">
-                  <FormattedMessage id="sample.id" defaultMessage="Sample ID" />
+                  <FormattedMessage id="sample.item.id" defaultMessage="Sample Item ID" />
                   :
                 </span>
-                <span className="info-value">{sample.sampleId}</span>
+                <span className="info-value">
+                  {sample.sampleItemExternalId || sample.sampleItemId || sample.id || sample.sampleId || "N/A"}
+                </span>
               </div>
+              {/* Parent Sample accession number (secondary identifier) */}
+              {sample.sampleAccessionNumber && (
+                <div className="info-row">
+                  <span className="info-label">
+                    <FormattedMessage id="sample.accession.number" defaultMessage="Sample Accession" />
+                    :
+                  </span>
+                  <span className="info-value">{sample.sampleAccessionNumber}</span>
+                </div>
+              )}
               <div className="info-row">
                 <span className="info-label">
                   <FormattedMessage id="sample.type" defaultMessage="Type" />:

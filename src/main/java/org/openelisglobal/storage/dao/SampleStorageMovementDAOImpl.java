@@ -20,21 +20,20 @@ public class SampleStorageMovementDAOImpl extends BaseDAOImpl<SampleStorageMovem
 
     @Override
     @Transactional(readOnly = true)
-    public List<SampleStorageMovement> findBySampleId(String sampleId) {
+    public List<SampleStorageMovement> findBySampleItemId(String sampleItemId) {
         try {
-            // Note: Sample.id is String in entity but stored as numeric in database
-            // Pattern used throughout codebase: parse String sampleId to Integer for
-            // database queries
-            String hql = "FROM SampleStorageMovement WHERE sample.id = :sampleId ORDER BY movementDate DESC";
+            // Note: SampleItem.id uses LIMSStringNumberUserType (String in Java, numeric in DB)
+            // When querying through relationships, we must parse String to Integer for the parameter
+            // This matches the pattern in SampleItemDAOImpl.getSampleItemsBySampleId()
+            String hql = "FROM SampleStorageMovement ssm WHERE ssm.sampleItem.id = :sampleItemId ORDER BY ssm.movementDate DESC";
             Query<SampleStorageMovement> query = entityManager.unwrap(Session.class).createQuery(hql,
                     SampleStorageMovement.class);
-            // Parse String to Integer to match database column type (numeric)
-            query.setParameter("sampleId", Integer.parseInt(sampleId));
+            query.setParameter("sampleItemId", Integer.parseInt(sampleItemId));
             return query.list();
         } catch (NumberFormatException e) {
-            throw new LIMSRuntimeException("Invalid sample ID format (not numeric): " + sampleId, e);
+            throw new LIMSRuntimeException("Invalid SampleItem ID format (must be numeric): " + sampleItemId, e);
         } catch (Exception e) {
-            throw new LIMSRuntimeException("Error finding SampleStorageMovements by sample ID", e);
+            throw new LIMSRuntimeException("Error finding SampleStorageMovements by SampleItem ID: " + sampleItemId, e);
         }
     }
 }

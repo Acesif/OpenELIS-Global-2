@@ -57,32 +57,38 @@ public class StorageSearchServiceImplTest {
     }
 
     private void setupMockData() {
-        // Mock samples with different IDs, accession numbers, and locations
+        // Mock SampleItems with different IDs, external IDs, parent Sample accession numbers, and locations
         mockSamples = new ArrayList<>();
 
-        Map<String, Object> sample1 = new HashMap<>();
-        sample1.put("id", 1001);
-        sample1.put("sampleId", 1001);
-        sample1.put("type", "TEST-SAMPLE-001");
-        sample1.put("status", "active");
-        sample1.put("location", "Main Laboratory > Freezer Unit 1 > Shelf-A > Rack R1 > Position A5");
-        mockSamples.add(sample1);
+        Map<String, Object> sampleItem1 = new HashMap<>();
+        sampleItem1.put("id", "1001");
+        sampleItem1.put("sampleItemId", "1001");
+        sampleItem1.put("sampleItemExternalId", "SI-1001-EXT");
+        sampleItem1.put("sampleAccessionNumber", "TEST-SAMPLE-001");
+        sampleItem1.put("type", "Blood");
+        sampleItem1.put("status", "active");
+        sampleItem1.put("location", "Main Laboratory > Freezer Unit 1 > Shelf-A > Rack R1 > Position A5");
+        mockSamples.add(sampleItem1);
 
-        Map<String, Object> sample2 = new HashMap<>();
-        sample2.put("id", 1002);
-        sample2.put("sampleId", 1002);
-        sample2.put("type", "TB-2025-001");
-        sample2.put("status", "active");
-        sample2.put("location", "Main Laboratory > Refrigerator Unit 1 > Shelf-1 > Rack R2 > Position B3");
-        mockSamples.add(sample2);
+        Map<String, Object> sampleItem2 = new HashMap<>();
+        sampleItem2.put("id", "1002");
+        sampleItem2.put("sampleItemId", "1002");
+        sampleItem2.put("sampleItemExternalId", "SI-1002-EXT");
+        sampleItem2.put("sampleAccessionNumber", "TB-2025-001");
+        sampleItem2.put("type", "Serum");
+        sampleItem2.put("status", "active");
+        sampleItem2.put("location", "Main Laboratory > Refrigerator Unit 1 > Shelf-1 > Rack R2 > Position B3");
+        mockSamples.add(sampleItem2);
 
-        Map<String, Object> sample3 = new HashMap<>();
-        sample3.put("id", 1003);
-        sample3.put("sampleId", 1003);
-        sample3.put("type", "S-2025-002");
-        sample3.put("status", "active");
-        sample3.put("location", "Secondary Laboratory > Freezer Unit 2 > Shelf-B > Rack R3 > Position C1");
-        mockSamples.add(sample3);
+        Map<String, Object> sampleItem3 = new HashMap<>();
+        sampleItem3.put("id", "1003");
+        sampleItem3.put("sampleItemId", "1003");
+        sampleItem3.put("sampleItemExternalId", "SI-1003-EXT");
+        sampleItem3.put("sampleAccessionNumber", "S-2025-002");
+        sampleItem3.put("type", "Urine");
+        sampleItem3.put("status", "active");
+        sampleItem3.put("location", "Secondary Laboratory > Freezer Unit 2 > Shelf-B > Rack R3 > Position C1");
+        mockSamples.add(sampleItem3);
 
         // Mock rooms as Maps (API format)
         mockRoomsForAPI = new ArrayList<>();
@@ -151,26 +157,26 @@ public class StorageSearchServiceImplTest {
 
     @Test
     public void testSearchSamples_FiltersBySampleId() throws Exception {
-        // Filter samples by ID substring
+        // Filter SampleItems by ID substring
         when(sampleStorageService.getAllSamplesWithAssignments()).thenReturn(mockSamples);
 
         List<Map<String, Object>> results = searchService.searchSamples("1001");
 
         assertNotNull("Results should not be null", results);
-        assertEquals("Should return one matching sample", 1, results.size());
-        assertEquals("Should return sample with ID 1001", 1001, results.get(0).get("id"));
+        assertEquals("Should return one matching SampleItem", 1, results.size());
+        assertEquals("Should return SampleItem with ID 1001", "1001", String.valueOf(results.get(0).get("id")));
     }
 
     @Test
     public void testSearchSamples_FiltersByAccessionPrefix() throws Exception {
-        // Filter by accession prefix
+        // Filter by parent Sample accession number prefix
         when(sampleStorageService.getAllSamplesWithAssignments()).thenReturn(mockSamples);
 
         List<Map<String, Object>> results = searchService.searchSamples("TB-2025");
 
         assertNotNull("Results should not be null", results);
         assertEquals("Should return one matching sample", 1, results.size());
-        assertEquals("Should return sample with TB-2025 prefix", "TB-2025-001", results.get(0).get("type"));
+        assertEquals("Should return SampleItem with TB-2025 prefix in parent Sample accession", "TB-2025-001", results.get(0).get("sampleAccessionNumber"));
     }
 
     @Test
@@ -194,16 +200,20 @@ public class StorageSearchServiceImplTest {
 
     @Test
     public void testSearchSamples_OR_Logic() throws Exception {
-        // Matches if ANY field matches (sample ID, accession prefix, or location path)
+        // Matches if ANY field matches (SampleItem ID, External ID, parent Sample accession, or location path)
         when(sampleStorageService.getAllSamplesWithAssignments()).thenReturn(mockSamples);
 
-        // Query "1001" should match by ID
+        // Query "1001" should match by SampleItem ID
         List<Map<String, Object>> resultsById = searchService.searchSamples("1001");
-        assertEquals("Should match by ID", 1, resultsById.size());
+        assertEquals("Should match by SampleItem ID", 1, resultsById.size());
 
-        // Query "TB-2025" should match by accession prefix
+        // Query "TB-2025" should match by parent Sample accession number
         List<Map<String, Object>> resultsByPrefix = searchService.searchSamples("TB-2025");
-        assertEquals("Should match by accession prefix", 1, resultsByPrefix.size());
+        assertEquals("Should match by parent Sample accession number", 1, resultsByPrefix.size());
+
+        // Query "SI-1001" should match by SampleItem External ID
+        List<Map<String, Object>> resultsByExternalId = searchService.searchSamples("SI-1001");
+        assertEquals("Should match by SampleItem External ID", 1, resultsByExternalId.size());
 
         // Query "Freezer" should match by location path
         List<Map<String, Object>> resultsByLocation = searchService.searchSamples("Freezer");

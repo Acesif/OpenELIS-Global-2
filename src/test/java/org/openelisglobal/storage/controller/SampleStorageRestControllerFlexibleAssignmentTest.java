@@ -63,13 +63,28 @@ public class SampleStorageRestControllerFlexibleAssignmentTest extends BaseWebCo
         }
     }
 
-    private String createSampleAndGetId() throws Exception {
-        // Create a test sample
-        String sampleResponse = mockMvc
-                .perform(post("/rest/samples").contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"accessionNumber\":\"TEST-" + System.currentTimeMillis() + "\"}"))
-                .andExpect(status().isCreated()).andReturn().getResponse().getContentAsString();
-        return objectMapper.readTree(sampleResponse).get("id").asText();
+    private String createSampleItemAndGetId() throws Exception {
+        // Create a test sample directly via SQL (SampleItem requires a parent Sample)
+        // Use direct database insertion instead of REST endpoint (which may not be available in test context)
+        long timestamp = System.currentTimeMillis();
+        int sampleId = 60000 + (int) (timestamp % 10000);
+        String accessionNumber = "TEST-" + timestamp;
+        
+        // Insert sample directly
+        jdbcTemplate.update(
+            "INSERT INTO sample (id, accession_number, entered_date, received_date, lastupdated) VALUES (?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)",
+            sampleId, accessionNumber);
+        
+        // Create a SampleItem for the sample
+        // Use numeric ID (sample_item.id is numeric in DB, but Hibernate treats it as String)
+        int sampleItemId = 50000 + (int) (timestamp % 10000);
+        // Get default status_id and typeosamp_id from database
+        Integer statusId = jdbcTemplate.queryForObject("SELECT id FROM status_of_sample ORDER BY id LIMIT 1", Integer.class);
+        Integer typeOfSampleId = jdbcTemplate.queryForObject("SELECT id FROM type_of_sample ORDER BY id LIMIT 1", Integer.class);
+        jdbcTemplate.update(
+            "INSERT INTO sample_item (id, samp_id, sort_order, sampitem_id, external_id, typeosamp_id, status_id, lastupdated) VALUES (?, ?, 1, NULL, ?, ?, ?, CURRENT_TIMESTAMP)",
+            sampleItemId, sampleId, "TEST-SAMPLE-" + timestamp + "-TUBE-1", typeOfSampleId, statusId);
+        return String.valueOf(sampleItemId);
     }
 
     private String createRoomAndGetId(String name, String code) throws Exception {
@@ -131,19 +146,19 @@ public class SampleStorageRestControllerFlexibleAssignmentTest extends BaseWebCo
     @Test
     public void testAssignSample_WithLocationIdAndType_Returns201() throws Exception {
         // Setup
-        String sampleId = createSampleAndGetId();
+        String sampleItemId = createSampleItemAndGetId();
         String roomId = createRoomAndGetId("Test Room", "TEST-ROOM-" + System.currentTimeMillis());
         String deviceId = createDeviceAndGetId("Test Device", "TEST-DEV-" + System.currentTimeMillis(), "freezer",
                 roomId);
 
         SampleAssignmentForm form = new SampleAssignmentForm();
-        form.setSampleId(sampleId);
+        form.setSampleItemId(sampleItemId);
         form.setLocationId(deviceId);
         form.setLocationType("device");
         form.setNotes("Test assignment");
 
         // Execute & Verify
-        mockMvc.perform(post("/rest/storage/samples/assign").contentType(MediaType.APPLICATION_JSON)
+        mockMvc.perform(post("/rest/storage/sample-items/assign").contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(form))).andExpect(status().isCreated())
                 .andExpect(jsonPath("$.assignmentId").exists()).andExpect(jsonPath("$.hierarchicalPath").exists());
     }
@@ -151,12 +166,12 @@ public class SampleStorageRestControllerFlexibleAssignmentTest extends BaseWebCo
     @Test
     public void testAssignSample_WithLocationIdAndType_DeviceLevel_Valid() throws Exception {
         // Setup
-        String sampleId = createSampleAndGetId();
+        String sampleItemId = createSampleItemAndGetId();
         String roomId = createRoomAndGetId("Main Lab", "MAIN-" + System.currentTimeMillis());
         String deviceId = createDeviceAndGetId("Freezer 1", "FRZ1-" + System.currentTimeMillis(), "freezer", roomId);
 
         SampleAssignmentForm form = new SampleAssignmentForm();
-        form.setSampleId(sampleId);
+        form.setSampleItemId(sampleItemId);
         form.setLocationId(deviceId);
         form.setLocationType("device");
         form.setPositionCoordinate("A5");
@@ -164,7 +179,7 @@ public class SampleStorageRestControllerFlexibleAssignmentTest extends BaseWebCo
 
         // Execute
         String response = mockMvc
-                .perform(post("/rest/storage/samples/assign").contentType(MediaType.APPLICATION_JSON)
+                .perform(post("/rest/storage/sample-items/assign").contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(form)))
                 .andExpect(status().isCreated()).andReturn().getResponse().getContentAsString();
 
@@ -179,7 +194,7 @@ public class SampleStorageRestControllerFlexibleAssignmentTest extends BaseWebCo
     @Test
     public void testAssignSample_WithLocationIdAndType_WithCoordinate_Valid() throws Exception {
         // Setup
-        String sampleId = createSampleAndGetId();
+        String sampleItemId = createSampleItemAndGetId();
         String roomId = createRoomAndGetId("Test Room", "TEST-ROOM-" + System.currentTimeMillis());
         String deviceId = createDeviceAndGetId("Test Device", "TEST-DEV-" + System.currentTimeMillis(), "freezer",
                 roomId);
@@ -187,7 +202,7 @@ public class SampleStorageRestControllerFlexibleAssignmentTest extends BaseWebCo
         String rackId = createRackAndGetId("Rack-1", 8, 12, shelfId);
 
         SampleAssignmentForm form = new SampleAssignmentForm();
-        form.setSampleId(sampleId);
+        form.setSampleItemId(sampleItemId);
         form.setLocationId(rackId);
         form.setLocationType("rack");
         form.setPositionCoordinate("B3");
@@ -195,7 +210,7 @@ public class SampleStorageRestControllerFlexibleAssignmentTest extends BaseWebCo
 
         // Execute
         String response = mockMvc
-                .perform(post("/rest/storage/samples/assign").contentType(MediaType.APPLICATION_JSON)
+                .perform(post("/rest/storage/sample-items/assign").contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(form)))
                 .andExpect(status().isCreated()).andReturn().getResponse().getContentAsString();
 
@@ -209,14 +224,14 @@ public class SampleStorageRestControllerFlexibleAssignmentTest extends BaseWebCo
     @Test
     public void testAssignSample_MissingLocationIdOrType_Returns400() throws Exception {
         // Setup - missing locationId
-        String sampleId = createSampleAndGetId();
+        String sampleItemId = createSampleItemAndGetId();
         SampleAssignmentForm form = new SampleAssignmentForm();
-        form.setSampleId(sampleId);
+        form.setSampleItemId(sampleItemId);
         form.setLocationType("device");
         form.setNotes("Test");
 
         // Execute & Verify
-        mockMvc.perform(post("/rest/storage/samples/assign").contentType(MediaType.APPLICATION_JSON)
+        mockMvc.perform(post("/rest/storage/sample-items/assign").contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(form))).andExpect(status().isBadRequest());
 
         // Setup - missing locationType
@@ -224,14 +239,14 @@ public class SampleStorageRestControllerFlexibleAssignmentTest extends BaseWebCo
         form.setLocationType(null);
 
         // Execute & Verify
-        mockMvc.perform(post("/rest/storage/samples/assign").contentType(MediaType.APPLICATION_JSON)
+        mockMvc.perform(post("/rest/storage/sample-items/assign").contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(form))).andExpect(status().isBadRequest());
     }
 
     @Test
     public void testMoveSample_WithLocationIdAndType_Returns200() throws Exception {
         // Setup - create assignment first
-        String sampleId = createSampleAndGetId();
+        String sampleItemId = createSampleItemAndGetId();
         String roomId = createRoomAndGetId("Test Room", "TEST-ROOM-" + System.currentTimeMillis());
         String deviceId = createDeviceAndGetId("Test Device", "TEST-DEV-" + System.currentTimeMillis(), "freezer",
                 roomId);
@@ -239,17 +254,17 @@ public class SampleStorageRestControllerFlexibleAssignmentTest extends BaseWebCo
 
         // Assign to device
         SampleAssignmentForm assignForm = new SampleAssignmentForm();
-        assignForm.setSampleId(sampleId);
+        assignForm.setSampleItemId(sampleItemId);
         assignForm.setLocationId(deviceId);
         assignForm.setLocationType("device");
         assignForm.setNotes("Initial assignment");
 
-        mockMvc.perform(post("/rest/storage/samples/assign").contentType(MediaType.APPLICATION_JSON)
+        mockMvc.perform(post("/rest/storage/sample-items/assign").contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(assignForm))).andExpect(status().isCreated());
 
         // Move to shelf
         SampleMovementForm moveForm = new SampleMovementForm();
-        moveForm.setSampleId(sampleId);
+        moveForm.setSampleItemId(sampleItemId);
         moveForm.setLocationId(shelfId);
         moveForm.setLocationType("shelf");
         moveForm.setReason("Moving to shelf");
@@ -258,7 +273,7 @@ public class SampleStorageRestControllerFlexibleAssignmentTest extends BaseWebCo
         // This test verifies that findBySampleId correctly handles String-to-numeric
         // conversion
         // The sampleId is a String, but the database column is numeric
-        mockMvc.perform(post("/rest/storage/samples/move").contentType(MediaType.APPLICATION_JSON)
+        mockMvc.perform(post("/rest/storage/sample-items/move").contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(moveForm))).andExpect(status().isOk())
                 .andExpect(jsonPath("$.movementId").exists());
     }
@@ -269,11 +284,11 @@ public class SampleStorageRestControllerFlexibleAssignmentTest extends BaseWebCo
      * fix for findBySampleId
      */
     @Test
-    public void testMoveSample_WithNumericSampleIdString_HandlesTypeConversion() throws Exception {
+    public void testMoveSampleItem_WithStringId_HandlesCorrectly() throws Exception {
         // Setup - create assignment first
-        String sampleId = createSampleAndGetId();
-        // Verify sampleId is a String (even though it represents a number)
-        assertNotNull("Sample ID should not be null", sampleId);
+        String sampleItemId = createSampleItemAndGetId();
+        // Verify sampleItemId is a String
+        assertNotNull("SampleItem ID should not be null", sampleItemId);
 
         String roomId = createRoomAndGetId("Test Room", "TEST-ROOM-" + System.currentTimeMillis());
         String deviceId = createDeviceAndGetId("Test Device", "TEST-DEV-" + System.currentTimeMillis(), "freezer",
@@ -282,24 +297,24 @@ public class SampleStorageRestControllerFlexibleAssignmentTest extends BaseWebCo
 
         // Assign to device
         SampleAssignmentForm assignForm = new SampleAssignmentForm();
-        assignForm.setSampleId(sampleId);
+        assignForm.setSampleItemId(sampleItemId);
         assignForm.setLocationId(deviceId);
         assignForm.setLocationType("device");
         assignForm.setNotes("Initial assignment");
 
-        mockMvc.perform(post("/rest/storage/samples/assign").contentType(MediaType.APPLICATION_JSON)
+        mockMvc.perform(post("/rest/storage/sample-items/assign").contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(assignForm))).andExpect(status().isCreated());
 
-        // Move to shelf - this will call findBySampleId with String sampleId
+        // Move to shelf - this will call findBySampleItemId with String sampleItemId
         // The DAO should convert it to Integer for the database query
         SampleMovementForm moveForm = new SampleMovementForm();
-        moveForm.setSampleId(sampleId); // String, but represents numeric ID
+        moveForm.setSampleItemId(sampleItemId); // String, but represents numeric ID
         moveForm.setLocationId(shelfId);
         moveForm.setLocationType("shelf");
         moveForm.setReason("Moving to shelf");
 
         // Execute & Verify - should succeed despite String-to-numeric conversion
-        mockMvc.perform(post("/rest/storage/samples/move").contentType(MediaType.APPLICATION_JSON)
+        mockMvc.perform(post("/rest/storage/sample-items/move").contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(moveForm))).andExpect(status().isOk())
                 .andExpect(jsonPath("$.movementId").exists());
     }
@@ -314,7 +329,7 @@ public class SampleStorageRestControllerFlexibleAssignmentTest extends BaseWebCo
     @Test
     public void testMoveSample_DeviceToRack_EndToEnd() throws Exception {
         // Setup - create sample and locations
-        String sampleId = createSampleAndGetId();
+        String sampleItemId = createSampleItemAndGetId();
         String roomId = createRoomAndGetId("Test Room", "TEST-ROOM-" + System.currentTimeMillis());
         String deviceId = createDeviceAndGetId("Test Device", "TEST-DEV-" + System.currentTimeMillis(), "freezer",
                 roomId);
@@ -323,26 +338,26 @@ public class SampleStorageRestControllerFlexibleAssignmentTest extends BaseWebCo
 
         // Step 1: Assign sample to device
         SampleAssignmentForm assignForm = new SampleAssignmentForm();
-        assignForm.setSampleId(sampleId);
+        assignForm.setSampleItemId(sampleItemId);
         assignForm.setLocationId(deviceId);
         assignForm.setLocationType("device");
         assignForm.setNotes("Initial assignment to device");
 
         String assignResponse = mockMvc
-                .perform(post("/rest/storage/samples/assign").contentType(MediaType.APPLICATION_JSON)
+                .perform(post("/rest/storage/sample-items/assign").contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(assignForm)))
                 .andExpect(status().isCreated()).andExpect(jsonPath("$.assignmentId").exists()).andReturn()
                 .getResponse().getContentAsString();
 
         // Step 2: Move sample to rack
         SampleMovementForm moveForm = new SampleMovementForm();
-        moveForm.setSampleId(sampleId);
+        moveForm.setSampleItemId(sampleItemId);
         moveForm.setLocationId(rackId);
         moveForm.setLocationType("rack");
         moveForm.setReason("Moving to rack");
 
         String moveResponse = mockMvc
-                .perform(post("/rest/storage/samples/move").contentType(MediaType.APPLICATION_JSON)
+                .perform(post("/rest/storage/sample-items/move").contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(moveForm)))
                 .andExpect(status().isOk()).andExpect(jsonPath("$.movementId").exists()).andReturn().getResponse()
                 .getContentAsString();
@@ -371,7 +386,7 @@ public class SampleStorageRestControllerFlexibleAssignmentTest extends BaseWebCo
 
         // Verify assignment was updated
         Map<String, Object> assignmentRecord = jdbcTemplate
-                .queryForMap("SELECT * FROM sample_storage_assignment WHERE sample_id = ?", Integer.parseInt(sampleId));
+                .queryForMap("SELECT * FROM sample_storage_assignment WHERE sample_item_id = ?", Integer.parseInt(sampleItemId));
         assertEquals("Assignment location ID should be updated to rack", Integer.parseInt(rackId),
                 ((Number) assignmentRecord.get("location_id")).intValue());
         assertEquals("Assignment location type should be updated to 'rack'", "rack",
@@ -381,7 +396,7 @@ public class SampleStorageRestControllerFlexibleAssignmentTest extends BaseWebCo
     @Test
     public void testMoveSample_WithLocationIdAndType_DeviceToRack_Valid() throws Exception {
         // Setup
-        String sampleId = createSampleAndGetId();
+        String sampleItemId = createSampleItemAndGetId();
         String roomId = createRoomAndGetId("Main Lab", "MAIN-" + System.currentTimeMillis());
         String deviceId = createDeviceAndGetId("Freezer 1", "FRZ1-" + System.currentTimeMillis(), "freezer", roomId);
         String shelfId = createShelfAndGetId("Shelf-A", deviceId);
@@ -389,17 +404,17 @@ public class SampleStorageRestControllerFlexibleAssignmentTest extends BaseWebCo
 
         // Assign to device
         SampleAssignmentForm assignForm = new SampleAssignmentForm();
-        assignForm.setSampleId(sampleId);
+        assignForm.setSampleItemId(sampleItemId);
         assignForm.setLocationId(deviceId);
         assignForm.setLocationType("device");
         assignForm.setNotes("Initial assignment");
 
-        mockMvc.perform(post("/rest/storage/samples/assign").contentType(MediaType.APPLICATION_JSON)
+        mockMvc.perform(post("/rest/storage/sample-items/assign").contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(assignForm))).andExpect(status().isCreated());
 
         // Move to rack with coordinate
         SampleMovementForm moveForm = new SampleMovementForm();
-        moveForm.setSampleId(sampleId);
+        moveForm.setSampleItemId(sampleItemId);
         moveForm.setLocationId(rackId);
         moveForm.setLocationType("rack");
         moveForm.setPositionCoordinate("C7");
@@ -407,7 +422,7 @@ public class SampleStorageRestControllerFlexibleAssignmentTest extends BaseWebCo
 
         // Execute
         String response = mockMvc
-                .perform(post("/rest/storage/samples/move").contentType(MediaType.APPLICATION_JSON)
+                .perform(post("/rest/storage/sample-items/move").contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(moveForm)))
                 .andExpect(status().isOk()).andReturn().getResponse().getContentAsString();
 
@@ -420,7 +435,7 @@ public class SampleStorageRestControllerFlexibleAssignmentTest extends BaseWebCo
 
         // Verify positionCoordinate is saved in database
         Map<String, Object> assignmentRecord = jdbcTemplate
-                .queryForMap("SELECT * FROM sample_storage_assignment WHERE sample_id = ?", Integer.parseInt(sampleId));
+                .queryForMap("SELECT * FROM sample_storage_assignment WHERE sample_item_id = ?", Integer.parseInt(sampleItemId));
         assertEquals("Position coordinate should be saved", "C7", assignmentRecord.get("position_coordinate"));
 
         // Verify positionCoordinate is saved in movement record
@@ -438,14 +453,14 @@ public class SampleStorageRestControllerFlexibleAssignmentTest extends BaseWebCo
     @Test
     public void testAssignSample_WithPositionCoordinate_SavesToDatabase() throws Exception {
         // Setup
-        String sampleId = createSampleAndGetId();
+        String sampleItemId = createSampleItemAndGetId();
         String roomId = createRoomAndGetId("Test Room", "TEST-ROOM-" + System.currentTimeMillis());
         String deviceId = createDeviceAndGetId("Test Device", "TEST-DEV-" + System.currentTimeMillis(), "freezer",
                 roomId);
 
         // Assign to device with position coordinate
         SampleAssignmentForm assignForm = new SampleAssignmentForm();
-        assignForm.setSampleId(sampleId);
+        assignForm.setSampleItemId(sampleItemId);
         assignForm.setLocationId(deviceId);
         assignForm.setLocationType("device");
         assignForm.setPositionCoordinate("A1");
@@ -453,7 +468,7 @@ public class SampleStorageRestControllerFlexibleAssignmentTest extends BaseWebCo
 
         // Execute
         String response = mockMvc
-                .perform(post("/rest/storage/samples/assign").contentType(MediaType.APPLICATION_JSON)
+                .perform(post("/rest/storage/sample-items/assign").contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(assignForm)))
                 .andExpect(status().isCreated()).andReturn().getResponse().getContentAsString();
 
@@ -463,7 +478,7 @@ public class SampleStorageRestControllerFlexibleAssignmentTest extends BaseWebCo
 
         // Verify positionCoordinate is saved in database
         Map<String, Object> assignmentRecord = jdbcTemplate
-                .queryForMap("SELECT * FROM sample_storage_assignment WHERE sample_id = ?", Integer.parseInt(sampleId));
+                .queryForMap("SELECT * FROM sample_storage_assignment WHERE sample_item_id = ?", Integer.parseInt(sampleItemId));
         assertEquals("Position coordinate should be saved", "A1", assignmentRecord.get("position_coordinate"));
     }
 
@@ -473,7 +488,7 @@ public class SampleStorageRestControllerFlexibleAssignmentTest extends BaseWebCo
     @Test
     public void testMoveSample_WithPositionCoordinate_SavesToDatabase() throws Exception {
         // Setup - create assignment first
-        String sampleId = createSampleAndGetId();
+        String sampleItemId = createSampleItemAndGetId();
         String roomId = createRoomAndGetId("Test Room", "TEST-ROOM-" + System.currentTimeMillis());
         String deviceId = createDeviceAndGetId("Test Device", "TEST-DEV-" + System.currentTimeMillis(), "freezer",
                 roomId);
@@ -481,18 +496,18 @@ public class SampleStorageRestControllerFlexibleAssignmentTest extends BaseWebCo
 
         // Assign to device with initial position
         SampleAssignmentForm assignForm = new SampleAssignmentForm();
-        assignForm.setSampleId(sampleId);
+        assignForm.setSampleItemId(sampleItemId);
         assignForm.setLocationId(deviceId);
         assignForm.setLocationType("device");
         assignForm.setPositionCoordinate("A1");
         assignForm.setNotes("Initial assignment");
 
-        mockMvc.perform(post("/rest/storage/samples/assign").contentType(MediaType.APPLICATION_JSON)
+        mockMvc.perform(post("/rest/storage/sample-items/assign").contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(assignForm))).andExpect(status().isCreated());
 
         // Move to shelf with new position coordinate
         SampleMovementForm moveForm = new SampleMovementForm();
-        moveForm.setSampleId(sampleId);
+        moveForm.setSampleItemId(sampleItemId);
         moveForm.setLocationId(shelfId);
         moveForm.setLocationType("shelf");
         moveForm.setPositionCoordinate("B5");
@@ -500,13 +515,13 @@ public class SampleStorageRestControllerFlexibleAssignmentTest extends BaseWebCo
 
         // Execute
         String response = mockMvc
-                .perform(post("/rest/storage/samples/move").contentType(MediaType.APPLICATION_JSON)
+                .perform(post("/rest/storage/sample-items/move").contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(moveForm)))
                 .andExpect(status().isOk()).andReturn().getResponse().getContentAsString();
 
         // Verify positionCoordinate is updated in assignment
         Map<String, Object> assignmentRecord = jdbcTemplate
-                .queryForMap("SELECT * FROM sample_storage_assignment WHERE sample_id = ?", Integer.parseInt(sampleId));
+                .queryForMap("SELECT * FROM sample_storage_assignment WHERE sample_item_id = ?", Integer.parseInt(sampleItemId));
         assertEquals("Position coordinate should be updated in assignment", "B5",
                 assignmentRecord.get("position_coordinate"));
 

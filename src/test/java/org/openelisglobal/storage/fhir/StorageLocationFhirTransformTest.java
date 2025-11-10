@@ -66,7 +66,7 @@ public class StorageLocationFhirTransformTest {
         testPosition.setCoordinate("A5");
         testPosition.setRowIndex(1);
         testPosition.setColumnIndex(5);
-        testPosition.setOccupied(true);
+        // Occupancy is now calculated dynamically from SampleStorageAssignment records
         testPosition.setParentRack(testRack);
     }
 

@@ -124,7 +124,7 @@ completes
       many-to-one to StorageRack, fhir_uuid, occupied boolean
 - [x] T016 [P] Create Hibernate mapping
       `src/main/resources/hibernate/hbm/SampleStorageAssignment.hbm.xml` with
-      many-to-one to Sample and StoragePosition, unique constraint on sample_id
+      many-to-one to SampleItem (not Sample), unique constraint on sample_item_id
 - [x] T017 [P] Create Hibernate mapping
       `src/main/resources/hibernate/hbm/SampleStorageMovement.hbm.xml` for audit
       log (previous_position_id, new_position_id can be NULL)
@@ -320,16 +320,16 @@ need to create StoragePosition entities for every assignment.
 
 - [x] T026q [P] Write unit test
       `src/test/java/org/openelisglobal/storage/service/SampleStorageServiceFlexibleAssignmentTest.java`
-      for flexible assignment: testAssignSampleWithLocation_DeviceLevel_Valid,
-      testAssignSampleWithLocation_ShelfLevel_Valid,
-      testAssignSampleWithLocation_RackLevel_Valid,
-      testAssignSampleWithLocation_DeviceLevel_WithCoordinate_Valid,
-      testAssignSampleWithLocation_MissingLocationId_ThrowsException,
-      testAssignSampleWithLocation_InvalidLocationType_ThrowsException,
-      testAssignSampleWithLocation_PositionType_ThrowsException,
-      testAssignSampleWithLocation_InactiveLocation_ThrowsException,
-      testMoveSampleWithLocation_DeviceToShelf_Valid,
-      testMoveSampleWithLocation_DeviceToRack_WithCoordinate_Valid
+      for flexible assignment: testAssignSampleItemWithLocation_DeviceLevel_Valid,
+      testAssignSampleItemWithLocation_ShelfLevel_Valid,
+      testAssignSampleItemWithLocation_RackLevel_Valid,
+      testAssignSampleItemWithLocation_DeviceLevel_WithCoordinate_Valid,
+      testAssignSampleItemWithLocation_MissingLocationId_ThrowsException,
+      testAssignSampleItemWithLocation_InvalidLocationType_ThrowsException,
+      testAssignSampleItemWithLocation_PositionType_ThrowsException,
+      testAssignSampleItemWithLocation_InactiveLocation_ThrowsException,
+      testMoveSampleItemWithLocation_DeviceToShelf_Valid,
+      testMoveSampleItemWithLocation_DeviceToRack_WithCoordinate_Valid
 
 - [x] T026r [P] Write integration test
       `src/test/java/org/openelisglobal/storage/controller/SampleStorageRestControllerFlexibleAssignmentTest.java`
@@ -390,14 +390,14 @@ need to create StoragePosition entities for every assignment.
 
 ### Implementation - Service Layer
 
-- [x] T026y Add assignSampleWithLocation() method to SampleStorageService
+- [x] T026y Add assignSampleItemWithLocation() method to SampleStorageService
       interface
       `src/main/java/org/openelisglobal/storage/service/SampleStorageService.java`: -
       Method signature:
-      `Map<String, Object> assignSampleWithLocation(String sampleId, String locationId, String locationType, String positionCoordinate, String notes)` -
+      `Map<String, Object> assignSampleItemWithLocation(String sampleItemId, String locationId, String locationType, String positionCoordinate, String notes)` -
       Returns assignment details including hierarchical path
 
-- [x] T026z Implement assignSampleWithLocation() method in
+- [x] T026z Implement assignSampleItemWithLocation() method in
       SampleStorageServiceImpl
       `src/main/java/org/openelisglobal/storage/service/SampleStorageServiceImpl.java`: -
       Validate locationId and locationType are provided - Validate locationType
@@ -413,14 +413,14 @@ need to create StoragePosition entities for every assignment.
       (assignmentId, hierarchicalPath, assignedDate, shelfCapacityWarning if
       applicable)
 
-- [x] T026aa Add moveSampleWithLocation() method to SampleStorageService
+- [x] T026aa Add moveSampleItemWithLocation() method to SampleStorageService
       interface
       `src/main/java/org/openelisglobal/storage/service/SampleStorageService.java`: -
       Method signature:
-      `String moveSampleWithLocation(String sampleId, String locationId, String locationType, String positionCoordinate, String reason)` -
+      `String moveSampleItemWithLocation(String sampleItemId, String locationId, String locationType, String positionCoordinate, String reason)` -
       Returns movement ID
 
-- [x] T026ab Implement moveSampleWithLocation() method in
+- [x] T026ab Implement moveSampleItemWithLocation() method in
       SampleStorageServiceImpl
       `src/main/java/org/openelisglobal/storage/service/SampleStorageServiceImpl.java`: -
       Validate locationId and locationType are provided - Validate locationType
@@ -438,13 +438,13 @@ need to create StoragePosition entities for every assignment.
 - [x] T026ac Update assignSample endpoint in SampleStorageRestController
       `src/main/java/org/openelisglobal/storage/controller/SampleStorageRestController.java`: -
       Update validation to require locationId + locationType (no backward
-      compatibility) - Call assignSampleWithLocation() with locationId +
+      compatibility) - Call assignSampleItemWithLocation() with locationId +
       locationType
 
 - [x] T026ad Update moveSample endpoint in SampleStorageRestController
       `src/main/java/org/openelisglobal/storage/controller/SampleStorageRestController.java`: -
       Update validation to require locationId + locationType (no backward
-      compatibility) - Call moveSampleWithLocation() with locationId +
+      compatibility) - Call moveSampleItemWithLocation() with locationId +
       locationType - Build hierarchical paths for response (new location) -
       Check shelf capacity if applicable (informational warning only) - Return
       movement response with hierarchical paths and shelf capacity warning if
@@ -589,7 +589,7 @@ hierarchical path and timestamp
 ### Implementation - Sample Assignment Backend
 
 - [x] T045 [P] [US1] Create SampleStorageAssignmentDAO interface and
-      implementation, add query: findBySampleId()
+      implementation, add query: findBySampleItemId()
 - [x] T046 [P] [US1] Create SampleStorageMovementDAO interface and
       implementation (insert-only for audit log)
 - [x] T047 [US1] Implement SampleStorageService interface and implementation
@@ -600,10 +600,10 @@ hierarchical path and timestamp
       per plan.md enhancements
 - [x] T048 [US1] Create SampleAssignmentForm
       `src/main/java/org/openelisglobal/storage/form/SampleAssignmentForm.java`
-      with fields: sampleId, positionId, notes
+      with fields: sampleItemId, locationId, locationType, positionCoordinate, notes
 - [x] T049 [US1] Implement SampleStorageRestController
       `src/main/java/org/openelisglobal/storage/controller/SampleStorageRestController.java`
-      with POST /rest/storage/samples/assign endpoint
+      with POST /rest/storage/sample-items/assign endpoint
 - [x] T050 Run assignment tests → Verify all PASS:
       `mvn test -Dtest="SampleStorage*Test"` ✓ All 14 tests passing
 
@@ -802,7 +802,7 @@ hierarchical path and timestamp
 - [x] T063a [P] [P4] Write integration test
       `src/test/java/org/openelisglobal/storage/controller/StorageSearchRestControllerTest.java`
       for dashboard search endpoints: -
-      testSearchSamples_BySampleId_ReturnsMatching - Search by exact sample ID -
+      testSearchSamples_BySampleItemId_ReturnsMatching - Search by SampleItem ID or parent Sample accession number -
       testSearchSamples_ByAccessionPrefix_ReturnsMatching - Search by accession
       prefix (e.g., "S-2025" matches "S-2025-001") -
       testSearchSamples_ByLocationPath_ReturnsMatching - Search by location path
@@ -827,7 +827,7 @@ hierarchical path and timestamp
       (case-insensitive partial)
 - [x] T063b [P] [P4] Write unit test
       `src/test/java/org/openelisglobal/storage/service/StorageSearchServiceImplTest.java`
-      for search logic: - testSearchSamples_FiltersBySampleId - Filter samples
+      for search logic: - testSearchSamples_FiltersBySampleItemId - Filter SampleItems by ID, External ID, or parent Sample accession
       by ID substring - testSearchSamples_FiltersByAccessionPrefix - Filter by
       accession prefix - testSearchSamples_FiltersByLocationPath - Filter by
       location path substring - testSearchSamples_OR_Logic - Matches if ANY
@@ -846,7 +846,7 @@ hierarchical path and timestamp
 - [x] T063d [P4] Create or enhance StorageSearchService interface and
       implementation
       `src/main/java/org/openelisglobal/storage/service/StorageSearchService.java`
-      with methods: - searchSamples(String query) - Search by sample ID,
+      with methods: - searchSamples(String query) - Search by SampleItem ID, External ID, parent Sample accession number, or location path
       accession prefix, location path (OR logic) - searchRooms(String query) -
       Search by name OR code (case-insensitive LIKE) - searchDevices(String
       query) - Search by name OR code OR type (case-insensitive LIKE) -
@@ -903,7 +903,7 @@ hierarchical path and timestamp
 - [x] T063j [P4] Update existing Cypress E2E test file
       `frontend/cypress/e2e/storageSearch.cy.js` (or create new file
       `storageDashboardSearch.cy.js`) for dashboard tab search functionality: -
-      testSamplesSearch_BySampleId - Search by sample ID, verify results -
+      testSamplesSearch_BySampleItemId - Search by SampleItem ID or parent Sample accession, verify results -
       testSamplesSearch_ByAccessionPrefix - Search by accession prefix, verify
       results - testSamplesSearch_ByLocationPath - Search by location path,
       verify results - testSamplesSearch_Debounced - Verify debounced search
@@ -1084,11 +1084,11 @@ metric card with color-coding implemented with TDD.
 
 - [ ] T070 [US2A] Implement StorageSearchService interface and implementation
       `src/main/java/org/openelisglobal/storage/service/StorageSearchService.java`
-      with methods: getSampleLocation(sampleId), filterSamples(filters), uses
+      with methods: getSampleItemLocation(sampleItemId), filterSampleItems(filters), uses
       buildHierarchicalPath() helper from StorageLocationService
 - [ ] T071 [US2A] Implement StorageSearchRestController
       `src/main/java/org/openelisglobal/storage/controller/StorageSearchRestController.java`
-      with GET /rest/storage/samples/search and GET /rest/storage/samples
+      with GET /rest/storage/sample-items/search and GET /rest/storage/sample-items
       endpoints per storage-api.json
 - [ ] T072 Run search tests → Verify all PASS:
       `mvn test -Dtest="StorageSearch*Test"`
@@ -1191,12 +1191,12 @@ ID, view hierarchical location path, filter by room/device/status.
       position override via positionAssignments parameter, create individual
       audit records, return summary (total, successful, failed)
 - [ ] T085 [US2B] Add movement endpoints to SampleStorageRestController: POST
-      /rest/storage/samples/move, POST /rest/storage/samples/bulk-move per
+      /rest/storage/sample-items/move, POST /rest/storage/sample-items/bulk-move per
       storage-api.json
 - [ ] T086 [US2B] Create SampleMovementForm
       `src/main/java/org/openelisglobal/storage/form/SampleMovementForm.java`
-      with fields: sampleId, targetPositionId, reason
-- [ ] T087 [US2B] Create BulkMovementForm with fields: sampleIds[],
+      with fields: sampleItemId, locationId, locationType, positionCoordinate, reason
+- [ ] T087 [US2B] Create BulkMovementForm with fields: sampleItemIds[],
       targetRackId, positionAssignments[], reason
 - [ ] T088 Run movement tests → Verify all PASS:
       `mvn test -Dtest="*Movement*Test"`
@@ -1286,10 +1286,10 @@ ID, view hierarchical location path, filter by room/device/status.
       selection (minimum 2 levels per FR-033a), Cancel and "Assign Storage
       Location" buttons - **NOTE**: This component will be consolidated into
       LocationManagementModal in Phase 7.5 (T208), will be deleted in T214
-- [ ] T091e [US2B] Add POST /rest/storage/samples/dispose endpoint to
+- [ ] T091e [US2B] Add POST /rest/storage/sample-items/dispose endpoint to
       SampleStorageRestController
       `src/main/java/org/openelisglobal/storage/controller/SampleStorageRestController.java`
-      with request: { sample_id, reason, method, notes, date_time }, returns
+      with request: { sample_item_id, reason, method, notes, date_time }, returns
       disposal record - **Note**: Endpoint structure defined but full
       implementation deferred to P3
 
@@ -1396,7 +1396,7 @@ other user story work.
       (shows "Assign Storage Location" if no location, "Move Sample" if location
       exists), testDisplaysButtonText_DynamicBasedOnLocation (shows "Assign" if no
       location, "Confirm Move" if location exists), testDisplaysComprehensiveSampleInfo
-      (shows Sample ID, Type, Status, Date Collected, Patient ID, Test Orders),
+      (shows SampleItem ID/External ID, parent Sample accession number, Type, Status, Date Collected, Patient ID, Test Orders),
       testDisplaysCurrentLocation_OnlyWhenLocationExists (current location section
       only appears if sample has location), testDisplaysReasonForMove_OnlyWhenMoving
       (Reason for Move field appears only when location exists AND different location
@@ -1440,7 +1440,7 @@ other user story work.
 - [ ] T206 [P] Update Cypress E2E test
       `frontend/cypress/e2e/storageMovement.cy.js`: Add test for comprehensive
       sample details: testLocationManagementModal_DisplaysComprehensiveSampleInfo
-      (verifies Sample ID, Type, Status, Date Collected, Patient ID, Test Orders
+      (verifies SampleItem ID/External ID, parent Sample accession number, Type, Status, Date Collected, Patient ID, Test Orders
       displayed)
 
 - [ ] T207 Run Cypress E2E tests → Verify updated tests FAIL (implementation not
@@ -1893,7 +1893,7 @@ best practices and efficiently cover core functionality (happy paths).
 - [ ] T154 [P] Refactor `frontend/cypress/e2e/storageSearch.cy.js` per Constitution
       V.5: Apply intercept timing (setup intercepts before actions), apply
       retry-ability (use `.should()` assertions), add element readiness checks,
-      replace arbitrary waits, ensure test covers happy path: search by sample ID
+      replace arbitrary waits, ensure test covers happy path: search by SampleItem ID or parent Sample accession number
       and filter by location
 
 - [ ] T155 [P] Refactor `frontend/cypress/e2e/storageMovement.cy.js` per Constitution
@@ -1921,7 +1921,7 @@ best practices and efficiently cover core functionality (happy paths).
 
 - [ ] T159 Verify E2E tests cover core happy paths efficiently: Verify
       `storageAssignment.cy.js` covers cascading dropdowns assignment (P1), verify
-      `storageSearch.cy.js` covers search by sample ID and filter by location
+      `storageSearch.cy.js` covers search by SampleItem ID/External ID or parent Sample accession number and filter by location
       (P2A), verify `storageMovement.cy.js` covers single sample movement (P2B),
       ensure tests are focused on user workflows (not implementation details),
       ensure tests can run independently (no dependencies on full suite)

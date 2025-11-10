@@ -13,8 +13,8 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.MockitoJUnitRunner;
 import org.openelisglobal.common.exception.LIMSRuntimeException;
-import org.openelisglobal.sample.dao.SampleDAO;
-import org.openelisglobal.sample.valueholder.Sample;
+import org.openelisglobal.sampleitem.dao.SampleItemDAO;
+import org.openelisglobal.sampleitem.valueholder.SampleItem;
 import org.openelisglobal.storage.dao.SampleStorageAssignmentDAO;
 import org.openelisglobal.storage.dao.SampleStorageMovementDAO;
 import org.openelisglobal.storage.valueholder.*;
@@ -30,7 +30,7 @@ import org.openelisglobal.storage.valueholder.*;
 public class SampleStorageServiceFlexibleAssignmentTest {
 
     @Mock
-    private SampleDAO sampleDAO;
+    private SampleItemDAO sampleItemDAO;
 
     @Mock
     private SampleStorageAssignmentDAO sampleStorageAssignmentDAO;
@@ -44,7 +44,7 @@ public class SampleStorageServiceFlexibleAssignmentTest {
     @InjectMocks
     private SampleStorageServiceImpl sampleStorageService;
 
-    private Sample testSample;
+    private SampleItem testSampleItem;
     private StorageDevice testDevice;
     private StorageShelf testShelf;
     private StorageRack testRack;
@@ -81,21 +81,21 @@ public class SampleStorageServiceFlexibleAssignmentTest {
         testRack.setParentShelf(testShelf);
         testRack.setActive(true);
 
-        testSample = new Sample();
-        testSample.setId("sample-123");
+        testSampleItem = new SampleItem();
+        testSampleItem.setId("sample-item-123");
     }
 
     @Test
-    public void testAssignSampleWithLocation_DeviceLevel_Valid() {
+    public void testAssignSampleItemWithLocation_DeviceLevel_Valid() {
         // Setup
-        when(sampleDAO.get("sample-123")).thenReturn(Optional.of(testSample));
+        when(sampleItemDAO.get("sample-item-123")).thenReturn(Optional.of(testSampleItem));
         when(storageLocationService.get(10, StorageDevice.class)).thenReturn(testDevice);
         when(sampleStorageAssignmentDAO.insert(any(SampleStorageAssignment.class))).thenReturn(100);
         when(sampleStorageMovementDAO.insert(any(SampleStorageMovement.class))).thenReturn(200);
 
         // Execute
-        Map<String, Object> result = sampleStorageService.assignSampleWithLocation(
-                "sample-123", "10", "device", null, "Test notes");
+        Map<String, Object> result = sampleStorageService.assignSampleItemWithLocation(
+                "sample-item-123", "10", "device", null, "Test notes");
 
         // Verify
         assertNotNull(result);
@@ -114,16 +114,16 @@ public class SampleStorageServiceFlexibleAssignmentTest {
     }
 
     @Test
-    public void testAssignSampleWithLocation_DeviceLevel_WithCoordinate_Valid() {
+    public void testAssignSampleItemWithLocation_DeviceLevel_WithCoordinate_Valid() {
         // Setup
-        when(sampleDAO.get("sample-123")).thenReturn(Optional.of(testSample));
+        when(sampleItemDAO.get("sample-item-123")).thenReturn(Optional.of(testSampleItem));
         when(storageLocationService.get(10, StorageDevice.class)).thenReturn(testDevice);
         when(sampleStorageAssignmentDAO.insert(any(SampleStorageAssignment.class))).thenReturn(100);
         when(sampleStorageMovementDAO.insert(any(SampleStorageMovement.class))).thenReturn(200);
 
         // Execute
-        Map<String, Object> result = sampleStorageService.assignSampleWithLocation(
-                "sample-123", "10", "device", "A5", "Test notes");
+        Map<String, Object> result = sampleStorageService.assignSampleItemWithLocation(
+                "sample-item-123", "10", "device", "A5", "Test notes");
 
         // Verify
         assertNotNull(result);
@@ -140,16 +140,16 @@ public class SampleStorageServiceFlexibleAssignmentTest {
     }
 
     @Test
-    public void testAssignSampleWithLocation_ShelfLevel_Valid() {
+    public void testAssignSampleItemWithLocation_ShelfLevel_Valid() {
         // Setup
-        when(sampleDAO.get("sample-123")).thenReturn(Optional.of(testSample));
+        when(sampleItemDAO.get("sample-item-123")).thenReturn(Optional.of(testSampleItem));
         when(storageLocationService.get(20, StorageShelf.class)).thenReturn(testShelf);
         when(sampleStorageAssignmentDAO.insert(any(SampleStorageAssignment.class))).thenReturn(100);
         when(sampleStorageMovementDAO.insert(any(SampleStorageMovement.class))).thenReturn(200);
 
         // Execute
-        Map<String, Object> result = sampleStorageService.assignSampleWithLocation(
-                "sample-123", "20", "shelf", null, "Test notes");
+        Map<String, Object> result = sampleStorageService.assignSampleItemWithLocation(
+                "sample-item-123", "20", "shelf", null, "Test notes");
 
         // Verify
         assertNotNull(result);
@@ -165,16 +165,16 @@ public class SampleStorageServiceFlexibleAssignmentTest {
     }
 
     @Test
-    public void testAssignSampleWithLocation_RackLevel_Valid() {
+    public void testAssignSampleItemWithLocation_RackLevel_Valid() {
         // Setup
-        when(sampleDAO.get("sample-123")).thenReturn(Optional.of(testSample));
+        when(sampleItemDAO.get("sample-item-123")).thenReturn(Optional.of(testSampleItem));
         when(storageLocationService.get(30, StorageRack.class)).thenReturn(testRack);
         when(sampleStorageAssignmentDAO.insert(any(SampleStorageAssignment.class))).thenReturn(100);
         when(sampleStorageMovementDAO.insert(any(SampleStorageMovement.class))).thenReturn(200);
 
         // Execute
-        Map<String, Object> result = sampleStorageService.assignSampleWithLocation(
-                "sample-123", "30", "rack", "B3", "Test notes");
+        Map<String, Object> result = sampleStorageService.assignSampleItemWithLocation(
+                "sample-item-123", "30", "rack", "B3", "Test notes");
 
         // Verify
         assertNotNull(result);
@@ -192,69 +192,69 @@ public class SampleStorageServiceFlexibleAssignmentTest {
     }
 
     @Test(expected = LIMSRuntimeException.class)
-    public void testAssignSampleWithLocation_MissingLocationId_ThrowsException() {
+    public void testAssignSampleItemWithLocation_MissingLocationId_ThrowsException() {
         // Execute - should throw exception
-        sampleStorageService.assignSampleWithLocation("sample-123", null, "device", null, "Test notes");
+        sampleStorageService.assignSampleItemWithLocation("sample-item-123", null, "device", null, "Test notes");
     }
 
     @Test(expected = LIMSRuntimeException.class)
-    public void testAssignSampleWithLocation_MissingLocationType_ThrowsException() {
+    public void testAssignSampleItemWithLocation_MissingLocationType_ThrowsException() {
         // Execute - should throw exception
-        sampleStorageService.assignSampleWithLocation("sample-123", "10", null, null, "Test notes");
+        sampleStorageService.assignSampleItemWithLocation("sample-item-123", "10", null, null, "Test notes");
     }
 
     @Test(expected = LIMSRuntimeException.class)
-    public void testAssignSampleWithLocation_InvalidLocationType_ThrowsException() {
+    public void testAssignSampleItemWithLocation_InvalidLocationType_ThrowsException() {
         // Execute - should throw exception for invalid type
-        sampleStorageService.assignSampleWithLocation("sample-123", "10", "invalid", null, "Test notes");
+        sampleStorageService.assignSampleItemWithLocation("sample-item-123", "10", "invalid", null, "Test notes");
     }
 
     @Test(expected = LIMSRuntimeException.class)
-    public void testAssignSampleWithLocation_PositionType_ThrowsException() {
+    public void testAssignSampleItemWithLocation_PositionType_ThrowsException() {
         // Execute - 'position' is not a valid locationType (position is just text
         // coordinate)
-        sampleStorageService.assignSampleWithLocation("sample-123", "10", "position", null, "Test notes");
+        sampleStorageService.assignSampleItemWithLocation("sample-item-123", "10", "position", null, "Test notes");
     }
 
     @Test(expected = LIMSRuntimeException.class)
-    public void testAssignSampleWithLocation_InactiveLocation_ThrowsException() {
+    public void testAssignSampleItemWithLocation_InactiveLocation_ThrowsException() {
         // Setup - inactive device
         testDevice.setActive(false);
-        when(sampleDAO.get("sample-123")).thenReturn(Optional.of(testSample));
+        when(sampleItemDAO.get("sample-item-123")).thenReturn(Optional.of(testSampleItem));
         when(storageLocationService.get(10, StorageDevice.class)).thenReturn(testDevice);
 
         // Execute - should throw exception
-        sampleStorageService.assignSampleWithLocation("sample-123", "10", "device", null, "Test notes");
+        sampleStorageService.assignSampleItemWithLocation("sample-item-123", "10", "device", null, "Test notes");
     }
 
     @Test(expected = LIMSRuntimeException.class)
-    public void testAssignSampleWithLocation_DeviceWithoutRoom_ThrowsException() {
+    public void testAssignSampleItemWithLocation_DeviceWithoutRoom_ThrowsException() {
         // Setup - device without parent room
         testDevice.setParentRoom(null);
-        when(sampleDAO.get("sample-123")).thenReturn(Optional.of(testSample));
+        when(sampleItemDAO.get("sample-item-123")).thenReturn(Optional.of(testSampleItem));
         when(storageLocationService.get(10, StorageDevice.class)).thenReturn(testDevice);
 
         // Execute - should throw exception (minimum 2 levels: room + device)
-        sampleStorageService.assignSampleWithLocation("sample-123", "10", "device", null, "Test notes");
+        sampleStorageService.assignSampleItemWithLocation("sample-item-123", "10", "device", null, "Test notes");
     }
 
     @Test
-    public void testMoveSampleWithLocation_DeviceToShelf_Valid() {
+    public void testMoveSampleItemWithLocation_DeviceToShelf_Valid() {
         // Setup - existing assignment
         SampleStorageAssignment existingAssignment = new SampleStorageAssignment();
         existingAssignment.setId(50);
-        existingAssignment.setSample(testSample);
+        existingAssignment.setSampleItem(testSampleItem);
         existingAssignment.setLocationId(10);
         existingAssignment.setLocationType("device");
 
-        when(sampleDAO.get("sample-123")).thenReturn(Optional.of(testSample));
-        when(sampleStorageAssignmentDAO.findBySampleId("sample-123")).thenReturn(existingAssignment);
+        when(sampleItemDAO.get("sample-item-123")).thenReturn(Optional.of(testSampleItem));
+        when(sampleStorageAssignmentDAO.findBySampleItemId("sample-item-123")).thenReturn(existingAssignment);
         when(storageLocationService.get(20, StorageShelf.class)).thenReturn(testShelf);
         when(sampleStorageAssignmentDAO.update(any(SampleStorageAssignment.class))).thenReturn(existingAssignment);
         when(sampleStorageMovementDAO.insert(any(SampleStorageMovement.class))).thenReturn(300);
 
         // Execute
-        String movementId = sampleStorageService.moveSampleWithLocation("sample-123", "20", "shelf", null,
+        String movementId = sampleStorageService.moveSampleItemWithLocation("sample-item-123", "20", "shelf", null,
                 "Moving to shelf");
 
         // Verify
@@ -269,22 +269,22 @@ public class SampleStorageServiceFlexibleAssignmentTest {
     }
 
     @Test
-    public void testMoveSampleWithLocation_DeviceToRack_WithCoordinate_Valid() {
+    public void testMoveSampleItemWithLocation_DeviceToRack_WithCoordinate_Valid() {
         // Setup - existing assignment
         SampleStorageAssignment existingAssignment = new SampleStorageAssignment();
         existingAssignment.setId(50);
-        existingAssignment.setSample(testSample);
+        existingAssignment.setSampleItem(testSampleItem);
         existingAssignment.setLocationId(10);
         existingAssignment.setLocationType("device");
 
-        when(sampleDAO.get("sample-123")).thenReturn(Optional.of(testSample));
-        when(sampleStorageAssignmentDAO.findBySampleId("sample-123")).thenReturn(existingAssignment);
+        when(sampleItemDAO.get("sample-item-123")).thenReturn(Optional.of(testSampleItem));
+        when(sampleStorageAssignmentDAO.findBySampleItemId("sample-item-123")).thenReturn(existingAssignment);
         when(storageLocationService.get(30, StorageRack.class)).thenReturn(testRack);
         when(sampleStorageAssignmentDAO.update(any(SampleStorageAssignment.class))).thenReturn(existingAssignment);
         when(sampleStorageMovementDAO.insert(any(SampleStorageMovement.class))).thenReturn(300);
 
         // Execute
-        String movementId = sampleStorageService.moveSampleWithLocation("sample-123", "30", "rack", "C7",
+        String movementId = sampleStorageService.moveSampleItemWithLocation("sample-item-123", "30", "rack", "C7",
                 "Moving to rack");
 
         // Verify

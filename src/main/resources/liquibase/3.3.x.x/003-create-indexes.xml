@@ -102,18 +102,18 @@
     <changeSet id="storage-011-create-assignment-indexes" author="sample-storage-feature">
         <preConditions onFail="MARK_RAN">
             <not>
-                <indexExists indexName="idx_assignment_sample" tableName="sample_storage_assignment"/>
+                <indexExists indexName="idx_assignment_sample_item" tableName="sample_storage_assignment"/>
             </not>
         </preConditions>
-        <createIndex indexName="idx_assignment_sample" tableName="sample_storage_assignment">
-            <column name="sample_id"/>
+        <createIndex indexName="idx_assignment_sample_item" tableName="sample_storage_assignment">
+            <column name="sample_item_id"/>
         </createIndex>
         <createIndex indexName="idx_assignment_location" tableName="sample_storage_assignment">
             <column name="location_id"/>
             <column name="location_type"/>
         </createIndex>
         <rollback>
-            <dropIndex indexName="idx_assignment_sample" tableName="sample_storage_assignment"/>
+            <dropIndex indexName="idx_assignment_sample_item" tableName="sample_storage_assignment"/>
             <dropIndex indexName="idx_assignment_location" tableName="sample_storage_assignment"/>
         </rollback>
     </changeSet>
@@ -122,17 +122,17 @@
     <changeSet id="storage-012-create-movement-indexes" author="sample-storage-feature">
         <preConditions onFail="MARK_RAN">
             <not>
-                <indexExists indexName="idx_movement_sample" tableName="sample_storage_movement"/>
+                <indexExists indexName="idx_movement_sample_item" tableName="sample_storage_movement"/>
             </not>
         </preConditions>
-        <createIndex indexName="idx_movement_sample" tableName="sample_storage_movement">
-            <column name="sample_id"/>
+        <createIndex indexName="idx_movement_sample_item" tableName="sample_storage_movement">
+            <column name="sample_item_id"/>
         </createIndex>
         <createIndex indexName="idx_movement_date" tableName="sample_storage_movement">
             <column name="movement_date" descending="true"/>
         </createIndex>
         <rollback>
-            <dropIndex indexName="idx_movement_sample" tableName="sample_storage_movement"/>
+            <dropIndex indexName="idx_movement_sample_item" tableName="sample_storage_movement"/>
             <dropIndex indexName="idx_movement_date" tableName="sample_storage_movement"/>
         </rollback>
     </changeSet>

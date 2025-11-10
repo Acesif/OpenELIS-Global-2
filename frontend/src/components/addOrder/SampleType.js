@@ -581,12 +581,17 @@ const SampleType = (props) => {
             className="inputText"
           />
         </div>
-        {/* Storage Location Selector - T062: Integration point */}
+        {/* Storage Location Selector - INT-001: Integration point */}
+        {/* NOTE: In order entry workflow, SampleItems are created after Sample is saved.
+            Storage assignment operates at SampleItem level, so actual assignment happens
+            after SampleItems are created. The location preference is stored here for
+            later assignment to the first/default SampleItem. */}
         <div className="inlineDiv">
           <StorageLocationSelector
             workflow="orders"
             optional={true}
             sampleInfo={{
+              // Note: sampleId here is temporary/placeholder - actual SampleItem ID will be available after SampleItems are created
               sampleId: sample?.id || sample?.sampleId || `TEMP-${index}`,
               type: selectedSampleType?.name || sampleXml?.sampleTypeName || "",
               status: sampleXml?.rejected ? "Rejected" : "Active",
@@ -594,6 +599,7 @@ const SampleType = (props) => {
             onLocationChange={(locationData) => {
               // locationData format: { sample, newLocation, reason?, conditionNotes?, positionCoordinate? }
               // Extract newLocation from locationData for backward compatibility
+              // Store location preference - will be assigned to SampleItem after SampleItems are created
               const location = locationData?.newLocation || locationData;
               handleStorageLocationChange(location, index);
             }}

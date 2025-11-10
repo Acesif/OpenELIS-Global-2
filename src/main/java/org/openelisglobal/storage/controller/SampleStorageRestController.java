@@ -24,11 +24,11 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 /**
- * REST Controller for Sample Storage operations Handles sample assignment and
+ * REST Controller for SampleItem Storage operations Handles SampleItem assignment and
  * movement
  */
 @RestController
-@RequestMapping("/rest/storage/samples")
+@RequestMapping("/rest/storage/sample-items")
 public class SampleStorageRestController extends BaseRestController {
 
     private static final Logger logger = LoggerFactory.getLogger(SampleStorageRestController.class);
@@ -46,7 +46,7 @@ public class SampleStorageRestController extends BaseRestController {
     private StorageDashboardService storageDashboardService;
 
     /**
-     * Get all samples with storage assignments GET /rest/storage/samples Supports
+     * Get all SampleItems with storage assignments GET /rest/storage/sample-items Supports
      * filtering by location and status (FR-065)
      * 
      * @param countOnly If "true", returns metrics only
@@ -54,20 +54,20 @@ public class SampleStorageRestController extends BaseRestController {
      * @param status    Optional status filter (active, disposed, etc.)
      */
     @GetMapping("")
-    public ResponseEntity<List<Map<String, Object>>> getSamples(@RequestParam(required = false) String countOnly,
+    public ResponseEntity<List<Map<String, Object>>> getSampleItems(@RequestParam(required = false) String countOnly,
             @RequestParam(required = false) String location, @RequestParam(required = false) String status) {
         try {
             if ("true".equals(countOnly)) {
                 // Return count metrics only
                 List<SampleStorageAssignment> allAssignments = sampleStorageAssignmentDAO.getAll();
 
-                long totalSamples = allAssignments.size();
+                long totalSampleItems = allAssignments.size();
                 long active = allAssignments.stream()
-                        .filter(a -> a.getSample() != null && (a.getSample().getStatus() == null
-                                || !"disposed".equalsIgnoreCase(a.getSample().getStatus())))
+                        .filter(a -> a.getSampleItem() != null && (a.getSampleItem().getStatusId() == null
+                                || !"disposed".equalsIgnoreCase(a.getSampleItem().getStatusId())))
                         .count();
                 long disposed = allAssignments.stream()
-                        .filter(a -> a.getSample() != null && "disposed".equalsIgnoreCase(a.getSample().getStatus()))
+                        .filter(a -> a.getSampleItem() != null && "disposed".equalsIgnoreCase(a.getSampleItem().getStatusId()))
                         .count();
 
                 // Count unique storage locations (rooms, devices, shelves, racks)
@@ -76,7 +76,7 @@ public class SampleStorageRestController extends BaseRestController {
                         + storageLocationService.getAllRacks().size();
 
                 Map<String, Object> metrics = new HashMap<>();
-                metrics.put("totalSamples", totalSamples);
+                metrics.put("totalSampleItems", totalSampleItems);
                 metrics.put("active", active);
                 metrics.put("disposed", disposed);
                 metrics.put("storageLocations", storageLocations);
@@ -85,36 +85,36 @@ public class SampleStorageRestController extends BaseRestController {
                 response.add(metrics);
                 return ResponseEntity.ok(response);
             } else {
-                // Apply filters if provided (FR-065: Samples tab - filter by location and
+                // Apply filters if provided (FR-065: SampleItems tab - filter by location and
                 // status)
                 List<Map<String, Object>> response;
                 if (location != null || status != null) {
                     response = storageDashboardService.filterSamples(location, status);
-                    logger.info("Returning {} filtered samples (location={}, status={})", response.size(), location,
+                    logger.info("Returning {} filtered SampleItems (location={}, status={})", response.size(), location,
                             status);
                 } else {
-                    // No filters - return all samples
+                    // No filters - return all SampleItems
                     response = sampleStorageService.getAllSamplesWithAssignments();
-                    logger.info("Returning {} samples with storage assignments", response.size());
+                    logger.info("Returning {} SampleItems with storage assignments", response.size());
                 }
                 return ResponseEntity.ok(response);
             }
         } catch (Exception e) {
-            logger.error("Error getting samples", e);
+            logger.error("Error getting SampleItems", e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
 
     /**
-     * Assign sample to storage position POST /rest/storage/samples/assign
+     * Assign SampleItem to storage position POST /rest/storage/sample-items/assign
      */
     @PostMapping("/assign")
-    public ResponseEntity<Map<String, Object>> assignSample(@Valid @RequestBody SampleAssignmentForm form) {
+    public ResponseEntity<Map<String, Object>> assignSampleItem(@Valid @RequestBody SampleAssignmentForm form) {
         try {
             // Validate required fields
-            if (form.getSampleId() == null || form.getSampleId().trim().isEmpty()) {
+            if (form.getSampleItemId() == null || form.getSampleItemId().trim().isEmpty()) {
                 Map<String, Object> error = new HashMap<>();
-                error.put("message", "Sample ID is required");
+                error.put("message", "SampleItem ID is required");
                 return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
             }
 
@@ -128,19 +128,19 @@ public class SampleStorageRestController extends BaseRestController {
 
             // Log incoming request for debugging
             if (logger.isDebugEnabled()) {
-                logger.debug("Assigning sample {} to location: locationId={}, locationType={}, positionCoordinate={}", 
-                    form.getSampleId(), form.getLocationId(), form.getLocationType(), form.getPositionCoordinate());
+                logger.debug("Assigning SampleItem {} to location: locationId={}, locationType={}, positionCoordinate={}", 
+                    form.getSampleItemId(), form.getLocationId(), form.getLocationType(), form.getPositionCoordinate());
             }
 
             // Service layer prepares all data including hierarchical path within
             // transaction
-            Map<String, Object> response = sampleStorageService.assignSampleWithLocation(form.getSampleId(),
+            Map<String, Object> response = sampleStorageService.assignSampleItemWithLocation(form.getSampleItemId(),
                     form.getLocationId(), form.getLocationType(), form.getPositionCoordinate(), form.getNotes());
 
             // Log successful assignment
             if (logger.isInfoEnabled()) {
-                logger.info("Sample {} assigned successfully to locationId={}, locationType={}, positionCoordinate={}", 
-                    form.getSampleId(), form.getLocationId(), form.getLocationType(), form.getPositionCoordinate());
+                logger.info("SampleItem {} assigned successfully to locationId={}, locationType={}, positionCoordinate={}", 
+                    form.getSampleItemId(), form.getLocationId(), form.getLocationType(), form.getPositionCoordinate());
             }
 
             return ResponseEntity.status(HttpStatus.CREATED).body(response);
@@ -160,15 +160,15 @@ public class SampleStorageRestController extends BaseRestController {
     }
 
     /**
-     * Move sample to new storage position POST /rest/storage/samples/move
+     * Move SampleItem to new storage position POST /rest/storage/sample-items/move
      */
     @PostMapping("/move")
-    public ResponseEntity<Map<String, Object>> moveSample(@Valid @RequestBody SampleMovementForm form) {
+    public ResponseEntity<Map<String, Object>> moveSampleItem(@Valid @RequestBody SampleMovementForm form) {
         try {
             // Validate required fields
-            if (form.getSampleId() == null || form.getSampleId().trim().isEmpty()) {
+            if (form.getSampleItemId() == null || form.getSampleItemId().trim().isEmpty()) {
                 Map<String, Object> error = new HashMap<>();
-                error.put("message", "Sample ID is required");
+                error.put("message", "SampleItem ID is required");
                 return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
             }
 
@@ -182,18 +182,18 @@ public class SampleStorageRestController extends BaseRestController {
 
             // Log incoming request for debugging
             if (logger.isDebugEnabled()) {
-                logger.debug("Moving sample {} to location: locationId={}, locationType={}, positionCoordinate={}", 
-                    form.getSampleId(), form.getLocationId(), form.getLocationType(), form.getPositionCoordinate());
+                logger.debug("Moving SampleItem {} to location: locationId={}, locationType={}, positionCoordinate={}", 
+                    form.getSampleItemId(), form.getLocationId(), form.getLocationType(), form.getPositionCoordinate());
             }
 
             // Service layer handles all business logic
-            String movementId = sampleStorageService.moveSampleWithLocation(form.getSampleId(), form.getLocationId(),
+            String movementId = sampleStorageService.moveSampleItemWithLocation(form.getSampleItemId(), form.getLocationId(),
                     form.getLocationType(), form.getPositionCoordinate(), form.getReason());
 
             // Log successful movement
             if (logger.isInfoEnabled()) {
-                logger.info("Sample {} moved successfully to locationId={}, locationType={}, positionCoordinate={}, movementId={}", 
-                    form.getSampleId(), form.getLocationId(), form.getLocationType(), form.getPositionCoordinate(), movementId);
+                logger.info("SampleItem {} moved successfully to locationId={}, locationType={}, positionCoordinate={}, movementId={}", 
+                    form.getSampleItemId(), form.getLocationId(), form.getLocationType(), form.getPositionCoordinate(), movementId);
             }
 
             // Build hierarchical path for new location
@@ -286,6 +286,7 @@ public class SampleStorageRestController extends BaseRestController {
             response.put("movementId", movementId);
             response.put("previousLocation", previousHierarchicalPath);
             response.put("newLocation", newHierarchicalPath != null ? newHierarchicalPath : "Unknown");
+            response.put("newHierarchicalPath", newHierarchicalPath != null ? newHierarchicalPath : "Unknown"); // Alias for consistency
             response.put("movedDate", new java.sql.Timestamp(System.currentTimeMillis()).toString());
             if (shelfCapacityWarning != null) {
                 response.put("shelfCapacityWarning", shelfCapacityWarning);
@@ -301,7 +302,7 @@ public class SampleStorageRestController extends BaseRestController {
             error.put("message", e.getMessage());
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
         } catch (Exception e) {
-            logger.error("Error moving sample", e);
+            logger.error("Error moving SampleItem", e);
             Map<String, Object> error = new HashMap<>();
             error.put("message", "An error occurred during movement: " + e.getMessage());
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(error);

@@ -13,11 +13,11 @@ import jakarta.persistence.Table;
 import java.sql.Timestamp;
 import org.hibernate.annotations.DynamicUpdate;
 import org.openelisglobal.common.valueholder.BaseObject;
-import org.openelisglobal.sample.valueholder.Sample;
+import org.openelisglobal.sampleitem.valueholder.SampleItem;
 
 /**
- * SampleStorageAssignment entity - Current storage location for a sample
- * Represents one-to-one relationship: one sample, one current location
+ * SampleStorageAssignment entity - Current storage location for a SampleItem
+ * Represents one-to-one relationship: one SampleItem, one current location
  */
 @Entity
 @Table(name = "SAMPLE_STORAGE_ASSIGNMENT")
@@ -31,8 +31,8 @@ public class SampleStorageAssignment extends BaseObject<Integer> {
     private Integer id;
 
     @ManyToOne(fetch = jakarta.persistence.FetchType.EAGER)
-    @JoinColumn(name = "SAMPLE_ID", nullable = false, unique = true)
-    private Sample sample;
+    @JoinColumn(name = "SAMPLE_ITEM_ID", nullable = false, unique = true)
+    private SampleItem sampleItem;
 
     // Simplified polymorphic location relationship
     @Column(name = "LOCATION_ID", nullable = false)
@@ -63,12 +63,12 @@ public class SampleStorageAssignment extends BaseObject<Integer> {
         this.id = id;
     }
 
-    public Sample getSample() {
-        return sample;
+    public SampleItem getSampleItem() {
+        return sampleItem;
     }
 
-    public void setSample(Sample sample) {
-        this.sample = sample;
+    public void setSampleItem(SampleItem sampleItem) {
+        this.sampleItem = sampleItem;
     }
 
     public Integer getLocationId() {

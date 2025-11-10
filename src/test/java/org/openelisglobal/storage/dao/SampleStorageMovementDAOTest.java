@@ -16,7 +16,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.MockitoJUnitRunner;
 import org.openelisglobal.common.exception.LIMSRuntimeException;
-import org.openelisglobal.sample.valueholder.Sample;
+import org.openelisglobal.sampleitem.valueholder.SampleItem;
 import org.openelisglobal.storage.valueholder.SampleStorageMovement;
 
 /**
@@ -41,94 +41,94 @@ public class SampleStorageMovementDAOTest {
 
     private SampleStorageMovement testMovement1;
     private SampleStorageMovement testMovement2;
-    private Sample testSample;
+    private SampleItem testSampleItem;
 
     @Before
     public void setUp() {
-        testSample = new Sample();
-        testSample.setId("1000"); // String ID
+        testSampleItem = new SampleItem();
+        testSampleItem.setId("1000"); // String ID (numeric in database)
 
         testMovement1 = new SampleStorageMovement();
         testMovement1.setId(1);
-        testMovement1.setSample(testSample);
+        testMovement1.setSampleItem(testSampleItem);
         testMovement1.setReason("Test movement 1");
 
         testMovement2 = new SampleStorageMovement();
         testMovement2.setId(2);
-        testMovement2.setSample(testSample);
+        testMovement2.setSampleItem(testSampleItem);
         testMovement2.setReason("Test movement 2");
     }
 
     /**
-     * Test: findBySampleId correctly converts String sampleId to Integer for
-     * database query This verifies the fix for the type mismatch issue (String
-     * parameter vs numeric column)
+     * Test: findBySampleItemId correctly uses String sampleItemId for
+     * database query (SampleItem.id is String in entity and VARCHAR in database)
      */
     @Test
-    public void testFindBySampleId_ConvertsStringToInteger_ReturnsMovements() {
+    public void testFindBySampleItemId_UsesStringId_ReturnsMovements() {
         // Setup
-        String sampleId = "1000";
+        String sampleItemId = "1000"; // Numeric string (matches database numeric column)
         List<SampleStorageMovement> results = new ArrayList<>();
         results.add(testMovement2); // Most recent first (ORDER BY movementDate DESC)
         results.add(testMovement1);
 
         when(entityManager.unwrap(Session.class)).thenReturn(session);
         when(session.createQuery(anyString(), eq(SampleStorageMovement.class))).thenReturn(query);
-        when(query.setParameter(eq("sampleId"), eq(1000))).thenReturn(query); // Verify Integer is used
+        when(query.setParameter(eq("sampleItemId"), eq(1000))).thenReturn(query); // Integer parameter
         when(query.list()).thenReturn(results);
 
         // Execute
-        List<SampleStorageMovement> result = dao.findBySampleId(sampleId);
+        List<SampleStorageMovement> result = dao.findBySampleItemId(sampleItemId);
 
         // Verify
         assertNotNull(result);
         assertEquals(2, result.size());
         assertEquals(testMovement2.getId(), result.get(0).getId()); // Most recent first
 
-        // Verify Integer.parseInt was used (not String directly)
-        verify(query).setParameter("sampleId", 1000); // Integer, not String
+        // Verify String ID is parsed to Integer for database query
+        verify(query).setParameter("sampleItemId", 1000);
     }
 
     /**
-     * Test: findBySampleId returns empty list when no movements found
+     * Test: findBySampleItemId returns empty list when no movements found
      */
     @Test
-    public void testFindBySampleId_NoMovementsFound_ReturnsEmptyList() {
+    public void testFindBySampleItemId_NoMovementsFound_ReturnsEmptyList() {
         // Setup
-        String sampleId = "9999";
+        String sampleItemId = "9999"; // Numeric string
         List<SampleStorageMovement> emptyResults = new ArrayList<>();
 
         when(entityManager.unwrap(Session.class)).thenReturn(session);
         when(session.createQuery(anyString(), eq(SampleStorageMovement.class))).thenReturn(query);
-        when(query.setParameter(eq("sampleId"), eq(9999))).thenReturn(query);
+        when(query.setParameter(eq("sampleItemId"), anyInt())).thenReturn(query);
         when(query.list()).thenReturn(emptyResults);
 
         // Execute
-        List<SampleStorageMovement> result = dao.findBySampleId(sampleId);
+        List<SampleStorageMovement> result = dao.findBySampleItemId(sampleItemId);
 
         // Verify
         assertNotNull(result);
         assertTrue(result.isEmpty());
-        verify(query).setParameter("sampleId", 9999); // Integer conversion
+        verify(query).setParameter(eq("sampleItemId"), anyInt());
     }
 
     /**
-     * Test: findBySampleId throws exception for invalid (non-numeric) sample ID
+     * Test: findBySampleItemId handles database errors gracefully
      */
     @Test(expected = LIMSRuntimeException.class)
-    public void testFindBySampleId_InvalidFormat_ThrowsException() {
+    public void testFindBySampleItemId_DatabaseError_ThrowsException() {
         // Setup
-        String invalidSampleId = "not-a-number";
+        String sampleItemId = "1000"; // Numeric string
 
         when(entityManager.unwrap(Session.class)).thenReturn(session);
         when(session.createQuery(anyString(), eq(SampleStorageMovement.class))).thenReturn(query);
+        when(query.setParameter(anyString(), anyInt())).thenReturn(query);
+        when(query.list()).thenThrow(new RuntimeException("Database connection error"));
 
-        // Execute - should throw NumberFormatException which is caught and re-thrown as
-        // LIMSRuntimeException
+        // Execute - should throw LIMSRuntimeException
         try {
-            dao.findBySampleId(invalidSampleId);
+            dao.findBySampleItemId(sampleItemId);
         } catch (LIMSRuntimeException e) {
-            assertTrue(e.getMessage().contains("Invalid sample ID format"));
+            assertTrue(e.getMessage().contains("Error finding SampleStorageMovements"));
             throw e;
         }
     }

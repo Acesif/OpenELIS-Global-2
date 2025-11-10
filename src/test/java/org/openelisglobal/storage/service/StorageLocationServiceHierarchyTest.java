@@ -90,7 +90,6 @@ public class StorageLocationServiceHierarchyTest {
         testPosition = new StoragePosition();
         testPosition.setId(40);
         testPosition.setFhirUuid(UUID.randomUUID());
-        testPosition.setOccupied(false);
         testPosition.setParentDevice(testDevice);
         // No parent shelf, rack, or coordinate
 
@@ -111,7 +110,6 @@ public class StorageLocationServiceHierarchyTest {
         testPosition = new StoragePosition();
         testPosition.setId(40);
         testPosition.setFhirUuid(UUID.randomUUID());
-        testPosition.setOccupied(false);
         testPosition.setParentDevice(testDevice);
         testPosition.setParentShelf(testShelf);
         // No parent rack or coordinate
@@ -134,7 +132,6 @@ public class StorageLocationServiceHierarchyTest {
         testPosition = new StoragePosition();
         testPosition.setId(40);
         testPosition.setFhirUuid(UUID.randomUUID());
-        testPosition.setOccupied(false);
         testPosition.setParentDevice(testDevice);
         testPosition.setParentShelf(testShelf);
         testPosition.setParentRack(testRack);
@@ -158,7 +155,6 @@ public class StorageLocationServiceHierarchyTest {
         testPosition = new StoragePosition();
         testPosition.setId(40);
         testPosition.setFhirUuid(UUID.randomUUID());
-        testPosition.setOccupied(false);
         testPosition.setParentDevice(testDevice);
         testPosition.setParentShelf(testShelf);
         testPosition.setParentRack(testRack);

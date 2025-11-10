@@ -77,7 +77,7 @@ public class SampleStorageServiceImplTest {
         testPosition = new StoragePosition();
         testPosition.setId(40);
         testPosition.setCoordinate("A5");
-        testPosition.setOccupied(false);
+        // Occupancy is now calculated dynamically from SampleStorageAssignment records
         testPosition.setParentRack(testRack);
 
         testSample = new Sample();
@@ -87,4 +87,15 @@ public class SampleStorageServiceImplTest {
     // OLD TESTS REMOVED: These tested deprecated position-based assignment methods
     // New flexible assignment tests are in
     // SampleStorageServiceFlexibleAssignmentTest.java
+
+    /**
+     * Placeholder test to prevent initialization error.
+     * All actual tests are in SampleStorageServiceFlexibleAssignmentTest.java
+     */
+    @org.junit.Test
+    public void testPlaceholder() {
+        // This test file is kept for reference but all tests moved to
+        // SampleStorageServiceFlexibleAssignmentTest.java
+        assertTrue(true);
+    }
 }

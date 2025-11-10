@@ -2,20 +2,21 @@ import { useState } from "react";
 import { postToOpenElisServerJsonResponse } from "../../utils/Utils";
 
 /**
- * Hook for sample storage assignment and movement
+ * Hook for sample item storage assignment and movement
  * Uses postToOpenElisServerJsonResponse to get full JSON response and handle errors
+ * Note: Storage tracking operates at SampleItem level (physical specimens), not Sample level (orders)
  */
 export const useSampleStorage = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState(null);
 
-  const assignSample = async (assignmentData) => {
+  const assignSampleItem = async (assignmentData) => {
     setIsSubmitting(true);
     setError(null);
 
     return new Promise((resolve, reject) => {
       postToOpenElisServerJsonResponse(
-        "/rest/storage/samples/assign",
+        "/rest/storage/sample-items/assign",
         JSON.stringify(assignmentData),
         (response) => {
           setIsSubmitting(false);
@@ -55,13 +56,13 @@ export const useSampleStorage = () => {
     });
   };
 
-  const moveSample = async (movementData) => {
+  const moveSampleItem = async (movementData) => {
     setIsSubmitting(true);
     setError(null);
 
     return new Promise((resolve, reject) => {
       postToOpenElisServerJsonResponse(
-        "/rest/storage/samples/move",
+        "/rest/storage/sample-items/move",
         JSON.stringify(movementData),
         (response) => {
           setIsSubmitting(false);
@@ -101,7 +102,7 @@ export const useSampleStorage = () => {
     });
   };
 
-  return { assignSample, moveSample, isSubmitting, error };
+  return { assignSampleItem, moveSampleItem, isSubmitting, error };
 };
 
 export default useSampleStorage;
