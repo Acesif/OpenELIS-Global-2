@@ -584,12 +584,19 @@ const SampleType = (props) => {
         {/* Storage Location Selector - T062: Integration point */}
         <div className="inlineDiv">
           <StorageLocationSelector
-            mode="dropdown"
+            workflow="orders"
             optional={true}
-            enableInlineCreation={true}
-            onLocationChange={(location) =>
-              handleStorageLocationChange(location, index)
-            }
+            sampleInfo={{
+              sampleId: sample?.id || sample?.sampleId || `TEMP-${index}`,
+              type: selectedSampleType?.name || sampleXml?.sampleTypeName || "",
+              status: sampleXml?.rejected ? "Rejected" : "Active",
+            }}
+            onLocationChange={(locationData) => {
+              // locationData format: { sample, newLocation, reason?, conditionNotes?, positionCoordinate? }
+              // Extract newLocation from locationData for backward compatibility
+              const location = locationData?.newLocation || locationData;
+              handleStorageLocationChange(location, index);
+            }}
           />
         </div>
         <div className="testPanels">
