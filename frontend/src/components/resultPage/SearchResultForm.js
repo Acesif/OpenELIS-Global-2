@@ -36,6 +36,7 @@ import { ConfigurationContext } from "../layout/Layout";
 import config from "../../config.json";
 import CustomDatePicker from "../common/CustomDatePicker";
 import CompactFileInput from "./fileUpload/FileInput";
+import StorageLocationSelector from "../storage/StorageLocationSelector";
 
 function ResultSearchPage() {
   const [originalResultForm, setOriginalResultForm] = useState({
@@ -785,6 +786,7 @@ export function SearchResults(props) {
   const saveStatus = "";
   const [referTest, setReferTest] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [sampleLocations, setSampleLocations] = useState({}); // Track location for each sample by accessionNumber
 
   const componentMounted = useRef(false);
 
@@ -1263,136 +1265,259 @@ export function SearchResults(props) {
     }
   };
 
-  const renderReferral = ({ data }) => (
-    <>
-      <Grid>
-        <Column lg={2}>
-          <Select
-            id={"testMethod" + data.id}
-            name={"testResult[" + data.id + "].testMethod"}
-            labelText={intl.formatMessage({ id: "referral.label.testmethod" })}
-            onChange={(e) => handleChange(e, data.id)}
-            value={data.testMethod}
-          >
-            <SelectItem text="" value="" />
-            {methods.map((method, method_index) => (
-              <SelectItem
-                text={method.value}
-                value={method.id}
-                key={method_index}
-              />
-            ))}
-          </Select>
-        </Column>
-        <Column lg={2}>
-          <CompactFileInput
-            data={data}
-            results={props.results}
-            setResultForm={props.setResultForm}
-          />
+  // Fetch location for a sample when expanded
+  const fetchSampleLocation = (accessionNumber) => {
+    if (!accessionNumber || sampleLocations[accessionNumber]) {
+      return; // Already fetched or no accession number
+    }
+    getFromOpenElisServer(
+      `/rest/storage/sample-items/search?q=${encodeURIComponent(accessionNumber)}`,
+      (response) => {
+        if (response && response.length > 0) {
+          const sampleItem = response[0];
+          const locationPath = sampleItem.hierarchicalPath || sampleItem.location || "";
+          setSampleLocations((prev) => ({
+            ...prev,
+            [accessionNumber]: locationPath,
+          }));
+        }
+      },
+      (error) => {
+        // Sample may not have location assigned yet
+        console.debug("No location found for sample:", accessionNumber);
+      },
+    );
+  };
 
-          {data.resultFile && data.resultFile.fileName && (
-            <Link
-              onClick={() =>
-                downloadFile(
-                  data.resultFile.fileName,
-                  data.resultFile.content,
-                  data.resultFile.fileType,
-                )
-              }
-              style={{ fontSize: "12px" }}
+  // Handle location assignment
+  const handleLocationAssignment = async (locationData, accessionNumber) => {
+    // locationData format: { sample, newLocation, reason?, conditionNotes?, positionCoordinate? }
+    const newLocation = locationData?.newLocation || locationData;
+    
+    // Extract sample ID from accession number if needed
+    const sampleId = locationData?.sample?.id || locationData?.sample?.sampleId;
+    
+    if (!sampleId || !newLocation) {
+      console.error("Missing sample ID or location for assignment");
+      return;
+    }
+
+    try {
+      // Call assignment API
+      const assignmentData = {
+        sampleItemId: sampleId,
+        locationId: newLocation.rack?.id || newLocation.shelf?.id || newLocation.device?.id,
+        locationType: newLocation.rack ? "rack" : newLocation.shelf ? "shelf" : "device",
+        positionCoordinate: locationData.positionCoordinate || newLocation.position?.coordinate || "",
+        conditionNotes: locationData.conditionNotes || "",
+      };
+
+      postToOpenElisServerJsonResponse(
+        "/rest/storage/sample-items/assign",
+        JSON.stringify(assignmentData),
+        (response) => {
+          if (response && response.success) {
+            // Update local state
+            const locationPath = response.hierarchicalPath || "";
+            setSampleLocations((prev) => ({
+              ...prev,
+              [accessionNumber]: locationPath,
+            }));
+            addNotification({
+              title: intl.formatMessage({ id: "notification.title" }),
+              message: intl.formatMessage({
+                id: "storage.location.assigned.success",
+                defaultMessage: "Location assigned successfully",
+              }),
+              kind: NotificationKinds.success,
+            });
+            setNotificationVisible(true);
+          }
+        },
+        (error) => {
+          addNotification({
+            title: intl.formatMessage({ id: "notification.title" }),
+            message: intl.formatMessage({
+              id: "storage.location.assigned.error",
+              defaultMessage: "Failed to assign location",
+            }),
+            kind: NotificationKinds.error,
+          });
+          setNotificationVisible(true);
+        },
+      );
+    } catch (error) {
+      console.error("Error assigning location:", error);
+      addNotification({
+        title: intl.formatMessage({ id: "notification.title" }),
+        message: intl.formatMessage({
+          id: "storage.location.assigned.error",
+          defaultMessage: "Failed to assign location",
+        }),
+        kind: NotificationKinds.error,
+      });
+      setNotificationVisible(true);
+    }
+  };
+
+  const renderReferral = ({ data }) => {
+    // Fetch location when row is expanded
+    const accessionNumber = data.accessionNumber;
+    if (accessionNumber && !sampleLocations[accessionNumber]) {
+      fetchSampleLocation(accessionNumber);
+    }
+
+    const currentLocationPath = sampleLocations[accessionNumber] || "";
+
+    return (
+      <>
+        <Grid>
+          <Column lg={2}>
+            <Select
+              id={"testMethod" + data.id}
+              name={"testResult[" + data.id + "].testMethod"}
+              labelText={intl.formatMessage({ id: "referral.label.testmethod" })}
+              onChange={(e) => handleChange(e, data.id)}
+              value={data.testMethod}
             >
-              {data.resultFile.fileName}
-            </Link>
-          )}
-        </Column>
-        <Column lg={2}>
-          <Checkbox
-            labelText={intl.formatMessage({ id: "results.label.refer" })}
-            name={"testResult[" + data.id + "].refer"}
-            id={"testResult[" + data.id + "].refer"}
-            checked={data.refer === "true"}
-            disabled={data.referredOut}
-            onChange={(e) => {
-              e.target.value = e.target.checked;
-              handleChange(e, data.id);
-            }}
-          />
-        </Column>
-        <Column lg={2}>
-          <Select
-            id={"referralReason" + data.id}
-            name={"testResult[" + data.id + "].referralItem.referralReasonId"}
-            // noLabel={true}
-            labelText={intl.formatMessage({ id: "referral.label.reason" })}
-            onChange={(e) => handleChange(e, data.id)}
-            value={data?.referralItem?.referralReasonId}
-            disabled={!referTest[data.id]}
-          >
-            {/* {...updateShadowResult(e, this, param.rowId)} */}
-            <SelectItem text="" value="" />
-            {referralReasons.map((reason, reason_index) => (
-              <SelectItem
-                text={reason.value}
-                value={reason.id}
-                key={reason_index}
-              />
-            ))}
-          </Select>
-        </Column>
-        <Column lg={2}>
-          <Select
-            id={"institute" + data.id}
-            name={
-              "testResult[" + data.id + "].referralItem.referredInstituteId"
-            }
-            // noLabel={true}
-            labelText={intl.formatMessage({ id: "referral.label.institute" })}
-            onChange={(e) => handleChange(e, data.id)}
-            value={data?.referralItem?.referredInstituteId}
-            disabled={!referTest[data.id]}
-          >
-            {/* {...updateShadowResult(e, this, param.rowId)} */}
+              <SelectItem text="" value="" />
+              {methods.map((method, method_index) => (
+                <SelectItem
+                  text={method.value}
+                  value={method.id}
+                  key={method_index}
+                />
+              ))}
+            </Select>
+          </Column>
+          <Column lg={2}>
+            <CompactFileInput
+              data={data}
+              results={props.results}
+              setResultForm={props.setResultForm}
+            />
 
-            <SelectItem text="" value="" />
-            {referalOrganizations.map((org, org_index) => (
-              <SelectItem text={org.value} value={org.id} key={org_index} />
-            ))}
-          </Select>
-        </Column>
-        <Column lg={3}>
-          <Select
-            id={"testToPerform" + data.id}
-            name={"testResult[" + data.id + "].referralItem.referredTestId"}
-            // noLabel={true}
-            labelText={intl.formatMessage({
-              id: "referral.label.testtoperform",
-            })}
-            onChange={(e) => handleChange(e, data.id)}
-            value={data?.referralItem?.referredTestId}
-            disabled={!referTest[data.id]}
-          >
-            {/* {...updateShadowResult(e, this, param.rowId)} */}
+            {data.resultFile && data.resultFile.fileName && (
+              <Link
+                onClick={() =>
+                  downloadFile(
+                    data.resultFile.fileName,
+                    data.resultFile.content,
+                    data.resultFile.fileType,
+                  )
+                }
+                style={{ fontSize: "12px" }}
+              >
+                {data.resultFile.fileName}
+              </Link>
+            )}
+          </Column>
+          <Column lg={2}>
+            <Checkbox
+              labelText={intl.formatMessage({ id: "results.label.refer" })}
+              name={"testResult[" + data.id + "].refer"}
+              id={"testResult[" + data.id + "].refer"}
+              checked={data.refer === "true"}
+              disabled={data.referredOut}
+              onChange={(e) => {
+                e.target.value = e.target.checked;
+                handleChange(e, data.id);
+              }}
+            />
+          </Column>
+          <Column lg={2}>
+            <Select
+              id={"referralReason" + data.id}
+              name={"testResult[" + data.id + "].referralItem.referralReasonId"}
+              // noLabel={true}
+              labelText={intl.formatMessage({ id: "referral.label.reason" })}
+              onChange={(e) => handleChange(e, data.id)}
+              value={data?.referralItem?.referralReasonId}
+              disabled={!referTest[data.id]}
+            >
+              {/* {...updateShadowResult(e, this, param.rowId)} */}
+              <SelectItem text="" value="" />
+              {referralReasons.map((reason, reason_index) => (
+                <SelectItem
+                  text={reason.value}
+                  value={reason.id}
+                  key={reason_index}
+                />
+              ))}
+            </Select>
+          </Column>
+          <Column lg={2}>
+            <Select
+              id={"institute" + data.id}
+              name={
+                "testResult[" + data.id + "].referralItem.referredInstituteId"
+              }
+              // noLabel={true}
+              labelText={intl.formatMessage({ id: "referral.label.institute" })}
+              onChange={(e) => handleChange(e, data.id)}
+              value={data?.referralItem?.referredInstituteId}
+              disabled={!referTest[data.id]}
+            >
+              {/* {...updateShadowResult(e, this, param.rowId)} */}
 
-            <SelectItem text={data.testName} value={data.id} />
-          </Select>
-        </Column>
-        <Column lg={2}>
-          <CustomDatePicker
-            id={"sentDate_" + data.id}
-            labelText={intl.formatMessage({
-              id: "referral.label.sentdate",
-            })}
-            onChange={(date) => handleDatePickerChange(date, data.id)}
-            name={"testResult[" + data.id + "].referralItem.referredSendDate"}
-            value={data?.referralItem?.referredSendDate}
-            disabled={!referTest[data.id]}
-            disallowFutureDate={true}
-          />
-        </Column>
-      </Grid>
-    </>
-  );
+              <SelectItem text="" value="" />
+              {referalOrganizations.map((org, org_index) => (
+                <SelectItem text={org.value} value={org.id} key={org_index} />
+              ))}
+            </Select>
+          </Column>
+          <Column lg={3}>
+            <Select
+              id={"testToPerform" + data.id}
+              name={"testResult[" + data.id + "].referralItem.referredTestId"}
+              // noLabel={true}
+              labelText={intl.formatMessage({
+                id: "referral.label.testtoperform",
+              })}
+              onChange={(e) => handleChange(e, data.id)}
+              value={data?.referralItem?.referredTestId}
+              disabled={!referTest[data.id]}
+            >
+              {/* {...updateShadowResult(e, this, param.rowId)} */}
+
+              <SelectItem text={data.testName} value={data.id} />
+            </Select>
+          </Column>
+          <Column lg={2}>
+            <CustomDatePicker
+              id={"sentDate_" + data.id}
+              labelText={intl.formatMessage({
+                id: "referral.label.sentdate",
+              })}
+              onChange={(date) => handleDatePickerChange(date, data.id)}
+              name={"testResult[" + data.id + "].referralItem.referredSendDate"}
+              value={data?.referralItem?.referredSendDate}
+              disabled={!referTest[data.id]}
+              disallowFutureDate={true}
+            />
+          </Column>
+        </Grid>
+        {/* Storage Location Widget - INT-002: Integration point */}
+        <Grid style={{ marginTop: "1rem" }}>
+          <Column lg={16}>
+            <StorageLocationSelector
+              workflow="results"
+              showQuickFind={true}
+              sampleInfo={{
+                sampleId: accessionNumber,
+                type: data.sampleType || "",
+                status: data.sampleStatus || "Active",
+              }}
+              hierarchicalPath={currentLocationPath}
+              onLocationChange={(locationData) => {
+                handleLocationAssignment(locationData, accessionNumber);
+              }}
+            />
+          </Column>
+        </Grid>
+      </>
+    );
+  };
   const validateResults = (e, rowId) => {
     console.debug("validateResults:" + e.target.value);
     // e.target.value;
