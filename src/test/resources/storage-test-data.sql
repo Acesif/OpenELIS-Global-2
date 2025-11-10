@@ -41,7 +41,7 @@ DELETE FROM storage_room WHERE id BETWEEN 1 AND 100;
 INSERT INTO storage_room (id, fhir_uuid, name, code, description, active, sys_user_id, last_updated) VALUES
 (1, gen_random_uuid(), 'Main Laboratory', 'MAIN', 'Primary laboratory storage facility', true, 1, CURRENT_TIMESTAMP),
 (2, gen_random_uuid(), 'Secondary Laboratory', 'SEC', 'Secondary storage area', true, 1, CURRENT_TIMESTAMP),
-(3, gen_random_uuid(), 'Inactive Room', 'INACTIVE', 'Deactivated room for testing inactive validation', 1, CURRENT_TIMESTAMP);
+(3, gen_random_uuid(), 'Inactive Room', 'INACTIVE', 'Deactivated room for testing inactive validation', false, 1, CURRENT_TIMESTAMP);
 
 -- Insert Test Devices
 -- Each room has unique devices with descriptive names
@@ -53,7 +53,7 @@ INSERT INTO storage_device (id, fhir_uuid, name, code, type, temperature_setting
 (12, gen_random_uuid(), 'Secondary Lab Cabinet Unit 1', 'SEC-CAB01', 'cabinet', NULL, NULL, true, 2, 1, CURRENT_TIMESTAMP),
 (14, gen_random_uuid(), 'Secondary Lab Freezer Unit 1', 'SEC-FRZ01', 'freezer', -20.0, 200, true, 2, 1, CURRENT_TIMESTAMP),
 -- Inactive Room device
-(13, gen_random_uuid(), 'Inactive Freezer', 'INACTIVE-FRZ', 'freezer', NULL, NULL, 3, 1, CURRENT_TIMESTAMP);
+(13, gen_random_uuid(), 'Inactive Freezer', 'INACTIVE-FRZ', 'freezer', NULL, NULL, false, 3, 1, CURRENT_TIMESTAMP);
 
 -- Insert Test Shelves
 -- Each device has uniquely named shelves
@@ -267,8 +267,8 @@ BEGIN
   INSERT INTO sample_item (id, samp_id, sort_order, sampitem_id, external_id, typeosamp_id, 
                            collection_date, collector, quantity, status_id, lastupdated)
   VALUES
-  (10001, 1000, 1, 1, 'E2E-001-TUBE-1', serum_type_id, CURRENT_TIMESTAMP, 'Tech-001', 5.0, status_id_val, CURRENT_TIMESTAMP),
-  (10002, 1000, 2, 2, 'E2E-001-ALIQUOT-1', serum_type_id, CURRENT_TIMESTAMP, 'Tech-001', 2.0, status_id_val, CURRENT_TIMESTAMP)
+  (10001, 1000, 1, NULL, 'E2E-001-TUBE-1', serum_type_id, CURRENT_TIMESTAMP, 'Tech-001', 5.0, status_id_val, CURRENT_TIMESTAMP),
+  (10002, 1000, 2, 10001, 'E2E-001-ALIQUOT-1', serum_type_id, CURRENT_TIMESTAMP, 'Tech-001', 2.0, status_id_val, CURRENT_TIMESTAMP)
   ON CONFLICT (id) DO UPDATE SET
     external_id = EXCLUDED.external_id,
     lastupdated = CURRENT_TIMESTAMP;
@@ -287,7 +287,7 @@ BEGIN
   INSERT INTO sample_item (id, samp_id, sort_order, sampitem_id, external_id, typeosamp_id, 
                            collection_date, collector, quantity, status_id, lastupdated)
   VALUES
-  (10011, 1001, 1, 1, 'E2E-002-TUBE-1', blood_type_id, CURRENT_TIMESTAMP, 'Tech-002', 10.0, status_id_val, CURRENT_TIMESTAMP)
+  (10011, 1001, 1, NULL, 'E2E-002-TUBE-1', blood_type_id, CURRENT_TIMESTAMP, 'Tech-002', 10.0, status_id_val, CURRENT_TIMESTAMP)
   ON CONFLICT (id) DO UPDATE SET
     external_id = EXCLUDED.external_id,
     lastupdated = CURRENT_TIMESTAMP;
@@ -306,9 +306,9 @@ BEGIN
   INSERT INTO sample_item (id, samp_id, sort_order, sampitem_id, external_id, typeosamp_id, 
                            collection_date, collector, quantity, status_id, lastupdated)
   VALUES
-  (10021, 1002, 1, 1, 'E2E-003-URINE-1', urine_type_id, CURRENT_TIMESTAMP, 'Tech-003', 50.0, status_id_val, CURRENT_TIMESTAMP),
-  (10022, 1002, 2, 2, 'E2E-003-ALIQUOT-1', urine_type_id, CURRENT_TIMESTAMP, 'Tech-003', 10.0, status_id_val, CURRENT_TIMESTAMP),
-  (10023, 1002, 3, 3, 'E2E-003-ALIQUOT-2', urine_type_id, CURRENT_TIMESTAMP, 'Tech-003', 10.0, status_id_val, CURRENT_TIMESTAMP)
+  (10021, 1002, 1, NULL, 'E2E-003-URINE-1', urine_type_id, CURRENT_TIMESTAMP, 'Tech-003', 50.0, status_id_val, CURRENT_TIMESTAMP),
+  (10022, 1002, 2, 10021, 'E2E-003-ALIQUOT-1', urine_type_id, CURRENT_TIMESTAMP, 'Tech-003', 10.0, status_id_val, CURRENT_TIMESTAMP),
+  (10023, 1002, 3, 10021, 'E2E-003-ALIQUOT-2', urine_type_id, CURRENT_TIMESTAMP, 'Tech-003', 10.0, status_id_val, CURRENT_TIMESTAMP)
   ON CONFLICT (id) DO UPDATE SET
     external_id = EXCLUDED.external_id,
     lastupdated = CURRENT_TIMESTAMP;
@@ -327,7 +327,7 @@ BEGIN
   INSERT INTO sample_item (id, samp_id, sort_order, sampitem_id, external_id, typeosamp_id, 
                            collection_date, collector, quantity, status_id, lastupdated)
   VALUES
-  (10031, 1003, 1, 1, 'E2E-004-TUBE-1', serum_type_id, CURRENT_TIMESTAMP, 'Tech-004', 5.0, status_id_val, CURRENT_TIMESTAMP)
+  (10031, 1003, 1, NULL, 'E2E-004-TUBE-1', serum_type_id, CURRENT_TIMESTAMP, 'Tech-004', 5.0, status_id_val, CURRENT_TIMESTAMP)
   ON CONFLICT (id) DO UPDATE SET
     external_id = EXCLUDED.external_id,
     lastupdated = CURRENT_TIMESTAMP;
@@ -346,8 +346,8 @@ BEGIN
   INSERT INTO sample_item (id, samp_id, sort_order, sampitem_id, external_id, typeosamp_id, 
                            collection_date, collector, quantity, status_id, lastupdated)
   VALUES
-  (10041, 1004, 1, 1, 'E2E-005-TUBE-1', blood_type_id, CURRENT_TIMESTAMP, 'Tech-005', 10.0, status_id_val, CURRENT_TIMESTAMP),
-  (10042, 1004, 2, 2, 'E2E-005-TUBE-2', blood_type_id, CURRENT_TIMESTAMP, 'Tech-005', 10.0, status_id_val, CURRENT_TIMESTAMP)
+  (10041, 1004, 1, NULL, 'E2E-005-TUBE-1', blood_type_id, CURRENT_TIMESTAMP, 'Tech-005', 10.0, status_id_val, CURRENT_TIMESTAMP),
+  (10042, 1004, 2, 10041, 'E2E-005-TUBE-2', blood_type_id, CURRENT_TIMESTAMP, 'Tech-005', 10.0, status_id_val, CURRENT_TIMESTAMP)
   ON CONFLICT (id) DO UPDATE SET
     external_id = EXCLUDED.external_id,
     lastupdated = CURRENT_TIMESTAMP;
@@ -477,9 +477,9 @@ BEGIN
   INSERT INTO sample_item (id, samp_id, sort_order, sampitem_id, external_id, typeosamp_id, 
                            collection_date, collector, quantity, status_id, lastupdated)
   VALUES
-  (10051, 1005, 1, 1, 'E2E-006-ALIQUOT-1', serum_type_id, CURRENT_TIMESTAMP, 'Tech-006', 2.0, status_id_val, CURRENT_TIMESTAMP),
-  (10052, 1005, 2, 2, 'E2E-006-ALIQUOT-2', serum_type_id, CURRENT_TIMESTAMP, 'Tech-006', 2.0, status_id_val, CURRENT_TIMESTAMP),
-  (10053, 1005, 3, 3, 'E2E-006-ALIQUOT-3', serum_type_id, CURRENT_TIMESTAMP, 'Tech-006', 2.0, status_id_val, CURRENT_TIMESTAMP)
+  (10051, 1005, 1, NULL, 'E2E-006-ALIQUOT-1', serum_type_id, CURRENT_TIMESTAMP, 'Tech-006', 2.0, status_id_val, CURRENT_TIMESTAMP),
+  (10052, 1005, 2, 10051, 'E2E-006-ALIQUOT-2', serum_type_id, CURRENT_TIMESTAMP, 'Tech-006', 2.0, status_id_val, CURRENT_TIMESTAMP),
+  (10053, 1005, 3, 10051, 'E2E-006-ALIQUOT-3', serum_type_id, CURRENT_TIMESTAMP, 'Tech-006', 2.0, status_id_val, CURRENT_TIMESTAMP)
   ON CONFLICT (id) DO UPDATE SET
     external_id = EXCLUDED.external_id,
     lastupdated = CURRENT_TIMESTAMP;
@@ -498,7 +498,7 @@ BEGIN
   INSERT INTO sample_item (id, samp_id, sort_order, sampitem_id, external_id, typeosamp_id, 
                            collection_date, collector, quantity, status_id, lastupdated)
   VALUES
-  (10061, 1006, 1, 1, 'E2E-007-TUBE-1', blood_type_id, CURRENT_TIMESTAMP, 'Tech-007', 10.0, status_id_val, CURRENT_TIMESTAMP)
+  (10061, 1006, 1, NULL, 'E2E-007-TUBE-1', blood_type_id, CURRENT_TIMESTAMP, 'Tech-007', 10.0, status_id_val, CURRENT_TIMESTAMP)
   ON CONFLICT (id) DO UPDATE SET
     external_id = EXCLUDED.external_id,
     lastupdated = CURRENT_TIMESTAMP;
@@ -517,8 +517,8 @@ BEGIN
   INSERT INTO sample_item (id, samp_id, sort_order, sampitem_id, external_id, typeosamp_id, 
                            collection_date, collector, quantity, status_id, lastupdated)
   VALUES
-  (10071, 1007, 1, 1, 'E2E-008-URINE-1', urine_type_id, CURRENT_TIMESTAMP, 'Tech-008', 50.0, status_id_val, CURRENT_TIMESTAMP),
-  (10072, 1007, 2, 2, 'E2E-008-ALIQUOT-1', urine_type_id, CURRENT_TIMESTAMP, 'Tech-008', 10.0, status_id_val, CURRENT_TIMESTAMP)
+  (10071, 1007, 1, NULL, 'E2E-008-URINE-1', urine_type_id, CURRENT_TIMESTAMP, 'Tech-008', 50.0, status_id_val, CURRENT_TIMESTAMP),
+  (10072, 1007, 2, 10071, 'E2E-008-ALIQUOT-1', urine_type_id, CURRENT_TIMESTAMP, 'Tech-008', 10.0, status_id_val, CURRENT_TIMESTAMP)
   ON CONFLICT (id) DO UPDATE SET
     external_id = EXCLUDED.external_id,
     lastupdated = CURRENT_TIMESTAMP;
@@ -537,8 +537,8 @@ BEGIN
   INSERT INTO sample_item (id, samp_id, sort_order, sampitem_id, external_id, typeosamp_id, 
                            collection_date, collector, quantity, status_id, lastupdated)
   VALUES
-  (10081, 1008, 1, 1, 'E2E-009-SERUM-1', serum_type_id, CURRENT_TIMESTAMP, 'Tech-009', 5.0, status_id_val, CURRENT_TIMESTAMP),
-  (10082, 1008, 2, 2, 'E2E-009-ALIQUOT-1', serum_type_id, CURRENT_TIMESTAMP, 'Tech-009', 2.0, status_id_val, CURRENT_TIMESTAMP)
+  (10081, 1008, 1, NULL, 'E2E-009-SERUM-1', serum_type_id, CURRENT_TIMESTAMP, 'Tech-009', 5.0, status_id_val, CURRENT_TIMESTAMP),
+  (10082, 1008, 2, 10081, 'E2E-009-ALIQUOT-1', serum_type_id, CURRENT_TIMESTAMP, 'Tech-009', 2.0, status_id_val, CURRENT_TIMESTAMP)
   ON CONFLICT (id) DO UPDATE SET
     external_id = EXCLUDED.external_id,
     lastupdated = CURRENT_TIMESTAMP;
@@ -557,9 +557,9 @@ BEGIN
   INSERT INTO sample_item (id, samp_id, sort_order, sampitem_id, external_id, typeosamp_id, 
                            collection_date, collector, quantity, status_id, lastupdated)
   VALUES
-  (10091, 1009, 1, 1, 'E2E-010-TUBE-1', blood_type_id, CURRENT_TIMESTAMP, 'Tech-010', 10.0, status_id_val, CURRENT_TIMESTAMP),
-  (10092, 1009, 2, 2, 'E2E-010-TUBE-2', blood_type_id, CURRENT_TIMESTAMP, 'Tech-010', 10.0, status_id_val, CURRENT_TIMESTAMP),
-  (10093, 1009, 3, 3, 'E2E-010-TUBE-3', blood_type_id, CURRENT_TIMESTAMP, 'Tech-010', 10.0, status_id_val, CURRENT_TIMESTAMP)
+  (10091, 1009, 1, NULL, 'E2E-010-TUBE-1', blood_type_id, CURRENT_TIMESTAMP, 'Tech-010', 10.0, status_id_val, CURRENT_TIMESTAMP),
+  (10092, 1009, 2, 10091, 'E2E-010-TUBE-2', blood_type_id, CURRENT_TIMESTAMP, 'Tech-010', 10.0, status_id_val, CURRENT_TIMESTAMP),
+  (10093, 1009, 3, 10091, 'E2E-010-TUBE-3', blood_type_id, CURRENT_TIMESTAMP, 'Tech-010', 10.0, status_id_val, CURRENT_TIMESTAMP)
   ON CONFLICT (id) DO UPDATE SET
     external_id = EXCLUDED.external_id,
     lastupdated = CURRENT_TIMESTAMP;
@@ -685,7 +685,7 @@ SELECT 'Patients' AS entity, COUNT(*) AS count FROM patient WHERE external_id LI
 UNION ALL
 SELECT 'Samples', COUNT(*) FROM sample WHERE accession_number LIKE 'E2E-%'
 UNION ALL
-SELECT 'SampleItems', COUNT(*) FROM sample_item WHERE id LIKE 'SI-%'
+SELECT 'SampleItems', COUNT(*) FROM sample_item WHERE id BETWEEN 10000 AND 20000
 UNION ALL
 SELECT 'Storage Assignments', COUNT(*) FROM sample_storage_assignment WHERE id >= 1000
 UNION ALL

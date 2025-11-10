@@ -53,7 +53,7 @@ describe("StorageDashboard Search Functionality (FR-064, FR-064a)", () => {
   test("testComponent_Renders", async () => {
     getFromOpenElisServer.mockImplementation((url, callback) => {
       // Mock all API calls to return empty arrays immediately
-      if (url.includes("/rest/storage/samples")) {
+      if (url.includes("/rest/storage/sample-items")) {
         callback([]);
       } else if (url.includes("/rest/storage/rooms")) {
         callback([]);
@@ -84,7 +84,7 @@ describe("StorageDashboard Search Functionality (FR-064, FR-064a)", () => {
   // Test 2: Does the search input exist after rendering?
   test("testSearchInput_Exists", async () => {
     getFromOpenElisServer.mockImplementation((url, callback) => {
-      if (url.includes("/rest/storage/samples")) {
+      if (url.includes("/rest/storage/sample-items")) {
         callback([]);
       } else if (url.includes("/rest/storage/rooms")) {
         callback([]);
@@ -116,7 +116,7 @@ describe("StorageDashboard Search Functionality (FR-064, FR-064a)", () => {
   // Test 3: Can we type in the search input?
   test("testSearchInput_AcceptsInput", async () => {
     getFromOpenElisServer.mockImplementation((url, callback) => {
-      if (url.includes("/rest/storage/samples")) {
+      if (url.includes("/rest/storage/sample-items")) {
         callback([]);
       } else if (url.includes("/rest/storage/rooms")) {
         callback([]);
@@ -160,9 +160,11 @@ describe("StorageDashboard Search Functionality (FR-064, FR-064a)", () => {
 
     getFromOpenElisServer.mockImplementation((url, callback) => {
       if (url.includes("/rest/storage/samples/search")) {
+        // Note: Backend search endpoint is still at /rest/storage/samples/search
+        // but list endpoint should be /rest/storage/sample-items
         searchCallback();
         callback([]);
-      } else if (url.includes("/rest/storage/samples")) {
+      } else if (url.includes("/rest/storage/sample-items")) {
         callback([]);
       } else if (url.includes("/rest/storage/rooms")) {
         callback([]);

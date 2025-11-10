@@ -470,13 +470,13 @@ const StorageDashboard = () => {
 
   const loadMetrics = () => {
     getFromOpenElisServer(
-      "/rest/storage/samples?countOnly=true",
+      "/rest/storage/sample-items?countOnly=true",
       (response) => {
         if (componentMounted.current && response) {
           // Response is an array with one metrics object
           const metricsData = Array.isArray(response) ? response[0] : response;
           setMetrics({
-            totalSamples: metricsData?.totalSamples || 0,
+            totalSamples: metricsData?.totalSampleItems || 0,
             active: metricsData?.active || 0,
             disposed: metricsData?.disposed || 0,
             storageLocations: metricsData?.storageLocations || 0,
@@ -813,7 +813,9 @@ const StorageDashboard = () => {
   const loadSamples = () => {
     // Use search endpoint if searchTerm is present, otherwise use filter endpoint
     if (searchTerm && searchTerm.trim()) {
-      // Call search endpoint (FR-064: Samples tab - search by ID, accession prefix, location path)
+      // Call search endpoint (FR-064: Sample Items tab - search by SampleItem ID/External ID, parent Sample accession, location path)
+      // Note: Backend search endpoint is at /rest/storage/samples/search (StorageLocationRestController)
+      // but should ideally be at /rest/storage/sample-items/search for consistency
       const url = `/rest/storage/samples/search?q=${encodeURIComponent(searchTerm.trim())}`;
       getFromOpenElisServer(url, (response) => {
         if (componentMounted.current) {
@@ -821,13 +823,13 @@ const StorageDashboard = () => {
             // Apply filters client-side on search results (AND logic)
             let filtered = response || [];
 
-            // Apply location filter from LocationFilterDropdown (Samples tab uses single location filter)
+            // Apply location filter from LocationFilterDropdown (Sample Items tab uses single location filter)
             if (locationFilter && locationFilter.id) {
               const locationName =
                 locationFilter.name || locationFilter.label || "";
-              filtered = filtered.filter((sample) => {
-                const sampleLocation = sample.location || "";
-                return sampleLocation
+              filtered = filtered.filter((sampleItem) => {
+                const sampleItemLocation = sampleItem.location || "";
+                return sampleItemLocation
                   .toLowerCase()
                   .includes(locationName.toLowerCase());
               });
@@ -842,10 +844,10 @@ const StorageDashboard = () => {
                     ? "disposed"
                     : null;
               if (statusFilter) {
-                filtered = filtered.filter((sample) => {
-                  const sampleStatus = sample.status || "active";
+                filtered = filtered.filter((sampleItem) => {
+                  const sampleItemStatus = sampleItem.status || "active";
                   return (
-                    sampleStatus.toLowerCase() === statusFilter.toLowerCase()
+                    sampleItemStatus.toLowerCase() === statusFilter.toLowerCase()
                   );
                 });
               }
@@ -854,7 +856,7 @@ const StorageDashboard = () => {
             setSamples(filtered);
           } else {
             console.error(
-              "Samples search API returned non-array response:",
+              "Sample Items search API returned non-array response:",
               response,
             );
             setSamples([]);
@@ -886,30 +888,30 @@ const StorageDashboard = () => {
       }
 
       const queryString = params.toString();
-      const url = `/rest/storage/samples${queryString ? "?" + queryString : ""}`;
+      const url = `/rest/storage/sample-items${queryString ? "?" + queryString : ""}`;
 
-      console.log("Loading samples from", url, "with filters:", {
+      console.log("Loading Sample Items from", url, "with filters:", {
         locationFilter,
         filterStatus,
       });
       getFromOpenElisServer(url, (response) => {
         if (componentMounted.current) {
-          console.log(
-            "Samples API response received:",
+            console.log(
+              "Sample Items API response received:",
             response,
             "Type:",
             typeof response,
           );
           if (response && Array.isArray(response)) {
-            console.log("Samples loaded:", response.length, response);
+            console.log("Sample Items loaded:", response.length, response);
             setSamples(response);
             if (response.length === 0) {
               console.warn(
-                "Samples API returned empty array - no sample assignments found matching filters",
+                "Sample Items API returned empty array - no sample item assignments found matching filters",
               );
             }
           } else {
-            console.error("Samples API returned non-array response:", response);
+            console.error("Sample Items API returned non-array response:", response);
             console.error("Expected array but got:", typeof response, response);
             console.error("Response is:", JSON.stringify(response));
             setSamples([]);
@@ -1095,9 +1097,16 @@ const StorageDashboard = () => {
     { key: "actions", header: intl.formatMessage({ id: "label.actions" }) },
   ];
 
-  // Samples table headers
+  // Sample Items table headers (per spec: SampleItem ID/External ID as primary, Sample accession as secondary)
   const samplesHeaders = [
-    { key: "sampleId", header: intl.formatMessage({ id: "sample.id" }) },
+    { 
+      key: "sampleItemId", 
+      header: intl.formatMessage({ id: "storage.sampleitem.id" }, { defaultMessage: "SampleItem ID" })
+    },
+    { 
+      key: "sampleAccessionNumber", 
+      header: intl.formatMessage({ id: "sample.accession.number" }, { defaultMessage: "Sample Accession" })
+    },
     { key: "type", header: intl.formatMessage({ id: "sample.type" }) },
     { key: "status", header: intl.formatMessage({ id: "storage.status" }) },
     { key: "location", header: intl.formatMessage({ id: "storage.location" }) },
@@ -1959,40 +1968,50 @@ const StorageDashboard = () => {
     );
   };
 
-  // Format samples data for table
+  // Format Sample Items data for table (per spec: SampleItem ID/External ID as primary, Sample accession as secondary)
   const formatSamplesData = (samplesData) => {
     if (!samplesData || samplesData.length === 0) {
       return [];
     }
-    return samplesData.map((sample) => ({
-      id: String(sample.sampleId || sample.id || ""),
-      sampleId: String(sample.sampleId || sample.id || ""),
-      type: sample.type || sample.sampleType || "",
-      status:
-        sample.status === "disposed" || sample.status === "Disposed" ? (
-          <Tag type="red">
-            <FormattedMessage id="storage.status.disposed" />
-          </Tag>
-        ) : (
-          <Tag type="green">
-            <FormattedMessage id="label.active" />
-          </Tag>
-        ),
-      location: sample.location || sample.hierarchicalPath || "",
-      assignedBy: sample.assignedBy || sample.assignedByUserId || "",
-      date: sample.date || sample.assignedDate || "",
-      actions: (
-        <SampleActionsContainer
-          sample={{
-            id: String(sample.sampleItemId || sample.id || sample.sampleId || ""),
-            sampleId: String(sample.sampleItemId || sample.id || sample.sampleId || ""),
-            sampleItemId: String(sample.sampleItemId || sample.id || sample.sampleId || ""),
-            sampleItemExternalId: sample.sampleItemExternalId || null,
-            sampleAccessionNumber: sample.sampleAccessionNumber || null,
-            type: sample.type || sample.sampleType || "",
-            status: sample.status || "Active",
-            location: sample.location || sample.hierarchicalPath || "",
-          }}
+    return samplesData.map((sampleItem) => {
+      // Primary identifier: SampleItem ID or External ID (prefer External ID if available)
+      const sampleItemId = String(sampleItem.sampleItemId || sampleItem.id || "");
+      const sampleItemExternalId = sampleItem.sampleItemExternalId || null;
+      const displayId = sampleItemExternalId || sampleItemId;
+      
+      // Secondary context: Parent Sample accession number
+      const sampleAccessionNumber = sampleItem.sampleAccessionNumber || "";
+      
+      return {
+        id: sampleItemId, // Use sampleItemId for row ID
+        sampleItemId: displayId, // Display: External ID if available, otherwise ID
+        sampleAccessionNumber: sampleAccessionNumber, // Parent Sample accession for context
+        type: sampleItem.type || sampleItem.sampleType || "",
+        status:
+          sampleItem.status === "disposed" || sampleItem.status === "Disposed" ? (
+            <Tag type="red">
+              <FormattedMessage id="storage.status.disposed" />
+            </Tag>
+          ) : (
+            <Tag type="green">
+              <FormattedMessage id="label.active" />
+            </Tag>
+          ),
+        location: sampleItem.location || sampleItem.hierarchicalPath || "",
+        assignedBy: sampleItem.assignedBy || sampleItem.assignedByUserId || "",
+        date: sampleItem.date || sampleItem.assignedDate || "",
+        actions: (
+          <SampleActionsContainer
+            sample={{
+              id: sampleItemId,
+              sampleId: sampleItemId,
+              sampleItemId: sampleItemId,
+              sampleItemExternalId: sampleItemExternalId,
+              sampleAccessionNumber: sampleAccessionNumber,
+              type: sampleItem.type || sampleItem.sampleType || "",
+              status: sampleItem.status || "Active",
+              location: sampleItem.location || sampleItem.hierarchicalPath || "",
+            }}
           onLocationConfirm={async (locationData) => {
             // locationData format: { sample: { id, sampleId, type, status }, newLocation: {...}, reason?: "...", conditionNotes?: "...", positionCoordinate?: "..." }
             // positionCoordinate can come from:
@@ -2217,8 +2236,9 @@ const StorageDashboard = () => {
           onNotification={addNotification}
         />
       ),
-    }));
-  };
+    };
+  });
+};
 
   const filteredRooms = filterData(rooms, "rooms");
   const filteredDevices = filterData(devices, "devices");

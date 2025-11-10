@@ -82,7 +82,10 @@ const setupApiMocks = (overrides = {}) => {
       callback(data.shelves);
     } else if (url.includes("/rest/storage/racks")) {
       callback(data.racks);
+    } else if (url.includes("/rest/storage/sample-items")) {
+      callback(data.samples);
     } else if (url.includes("/rest/storage/samples")) {
+      // Legacy endpoint support (for search endpoint which is still at /rest/storage/samples/search)
       callback(data.samples);
     } else if (url.includes("/rest/storage/dashboard/location-counts")) {
       callback(data.locationCounts);
@@ -383,6 +386,75 @@ describe("StorageDashboard Filter UI", () => {
 
     // Verify API was called to load initial data
     expect(getFromOpenElisServer).toHaveBeenCalled();
+  });
+
+  /**
+   * Test: Verify Samples tab displays SampleItem data structure (not Sample)
+   * This test ensures the dashboard uses SampleItem fields (sampleItemId, sampleItemExternalId, sampleAccessionNumber)
+   * instead of Sample fields (sampleId, accessionNumber)
+   * 
+   * WHY THIS WASN'T CAUGHT BEFORE:
+   * - Previous tests only checked UI presence (filters exist, tabs work)
+   * - Tests didn't verify the actual data structure or API contract
+   * - Mock data used Sample fields (id, accessionNumber) instead of SampleItem fields
+   * - Tests didn't verify table headers or displayed values matched spec
+   */
+  test("testSamplesTab_DisplaysSampleItemDataStructure", async () => {
+    jest
+      .spyOn(require("react-router-dom"), "useLocation")
+      .mockReturnValue(createMockLocation("/Storage/samples"));
+
+    const mockSampleItems = [
+      {
+        id: "10001",
+        sampleItemId: "10001",
+        sampleItemExternalId: "E2E-001-TUBE-1",
+        sampleAccessionNumber: "E2E-001",
+        type: "Serum",
+        status: "active",
+        location: "Main Laboratory > Freezer Unit 1",
+      },
+    ];
+
+    setupApiMocks({
+      metrics: mockMetrics,
+      rooms: mockRooms,
+      devices: mockDevices,
+      samples: mockSampleItems,
+      locationCounts: { rooms: 1, devices: 1, shelves: 0, racks: 0 },
+    });
+
+    renderWithIntl(<StorageDashboard />);
+
+    await screen.findByText(/Storage Management Dashboard/i);
+
+    // Click the Samples tab to activate it
+    const samplesTab = await screen.findByTestId("tab-samples");
+    fireEvent.click(samplesTab);
+
+    // Wait for the sample list to appear
+    const sampleList = await screen.findByTestId("sample-list");
+
+    // Verify API was called with correct endpoint (SampleItems, not Samples)
+    expect(getFromOpenElisServer).toHaveBeenCalledWith(
+      expect.stringContaining("/rest/storage/sample-items"),
+      expect.any(Function),
+    );
+
+    // Find the sample row within the list
+    const sampleRows = within(sampleList).getAllByTestId("sample-row");
+    expect(sampleRows.length).toBeGreaterThan(0);
+
+    // Query within the first row to verify SampleItem data structure
+    const firstRow = sampleRows[0];
+    
+    // Verify SampleItem External ID is displayed (preferred identifier)
+    const externalIdElements = within(firstRow).getAllByText("E2E-001-TUBE-1");
+    expect(externalIdElements.length).toBeGreaterThan(0);
+    
+    // Verify parent Sample accession number is displayed
+    const accessionElements = within(firstRow).getAllByText("E2E-001");
+    expect(accessionElements.length).toBeGreaterThan(0);
   });
 });
 

@@ -50,30 +50,27 @@ module.exports = defineConfig({
       on("task", {
         loadStorageTestData() {
           const { execSync } = require("child_process");
-          // Use PROJECT_ROOT constant defined at module level
-          const sqlFile = path.join(
+          // Use unified fixture loader script
+          const loaderScript = path.join(
             PROJECT_ROOT,
-            "src/test/resources/storage-test-data.sql",
+            "src/test/resources/load-test-fixtures.sh",
           );
-          // Verify file exists
-          if (!fs.existsSync(sqlFile)) {
+          // Verify script exists
+          if (!fs.existsSync(loaderScript)) {
             throw new Error(
-              `SQL file not found: ${sqlFile} (PROJECT_ROOT: ${PROJECT_ROOT})`,
+              `Fixture loader script not found: ${loaderScript} (PROJECT_ROOT: ${PROJECT_ROOT})`,
             );
           }
           try {
-            execSync(
-              `docker exec -i openelisglobal-database psql -U clinlims -d clinlims < "${sqlFile}"`,
-              {
-                stdio: "inherit",
-                cwd: PROJECT_ROOT,
-                shell: "/bin/bash",
-              },
-            );
+            execSync(`bash "${loaderScript}"`, {
+              stdio: "inherit",
+              cwd: PROJECT_ROOT,
+              shell: "/bin/bash",
+            });
             return null;
           } catch (error) {
-            console.error("Error loading storage test data:", error);
-            console.error("SQL file path:", sqlFile);
+            console.error("Error loading test fixtures:", error);
+            console.error("Loader script path:", loaderScript);
             console.error("Project root:", PROJECT_ROOT);
             return null;
           }
