@@ -1,10 +1,10 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { FormattedMessage, useIntl } from "react-intl";
 import CascadingDropdownMode from "./CascadingDropdownMode";
 import AutocompleteMode from "./AutocompleteMode";
 import BarcodeScanMode from "./BarcodeScanMode";
 import CompactLocationView from "./CompactLocationView";
-import LocationSelectorModal from "./LocationSelectorModal";
+import LocationManagementModal from "../SampleStorage/LocationManagementModal";
 import "./StorageLocationSelector.css";
 
 /**
@@ -20,6 +20,7 @@ import "./StorageLocationSelector.css";
  * - optional: boolean - can be left blank
  * - showQuickFind: boolean - Show quick-find search in compact view (results workflow)
  * - sampleInfo: object - { sampleId, type, status } - For modal display
+ * - hierarchicalPath: string - Initial hierarchical path to display (for results workflow)
  */
 const StorageLocationSelector = ({
   workflow,
@@ -29,11 +30,19 @@ const StorageLocationSelector = ({
   optional = true,
   showQuickFind = false,
   sampleInfo = null,
+  hierarchicalPath: initialHierarchicalPath = "",
 }) => {
   const intl = useIntl();
   const [selectedLocation, setSelectedLocation] = useState(null);
-  const [hierarchicalPath, setHierarchicalPath] = useState("");
+  const [hierarchicalPath, setHierarchicalPath] = useState(initialHierarchicalPath);
   const [isModalOpen, setIsModalOpen] = useState(false);
+
+  // Update hierarchicalPath when initialHierarchicalPath prop changes
+  useEffect(() => {
+    if (initialHierarchicalPath) {
+      setHierarchicalPath(initialHierarchicalPath);
+    }
+  }, [initialHierarchicalPath]);
 
   const buildHierarchicalPath = (location) => {
     if (!location) return "";
@@ -70,8 +79,11 @@ const StorageLocationSelector = ({
     setIsModalOpen(true);
   };
 
-  const handleModalSave = (location) => {
-    handleLocationChange(location);
+  const handleModalSave = (locationData) => {
+    // locationData format: { sample, newLocation, reason?, conditionNotes?, positionCoordinate? }
+    // Extract newLocation from locationData
+    const newLocation = locationData?.newLocation || locationData;
+    handleLocationChange(newLocation);
     setIsModalOpen(false);
   };
 
@@ -85,6 +97,16 @@ const StorageLocationSelector = ({
       ? { path: hierarchicalPath, position: selectedLocation?.position }
       : null;
 
+    // Convert sampleInfo format to sample format for LocationManagementModal
+    const sample = sampleInfo
+      ? {
+          id: sampleInfo.sampleId || sampleInfo.id,
+          sampleId: sampleInfo.sampleId || sampleInfo.id,
+          type: sampleInfo.type || "",
+          status: sampleInfo.status || "Active",
+        }
+      : null;
+
     return (
       <div
         className="storage-location-selector"
@@ -96,12 +118,12 @@ const StorageLocationSelector = ({
           showQuickFind={showQuickFind && workflow === "results"}
           onLocationSelect={handleLocationChange}
         />
-        <LocationSelectorModal
+        <LocationManagementModal
           open={isModalOpen}
-          sampleInfo={sampleInfo}
+          sample={sample}
           currentLocation={currentLocation}
           onClose={handleModalClose}
-          onSave={handleModalSave}
+          onConfirm={handleModalSave}
         />
       </div>
     );
