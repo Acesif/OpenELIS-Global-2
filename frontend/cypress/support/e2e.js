@@ -40,9 +40,11 @@ Cypress.on("window:before:load", (win) => {
     if (!win._cypressConsoleLogs) win._cypressConsoleLogs = [];
     win._cypressConsoleLogs.push({
       type: "log",
-      message: args.map((arg) => 
-        typeof arg === "object" ? JSON.stringify(arg, null, 2) : String(arg)
-      ).join(" "),
+      message: args
+        .map((arg) =>
+          typeof arg === "object" ? JSON.stringify(arg, null, 2) : String(arg),
+        )
+        .join(" "),
       timestamp: new Date().toISOString(),
     });
   };
@@ -52,9 +54,11 @@ Cypress.on("window:before:load", (win) => {
     if (!win._cypressConsoleLogs) win._cypressConsoleLogs = [];
     win._cypressConsoleLogs.push({
       type: "error",
-      message: args.map((arg) => 
-        typeof arg === "object" ? JSON.stringify(arg, null, 2) : String(arg)
-      ).join(" "),
+      message: args
+        .map((arg) =>
+          typeof arg === "object" ? JSON.stringify(arg, null, 2) : String(arg),
+        )
+        .join(" "),
       timestamp: new Date().toISOString(),
     });
   };
@@ -64,9 +68,11 @@ Cypress.on("window:before:load", (win) => {
     if (!win._cypressConsoleLogs) win._cypressConsoleLogs = [];
     win._cypressConsoleLogs.push({
       type: "warn",
-      message: args.map((arg) => 
-        typeof arg === "object" ? JSON.stringify(arg, null, 2) : String(arg)
-      ).join(" "),
+      message: args
+        .map((arg) =>
+          typeof arg === "object" ? JSON.stringify(arg, null, 2) : String(arg),
+        )
+        .join(" "),
       timestamp: new Date().toISOString(),
     });
   };
@@ -76,9 +82,11 @@ Cypress.on("window:before:load", (win) => {
     if (!win._cypressConsoleLogs) win._cypressConsoleLogs = [];
     win._cypressConsoleLogs.push({
       type: "info",
-      message: args.map((arg) => 
-        typeof arg === "object" ? JSON.stringify(arg, null, 2) : String(arg)
-      ).join(" "),
+      message: args
+        .map((arg) =>
+          typeof arg === "object" ? JSON.stringify(arg, null, 2) : String(arg),
+        )
+        .join(" "),
       timestamp: new Date().toISOString(),
     });
   };

@@ -36,10 +36,15 @@ describe("Location Expandable Rows", function () {
     it("should expand row when chevron icon is clicked", function () {
       // Navigate to Rooms tab
       cy.get('[data-testid="tab-rooms"]').click();
-      cy.get('button[role="tab"]').contains("Rooms").should("have.attr", "aria-selected", "true");
+      cy.get('button[role="tab"]')
+        .contains("Rooms")
+        .should("have.attr", "aria-selected", "true");
 
       // Wait for table to load
-      cy.get('[data-testid^="room-row-"]', { timeout: 10000 }).should("have.length.at.least", 1);
+      cy.get('[data-testid^="room-row-"]', { timeout: 10000 }).should(
+        "have.length.at.least",
+        1,
+      );
 
       // Find expand button (chevron icon) for first row
       cy.get('[data-testid^="room-row-"]')
@@ -52,12 +57,17 @@ describe("Location Expandable Rows", function () {
         });
 
       // Verify expanded content appears by test id
-      cy.get('[data-testid^="expanded-room-"]', { timeout: 5000 }).should("be.visible");
+      cy.get('[data-testid^="expanded-room-"]', { timeout: 5000 }).should(
+        "be.visible",
+      );
     });
 
     it("should show expanded content with correct fields for room", function () {
       cy.get('[data-testid="tab-rooms"]').click();
-      cy.get('[data-testid^="room-row-"]', { timeout: 10000 }).should("have.length.at.least", 1);
+      cy.get('[data-testid^="room-row-"]', { timeout: 10000 }).should(
+        "have.length.at.least",
+        1,
+      );
 
       // Expand first row
       cy.get('[data-testid^="room-row-"]')
@@ -78,7 +88,10 @@ describe("Location Expandable Rows", function () {
 
     it("should collapse previous row when expanding new row", function () {
       cy.get('[data-testid="tab-rooms"]').click();
-      cy.get('[data-testid^="room-row-"]', { timeout: 10000 }).should("have.length.at.least", 2);
+      cy.get('[data-testid^="room-row-"]', { timeout: 10000 }).should(
+        "have.length.at.least",
+        2,
+      );
 
       // Expand first row
       cy.get('[data-testid^="room-row-"]')
@@ -121,7 +134,10 @@ describe("Location Expandable Rows", function () {
 
     it("should collapse row when clicking same chevron again", function () {
       cy.get('[data-testid="tab-rooms"]').click();
-      cy.get('[data-testid^="room-row-"]', { timeout: 10000 }).should("have.length.at.least", 1);
+      cy.get('[data-testid^="room-row-"]', { timeout: 10000 }).should(
+        "have.length.at.least",
+        1,
+      );
 
       // Expand row
       cy.get('[data-testid^="room-row-"]')
@@ -156,7 +172,10 @@ describe("Location Expandable Rows", function () {
 
     it("should expand/collapse row with keyboard navigation", function () {
       cy.get('[data-testid="tab-rooms"]').click();
-      cy.get('[data-testid^="room-row-"]', { timeout: 10000 }).should("have.length.at.least", 1);
+      cy.get('[data-testid^="room-row-"]', { timeout: 10000 }).should(
+        "have.length.at.least",
+        1,
+      );
 
       // Focus on expand button and press Enter
       cy.get('[data-testid^="room-row-"]')
@@ -201,7 +220,10 @@ describe("Location Expandable Rows", function () {
      */
     it("should display all required fields for room", function () {
       cy.get('[data-testid="tab-rooms"]').click();
-      cy.get('[data-testid^="room-row-"]', { timeout: 10000 }).should("have.length.at.least", 1);
+      cy.get('[data-testid^="room-row-"]', { timeout: 10000 }).should(
+        "have.length.at.least",
+        1,
+      );
 
       // No need to reload - fixtures are already set up
 
@@ -228,7 +250,10 @@ describe("Location Expandable Rows", function () {
 
     it("should display all required fields for device", function () {
       cy.get('[data-testid="tab-devices"]').click();
-      cy.get('[data-testid^="device-row-"]', { timeout: 10000 }).should("have.length.at.least", 1);
+      cy.get('[data-testid^="device-row-"]', { timeout: 10000 }).should(
+        "have.length.at.least",
+        1,
+      );
 
       // No need to reload - fixtures are already set up
 
@@ -258,7 +283,10 @@ describe("Location Expandable Rows", function () {
 
     it("should display all required fields for shelf", function () {
       cy.get('[data-testid="tab-shelves"]').click();
-      cy.get('[data-testid^="shelf-row-"]', { timeout: 10000 }).should("have.length.at.least", 1);
+      cy.get('[data-testid^="shelf-row-"]', { timeout: 10000 }).should(
+        "have.length.at.least",
+        1,
+      );
 
       // No need to reload - fixtures are already set up
 
@@ -286,7 +314,10 @@ describe("Location Expandable Rows", function () {
 
     it("should display all required fields for rack", function () {
       cy.get('[data-testid="tab-racks"]').click();
-      cy.get('[data-testid^="rack-row-"]', { timeout: 10000 }).should("have.length.at.least", 1);
+      cy.get('[data-testid^="rack-row-"]', { timeout: 10000 }).should(
+        "have.length.at.least",
+        1,
+      );
 
       // No need to reload - fixtures are already set up
 
@@ -314,7 +345,10 @@ describe("Location Expandable Rows", function () {
 
     it("should display expanded content as read-only", function () {
       cy.get('[data-testid="tab-rooms"]').click();
-      cy.get('[data-testid^="room-row-"]', { timeout: 10000 }).should("have.length.at.least", 1);
+      cy.get('[data-testid^="room-row-"]', { timeout: 10000 }).should(
+        "have.length.at.least",
+        1,
+      );
 
       // Expand row
       cy.get('[data-testid^="room-row-"]')
@@ -331,7 +365,7 @@ describe("Location Expandable Rows", function () {
           // Should not contain any text inputs
           cy.get('input[type="text"]').should("not.exist");
           cy.get('input[type="number"]').should("not.exist");
-          cy.get('textarea').should("not.exist");
+          cy.get("textarea").should("not.exist");
           // Should only contain read-only text
           cy.contains("Description").should("be.visible");
         });
@@ -347,7 +381,10 @@ describe("Location Expandable Rows", function () {
      */
     it("should have proper ARIA attributes on expandable rows", function () {
       cy.get('[data-testid="tab-rooms"]').click();
-      cy.get('[data-testid^="room-row-"]', { timeout: 10000 }).should("have.length.at.least", 1);
+      cy.get('[data-testid^="room-row-"]', { timeout: 10000 }).should(
+        "have.length.at.least",
+        1,
+      );
 
       // Check ARIA attributes on expand button
       cy.get('[data-testid^="room-row-"]')
@@ -373,7 +410,10 @@ describe("Location Expandable Rows", function () {
 
     it("should support keyboard navigation for expand/collapse", function () {
       cy.get('[data-testid="tab-rooms"]').click();
-      cy.get('[data-testid^="room-row-"]', { timeout: 10000 }).should("have.length.at.least", 1);
+      cy.get('[data-testid^="room-row-"]', { timeout: 10000 }).should(
+        "have.length.at.least",
+        1,
+      );
 
       // Focus on expand button and press Space
       cy.get('[data-testid^="room-row-"]')
@@ -408,7 +448,10 @@ describe("Location Expandable Rows", function () {
 
     it("should have semantic HTML structure for screen readers", function () {
       cy.get('[data-testid="tab-rooms"]').click();
-      cy.get('[data-testid^="room-row-"]', { timeout: 10000 }).should("have.length.at.least", 1);
+      cy.get('[data-testid^="room-row-"]', { timeout: 10000 }).should(
+        "have.length.at.least",
+        1,
+      );
 
       // Expand row
       cy.get('[data-testid^="room-row-"]')
@@ -438,21 +481,25 @@ describe("Location Expandable Rows", function () {
      */
     it("should display correct sample count in rooms table", function () {
       cy.get('[data-testid="tab-rooms"]').click();
-      cy.get('[data-testid^="room-row-"]', { timeout: 10000 }).should("have.length.at.least", 1);
+      cy.get('[data-testid^="room-row-"]', { timeout: 10000 }).should(
+        "have.length.at.least",
+        1,
+      );
 
       // Verify the table header includes "Samples"
       cy.contains("th", "Samples").should("be.visible");
 
       // Verify at least one room row exists with sample count data
       // The sample count should be a number (0 or greater)
-      cy.get('[data-testid^="room-row-"]')
-        .first()
-        .should("be.visible");
+      cy.get('[data-testid^="room-row-"]').first().should("be.visible");
     });
 
     it("should display correct occupancy in devices table", function () {
       cy.get('[data-testid="tab-devices"]').click();
-      cy.get('[data-testid^="device-row-"]', { timeout: 10000 }).should("have.length.at.least", 1);
+      cy.get('[data-testid^="device-row-"]', { timeout: 10000 }).should(
+        "have.length.at.least",
+        1,
+      );
 
       // Verify the table header includes "Occupancy"
       cy.contains("th", "Occupancy").should("be.visible");
@@ -470,7 +517,10 @@ describe("Location Expandable Rows", function () {
 
     it("should display correct occupancy in shelves table", function () {
       cy.get('[data-testid="tab-shelves"]').click();
-      cy.get('[data-testid^="shelf-row-"]', { timeout: 10000 }).should("have.length.at.least", 1);
+      cy.get('[data-testid^="shelf-row-"]', { timeout: 10000 }).should(
+        "have.length.at.least",
+        1,
+      );
 
       // Verify the table header includes "Occupancy"
       cy.contains("th", "Occupancy").should("be.visible");
@@ -485,4 +535,3 @@ describe("Location Expandable Rows", function () {
     });
   });
 });
-

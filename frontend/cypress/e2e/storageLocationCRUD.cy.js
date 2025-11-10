@@ -25,10 +25,15 @@ describe("Location CRUD Operations", function () {
     it("should edit room name and description, verify update in table", function () {
       // Navigate to Rooms tab
       cy.get('[data-testid="tab-rooms"]').click();
-      cy.get('button[role="tab"]').contains("Rooms").should("have.attr", "aria-selected", "true");
+      cy.get('button[role="tab"]')
+        .contains("Rooms")
+        .should("have.attr", "aria-selected", "true");
 
       // Wait for table to load
-      cy.get('[data-testid^="room-row-"]', { timeout: 10000 }).should("have.length.at.least", 1);
+      cy.get('[data-testid^="room-row-"]', { timeout: 10000 }).should(
+        "have.length.at.least",
+        1,
+      );
 
       // Get first room row ID
       cy.get('[data-testid^="room-row-"]')
@@ -97,10 +102,14 @@ describe("Location CRUD Operations", function () {
                 .click({ force: true });
             });
 
-          cy.get('[data-testid="edit-location-menu-item"]').should("be.visible").click({ force: true });
-          
+          cy.get('[data-testid="edit-location-menu-item"]')
+            .should("be.visible")
+            .click({ force: true });
+
           // Wait for modal to open with longer timeout
-          cy.get('[data-testid="edit-location-modal"]', { timeout: 15000 }).should("be.visible");
+          cy.get('[data-testid="edit-location-modal"]', {
+            timeout: 15000,
+          }).should("be.visible");
 
           // Wait for form to be populated
           cy.get('[data-testid="edit-location-room-name"]', { timeout: 10000 })
@@ -108,19 +117,30 @@ describe("Location CRUD Operations", function () {
             .should("not.have.value", "");
 
           // Update fields
-          cy.get('[data-testid="edit-location-room-name"]').clear().type(newName);
-          cy.get('[data-testid="edit-location-room-description"]').clear().type(newDescription);
+          cy.get('[data-testid="edit-location-room-name"]')
+            .clear()
+            .type(newName);
+          cy.get('[data-testid="edit-location-room-description"]')
+            .clear()
+            .type(newDescription);
 
           // Verify code is read-only
-          cy.get('[data-testid="edit-location-room-code"]').should("have.attr", "readOnly");
+          cy.get('[data-testid="edit-location-room-code"]').should(
+            "have.attr",
+            "readOnly",
+          );
 
           // Save
-          cy.get('[data-testid="edit-location-save-button"]').should("not.be.disabled").click();
+          cy.get('[data-testid="edit-location-save-button"]')
+            .should("not.be.disabled")
+            .click();
           cy.wait("@updateRoom");
           cy.wait("@getUpdatedRoom");
 
           // Verify modal closes
-          cy.get('[data-testid="edit-location-modal"]', { timeout: 5000 }).should("not.be.visible");
+          cy.get('[data-testid="edit-location-modal"]', {
+            timeout: 5000,
+          }).should("not.be.visible");
 
           // Verify table update
           cy.wait("@refreshRooms");
@@ -133,12 +153,19 @@ describe("Location CRUD Operations", function () {
     it("should edit device type and capacity, verify active toggle reflects status", function () {
       // Navigate to Devices tab
       cy.get('[data-testid="tab-devices"]').click();
-      cy.get('button[role="tab"]').contains("Devices").should("have.attr", "aria-selected", "true");
+      cy.get('button[role="tab"]')
+        .contains("Devices")
+        .should("have.attr", "aria-selected", "true");
       cy.get('[role="tabpanel"]', { timeout: 10000 }).should("be.visible");
 
       // Wait for table
-      cy.get("table, [role='table'], .cds--data-table", { timeout: 10000 }).should("be.visible");
-      cy.get('[data-testid^="device-row-"]', { timeout: 10000 }).should("have.length.at.least", 1);
+      cy.get("table, [role='table'], .cds--data-table", {
+        timeout: 10000,
+      }).should("be.visible");
+      cy.get('[data-testid^="device-row-"]', { timeout: 10000 }).should(
+        "have.length.at.least",
+        1,
+      );
 
       // Get first device row ID
       cy.get('[data-testid^="device-row-"]')
@@ -210,17 +237,24 @@ describe("Location CRUD Operations", function () {
                 .click({ force: true });
             });
 
-          cy.get('[data-testid="edit-location-menu-item"]').should("be.visible").click({ force: true });
-          
+          cy.get('[data-testid="edit-location-menu-item"]')
+            .should("be.visible")
+            .click({ force: true });
+
           // Wait for modal to open with longer timeout
-          cy.get('[data-testid="edit-location-modal"]', { timeout: 15000 }).should("be.visible");
+          cy.get('[data-testid="edit-location-modal"]', {
+            timeout: 15000,
+          }).should("be.visible");
 
           // Wait for form
-          cy.get('[data-testid="edit-location-device-type"]', { timeout: 10000 }).should("be.visible");
+          cy.get('[data-testid="edit-location-device-type"]', {
+            timeout: 10000,
+          }).should("be.visible");
 
           // Wait for capacity field to be available
-          cy.get('[data-testid="edit-location-device-capacity"]', { timeout: 10000 })
-            .should("exist");
+          cy.get('[data-testid="edit-location-device-capacity"]', {
+            timeout: 10000,
+          }).should("exist");
 
           // Update capacity - use force since it might be covered by modal
           cy.get('[data-testid="edit-location-device-capacity"]')
@@ -231,27 +265,38 @@ describe("Location CRUD Operations", function () {
           cy.get("#device-active", { timeout: 10000 }).should("exist");
 
           // Save
-          cy.get('[data-testid="edit-location-save-button"]').should("not.be.disabled").click();
+          cy.get('[data-testid="edit-location-save-button"]')
+            .should("not.be.disabled")
+            .click();
           cy.wait("@updateDevice");
           cy.wait("@getUpdatedDevice");
 
           // Verify modal closes
-          cy.get('[data-testid="edit-location-modal"]', { timeout: 5000 }).should("not.be.visible");
+          cy.get('[data-testid="edit-location-modal"]', {
+            timeout: 5000,
+          }).should("not.be.visible");
 
           // Verify table refresh
           cy.wait("@refreshDevices");
-          cy.get(`[data-testid="device-row-${deviceId}"]`, { timeout: 10000 }).should("exist");
+          cy.get(`[data-testid="device-row-${deviceId}"]`, {
+            timeout: 10000,
+          }).should("exist");
         });
     });
 
     it("should edit shelf label and capacity, verify fields are visible", function () {
       // Navigate to Shelves tab
       cy.get('[data-testid="tab-shelves"]').click();
-      cy.get('button[role="tab"]').contains("Shelves").should("have.attr", "aria-selected", "true");
+      cy.get('button[role="tab"]')
+        .contains("Shelves")
+        .should("have.attr", "aria-selected", "true");
       cy.get('[role="tabpanel"]', { timeout: 10000 }).should("be.visible");
 
       // Wait for table
-      cy.get('[data-testid^="shelf-row-"]', { timeout: 10000 }).should("have.length.at.least", 1);
+      cy.get('[data-testid^="shelf-row-"]', { timeout: 10000 }).should(
+        "have.length.at.least",
+        1,
+      );
 
       // Get first shelf row ID
       cy.get('[data-testid^="shelf-row-"]')
@@ -316,36 +361,54 @@ describe("Location CRUD Operations", function () {
                 .click({ force: true });
             });
 
-          cy.get('[data-testid="edit-location-menu-item"]').should("be.visible").click();
-          
+          cy.get('[data-testid="edit-location-menu-item"]')
+            .should("be.visible")
+            .click();
+
           // Wait for modal to open
-          cy.get('[data-testid="edit-location-modal"]', { timeout: 10000 }).should("be.visible");
+          cy.get('[data-testid="edit-location-modal"]', {
+            timeout: 10000,
+          }).should("be.visible");
 
           // Wait for form fields to be populated
-          cy.get('[data-testid="edit-location-shelf-label"]', { timeout: 15000 })
+          cy.get('[data-testid="edit-location-shelf-label"]', {
+            timeout: 15000,
+          })
             .should("be.visible")
             .should("not.have.value", "");
 
           // Verify all shelf fields are visible
-          cy.get('[data-testid="edit-location-shelf-label"]').should("be.visible");
-          cy.get('[data-testid="edit-location-shelf-parent-device"]').should("be.visible");
-          cy.get('[data-testid="edit-location-shelf-capacity"]').should("be.visible");
+          cy.get('[data-testid="edit-location-shelf-label"]').should(
+            "be.visible",
+          );
+          cy.get('[data-testid="edit-location-shelf-parent-device"]').should(
+            "be.visible",
+          );
+          cy.get('[data-testid="edit-location-shelf-capacity"]').should(
+            "be.visible",
+          );
           cy.get('[data-testid="edit-location-shelf-active"]').should("exist");
 
           // Update fields
-          cy.get('[data-testid="edit-location-shelf-label"]').clear().type(newLabel);
+          cy.get('[data-testid="edit-location-shelf-label"]')
+            .clear()
+            .type(newLabel);
           cy.get('[data-testid="edit-location-shelf-capacity"]')
             .should("be.visible")
             .clear()
             .type("75");
 
           // Save
-          cy.get('[data-testid="edit-location-save-button"]').should("not.be.disabled").click();
+          cy.get('[data-testid="edit-location-save-button"]')
+            .should("not.be.disabled")
+            .click();
           cy.wait("@updateShelf");
           cy.wait("@getUpdatedShelf");
 
           // Verify modal closes
-          cy.get('[data-testid="edit-location-modal"]', { timeout: 5000 }).should("not.be.visible");
+          cy.get('[data-testid="edit-location-modal"]', {
+            timeout: 5000,
+          }).should("not.be.visible");
 
           // Verify table update
           cy.wait("@refreshShelves");
@@ -358,11 +421,16 @@ describe("Location CRUD Operations", function () {
     it("should edit rack dimensions and verify active toggle", function () {
       // Navigate to Racks tab
       cy.get('[data-testid="tab-racks"]').click();
-      cy.get('button[role="tab"]').contains("Racks").should("have.attr", "aria-selected", "true");
+      cy.get('button[role="tab"]')
+        .contains("Racks")
+        .should("have.attr", "aria-selected", "true");
       cy.get('[role="tabpanel"]', { timeout: 10000 }).should("be.visible");
 
       // Wait for table
-      cy.get('[data-testid^="rack-row-"]', { timeout: 10000 }).should("have.length.at.least", 1);
+      cy.get('[data-testid^="rack-row-"]', { timeout: 10000 }).should(
+        "have.length.at.least",
+        1,
+      );
 
       // Get first rack row ID
       cy.get('[data-testid^="rack-row-"]')
@@ -430,8 +498,12 @@ describe("Location CRUD Operations", function () {
                 .click({ force: true });
             });
 
-          cy.get('[data-testid="edit-location-menu-item"]').should("be.visible").click();
-          cy.get('[data-testid="edit-location-modal"]', { timeout: 10000 }).should("be.visible");
+          cy.get('[data-testid="edit-location-menu-item"]')
+            .should("be.visible")
+            .click();
+          cy.get('[data-testid="edit-location-modal"]', {
+            timeout: 10000,
+          }).should("be.visible");
 
           // Wait for rack data to load (if API call happens)
           // Don't fail if it doesn't - just wait for form fields instead
@@ -451,20 +523,32 @@ describe("Location CRUD Operations", function () {
           cy.get("#rack-active", { timeout: 10000 }).should("exist");
 
           // Update dimensions
-          cy.get('[data-testid="edit-location-rack-rows"]').should("be.visible").clear().type("10");
-          cy.get('[data-testid="edit-location-rack-columns"]').should("be.visible").clear().type("12");
+          cy.get('[data-testid="edit-location-rack-rows"]')
+            .should("be.visible")
+            .clear()
+            .type("10");
+          cy.get('[data-testid="edit-location-rack-columns"]')
+            .should("be.visible")
+            .clear()
+            .type("12");
 
           // Save
-          cy.get('[data-testid="edit-location-save-button"]').should("not.be.disabled").click();
+          cy.get('[data-testid="edit-location-save-button"]')
+            .should("not.be.disabled")
+            .click();
           cy.wait("@updateRack");
           cy.wait("@getUpdatedRack");
 
           // Verify modal closes
-          cy.get('[data-testid="edit-location-modal"]', { timeout: 5000 }).should("not.be.visible");
+          cy.get('[data-testid="edit-location-modal"]', {
+            timeout: 5000,
+          }).should("not.be.visible");
 
           // Verify table refresh
           cy.wait("@refreshRacks");
-          cy.get(`[data-testid="rack-row-${rackId}"]`, { timeout: 10000 }).should("exist");
+          cy.get(`[data-testid="rack-row-${rackId}"]`, {
+            timeout: 10000,
+          }).should("exist");
         });
     });
   });
@@ -473,10 +557,15 @@ describe("Location CRUD Operations", function () {
     it("should show error when deleting room with child devices", function () {
       // Navigate to Rooms tab
       cy.get('[data-testid="tab-rooms"]').click();
-      cy.get('button[role="tab"]').contains("Rooms").should("have.attr", "aria-selected", "true");
+      cy.get('button[role="tab"]')
+        .contains("Rooms")
+        .should("have.attr", "aria-selected", "true");
 
       // Wait for table
-      cy.get('[data-testid^="room-row-"]', { timeout: 10000 }).should("have.length.at.least", 1);
+      cy.get('[data-testid^="room-row-"]', { timeout: 10000 }).should(
+        "have.length.at.least",
+        1,
+      );
 
       // Get first room row ID
       cy.get('[data-testid^="room-row-"]')
@@ -503,37 +592,53 @@ describe("Location CRUD Operations", function () {
                 .click({ force: true });
             });
 
-          cy.get('[data-testid="delete-location-menu-item"]').should("be.visible").click();
+          cy.get('[data-testid="delete-location-menu-item"]')
+            .should("be.visible")
+            .click();
           cy.get('[data-testid="delete-location-modal"]').should("be.visible");
 
           // Wait for constraint check
           cy.wait("@checkConstraints", { timeout: 10000 });
 
           // Verify error message
-          cy.get('[data-testid="delete-location-constraints-error"]', { timeout: 10000 })
+          cy.get('[data-testid="delete-location-constraints-error"]', {
+            timeout: 10000,
+          })
             .should("be.visible")
             .and("contain.text", "devices");
 
           // Confirm button should be disabled
           cy.get("body").then(($body) => {
-            if ($body.find('[data-testid="delete-location-confirm-button"]').length > 0) {
-              cy.get('[data-testid="delete-location-confirm-button"]').should("be.disabled");
+            if (
+              $body.find('[data-testid="delete-location-confirm-button"]')
+                .length > 0
+            ) {
+              cy.get('[data-testid="delete-location-confirm-button"]').should(
+                "be.disabled",
+              );
             }
           });
 
           // Cancel
           cy.get('[data-testid="delete-location-cancel-button"]').click();
-          cy.get('[data-testid="delete-location-modal"]', { timeout: 5000 }).should("not.be.visible");
+          cy.get('[data-testid="delete-location-modal"]', {
+            timeout: 5000,
+          }).should("not.be.visible");
         });
     });
 
     it("should successfully delete location with no constraints", function () {
       // Navigate to Rooms tab
       cy.get('[data-testid="tab-rooms"]').click();
-      cy.get('button[role="tab"]').contains("Rooms").should("have.attr", "aria-selected", "true");
+      cy.get('button[role="tab"]')
+        .contains("Rooms")
+        .should("have.attr", "aria-selected", "true");
 
       // Wait for table
-      cy.get('[data-testid^="room-row-"]', { timeout: 10000 }).should("have.length.at.least", 1);
+      cy.get('[data-testid^="room-row-"]', { timeout: 10000 }).should(
+        "have.length.at.least",
+        1,
+      );
 
       // Get first room row ID
       cy.get('[data-testid^="room-row-"]')
@@ -566,34 +671,48 @@ describe("Location CRUD Operations", function () {
                 .click({ force: true });
             });
 
-          cy.get('[data-testid="delete-location-menu-item"]').should("be.visible").click();
+          cy.get('[data-testid="delete-location-menu-item"]')
+            .should("be.visible")
+            .click();
           cy.get('[data-testid="delete-location-modal"]').should("be.visible");
 
           // Wait for constraint check
           cy.wait("@checkConstraints", { timeout: 10000 });
 
           // Verify confirmation checkbox exists and button is disabled initially
-          cy.get('[data-testid="delete-location-confirmation-checkbox"]', { timeout: 10000 }).should("exist");
-          cy.get('[data-testid="delete-location-confirm-button"]').should("be.disabled");
+          cy.get('[data-testid="delete-location-confirmation-checkbox"]', {
+            timeout: 10000,
+          }).should("exist");
+          cy.get('[data-testid="delete-location-confirm-button"]').should(
+            "be.disabled",
+          );
 
           // Check confirmation checkbox
-          cy.get('[data-testid="delete-location-confirmation-checkbox"]').check({ force: true });
+          cy.get('[data-testid="delete-location-confirmation-checkbox"]').check(
+            { force: true },
+          );
 
           // Verify button is enabled
-          cy.get('[data-testid="delete-location-confirm-button"]').should("not.be.disabled");
+          cy.get('[data-testid="delete-location-confirm-button"]').should(
+            "not.be.disabled",
+          );
 
           // Confirm delete
           cy.get('[data-testid="delete-location-confirm-button"]').click();
           cy.wait("@deleteRoom");
 
           // Verify modal closes
-          cy.get('[data-testid="delete-location-modal"]', { timeout: 5000 }).should("not.be.visible");
+          cy.get('[data-testid="delete-location-modal"]', {
+            timeout: 5000,
+          }).should("not.be.visible");
 
           // Verify table refresh
           cy.wait("@refreshRooms");
 
           // Row should no longer exist
-          cy.get(`[data-testid="room-row-${roomId}"]`, { timeout: 10000 }).should("not.exist");
+          cy.get(`[data-testid="room-row-${roomId}"]`, {
+            timeout: 10000,
+          }).should("not.exist");
         });
     });
   });
