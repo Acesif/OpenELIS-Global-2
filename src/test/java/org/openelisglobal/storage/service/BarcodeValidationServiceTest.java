@@ -379,4 +379,166 @@ public class BarcodeValidationServiceTest {
         assertNotNull("Valid components should be populated", response.getValidComponents());
         assertEquals("Should have 2 components", 2, response.getValidComponents().size());
     }
+
+    /**
+     * Test barcode type detection: Location barcode (hierarchical format)
+     * T250: Dual Barcode Auto-Detection - Location format
+     */
+    @Test
+    public void testDetectLocationBarcode() {
+        // Arrange
+        String locationBarcode = "MAIN-FRZ01-SHA-RKR1";
+        
+        // Mock parsing service to return valid parsed barcode
+        ParsedBarcode parsed = new ParsedBarcode();
+        parsed.setValid(true);
+        parsed.setRoomCode("MAIN");
+        parsed.setDeviceCode("FRZ01");
+        parsed.setShelfCode("SHA");
+        parsed.setRackCode("RKR1");
+        when(barcodeParsingService.parseBarcode(locationBarcode)).thenReturn(parsed);
+        
+        // Mock DAOs to return valid entities
+        when(storageRoomDAO.findByCode("MAIN")).thenReturn(testRoom);
+        when(storageDeviceDAO.findByCode("FRZ01")).thenReturn(testDevice);
+        when(storageDeviceDAO.findByCodeAndParentRoom("FRZ01", testRoom)).thenReturn(testDevice);
+        when(storageShelfDAO.findByLabelAndParentDevice("SHA", testDevice)).thenReturn(testShelf);
+        when(storageRackDAO.findByLabelAndParentShelf("RKR1", testShelf)).thenReturn(testRack);
+
+        // Act
+        BarcodeValidationResponse response = barcodeValidationService.validateBarcode(locationBarcode);
+
+        // Assert
+        assertNotNull("Response should not be null", response);
+        assertEquals("Barcode type should be 'location'", "location", response.getBarcodeType());
+    }
+
+    /**
+     * Test barcode type detection: Sample barcode (accession number format)
+     * T250: Dual Barcode Auto-Detection - Sample format
+     */
+    @Test
+    public void testDetectSampleBarcode() {
+        // Arrange - Sample barcode formats: YY-XXXXX, S-YYYY-NNNNN, etc.
+        String sampleBarcode = "25-00001"; // Year-based format
+        
+        // Mock parsing service to return invalid parse (not hierarchical format)
+        ParsedBarcode parsed = new ParsedBarcode();
+        parsed.setValid(false);
+        parsed.setErrorMessage("Invalid barcode format");
+        when(barcodeParsingService.parseBarcode(sampleBarcode)).thenReturn(parsed);
+
+        // Act
+        BarcodeValidationResponse response = barcodeValidationService.validateBarcode(sampleBarcode);
+
+        // Assert
+        assertNotNull("Response should not be null", response);
+        assertEquals("Barcode type should be 'sample'", "sample", response.getBarcodeType());
+    }
+
+    /**
+     * Test barcode type detection: Unknown format
+     * T250: Dual Barcode Auto-Detection - Unknown format
+     */
+    @Test
+    public void testUnknownBarcodeType() {
+        // Arrange - Invalid format that doesn't match location or sample patterns
+        String unknownBarcode = "INVALID-CODE-123";
+        
+        // Mock parsing service to return invalid parse
+        ParsedBarcode parsed = new ParsedBarcode();
+        parsed.setValid(false);
+        parsed.setErrorMessage("Invalid barcode format");
+        when(barcodeParsingService.parseBarcode(unknownBarcode)).thenReturn(parsed);
+
+        // Act
+        BarcodeValidationResponse response = barcodeValidationService.validateBarcode(unknownBarcode);
+
+        // Assert
+        assertNotNull("Response should not be null", response);
+        assertEquals("Barcode type should be 'unknown'", "unknown", response.getBarcodeType());
+    }
+
+    /**
+     * Test error message format per FR-024g specification
+     * T250: Error Message Format - Includes raw barcode and parsed components
+     */
+    @Test
+    public void testErrorMessageFormatIncludesRawAndParsed() {
+        // Arrange - Barcode with valid format but invalid hierarchy (rack not found)
+        String barcode = "MAIN-FRZ01-SHA-RKR1";
+        
+        // Mock parsing service to return valid parsed barcode
+        ParsedBarcode parsed = new ParsedBarcode();
+        parsed.setValid(true);
+        parsed.setRoomCode("MAIN");
+        parsed.setDeviceCode("FRZ01");
+        parsed.setShelfCode("SHA");
+        parsed.setRackCode("RKR1");
+        when(barcodeParsingService.parseBarcode(barcode)).thenReturn(parsed);
+        
+        // Mock DAOs - room, device, shelf exist, but rack doesn't
+        when(storageRoomDAO.findByCode("MAIN")).thenReturn(testRoom);
+        when(storageDeviceDAO.findByCode("FRZ01")).thenReturn(testDevice);
+        when(storageDeviceDAO.findByCodeAndParentRoom("FRZ01", testRoom)).thenReturn(testDevice);
+        when(storageShelfDAO.findByLabel("SHA")).thenReturn(testShelf);
+        when(storageShelfDAO.findByLabelAndParentDevice("SHA", testDevice)).thenReturn(testShelf);
+        when(storageRackDAO.findByLabel("RKR1")).thenReturn(null); // Rack not found
+
+        // Act
+        BarcodeValidationResponse response = barcodeValidationService.validateBarcode(barcode);
+
+        // Assert
+        assertNotNull("Response should not be null", response);
+        assertFalse("Validation should fail", response.isValid());
+        assertNotNull("Error message should not be null", response.getErrorMessage());
+        
+        // Verify error message format: "Scanned code: {barcode} ({parsed components}). {specific error}"
+        String errorMessage = response.getErrorMessage();
+        assertTrue("Error message should start with 'Scanned code: '", 
+            errorMessage.startsWith("Scanned code: " + barcode));
+        assertTrue("Error message should include parsed components", 
+            errorMessage.contains("Room: MAIN"));
+        assertTrue("Error message should include parsed components", 
+            errorMessage.contains("Device: FRZ01"));
+        assertTrue("Error message should include parsed components", 
+            errorMessage.contains("Shelf: SHA"));
+        assertTrue("Error message should include parsed components", 
+            errorMessage.contains("Rack: RKR1"));
+        assertTrue("Error message should include specific error about rack not found", 
+            errorMessage.contains("Rack not found") || errorMessage.contains("RKR1"));
+    }
+
+    /**
+     * Test error message format when parsing fails
+     * T250: Error Message Format - Parsing failure shows only raw barcode
+     */
+    @Test
+    public void testErrorMessageFormatWhenParsingFails() {
+        // Arrange - Invalid barcode format
+        String invalidBarcode = "INVALID-CODE-123";
+        
+        // Mock parsing service to return invalid parse
+        ParsedBarcode parsed = new ParsedBarcode();
+        parsed.setValid(false);
+        parsed.setErrorMessage("Invalid barcode format");
+        when(barcodeParsingService.parseBarcode(invalidBarcode)).thenReturn(parsed);
+
+        // Act
+        BarcodeValidationResponse response = barcodeValidationService.validateBarcode(invalidBarcode);
+
+        // Assert
+        assertNotNull("Response should not be null", response);
+        assertFalse("Validation should fail", response.isValid());
+        assertNotNull("Error message should not be null", response.getErrorMessage());
+        
+        // Verify error message format: "Scanned code: {barcode}. {error}"
+        String errorMessage = response.getErrorMessage();
+        assertTrue("Error message should start with 'Scanned code: '", 
+            errorMessage.startsWith("Scanned code: " + invalidBarcode));
+        assertTrue("Error message should not include parsed components when parsing fails", 
+            !errorMessage.contains("Room:") && !errorMessage.contains("Device:"));
+        assertTrue("Error message should include format error", 
+            errorMessage.contains("Invalid barcode format") || errorMessage.contains("Invalid barcode format."));
+    }
 }

@@ -53,6 +53,26 @@ public class BarcodeValidationServiceImpl implements BarcodeValidationService {
         BarcodeValidationResponse response = new BarcodeValidationResponse();
         response.setBarcode(barcode);
 
+        // Detect barcode type first
+        String barcodeType = detectBarcodeType(barcode);
+        response.setBarcodeType(barcodeType);
+
+        // If it's a sample barcode, return early (don't validate as location)
+        if ("sample".equals(barcodeType)) {
+            response.setValid(false);
+            response.setFailedStep("BARCODE_TYPE_MISMATCH");
+            // Try to parse to get components, but use null if parsing fails
+            ParsedBarcode sampleParsed = barcodeParsingService.parseBarcode(barcode);
+            response.setErrorMessage(formatErrorMessage(barcode, sampleParsed, 
+                "Scanned barcode appears to be a sample accession number, not a location barcode"));
+            return response;
+        }
+
+        // If unknown type, still attempt validation but mark as unknown
+        if ("unknown".equals(barcodeType)) {
+            // Continue with validation attempt, but type is unknown
+        }
+
         boolean isValid = true;  // Assume valid until proven otherwise
         String firstFailedStep = null;
         String firstErrorMessage = null;
@@ -62,7 +82,7 @@ public class BarcodeValidationServiceImpl implements BarcodeValidationService {
         if (!parsed.isValid()) {
             response.setValid(false);
             response.setFailedStep("FORMAT_VALIDATION");
-            response.setErrorMessage(parsed.getErrorMessage());
+            response.setErrorMessage(formatErrorMessage(barcode, parsed, null));
             return response; // Can't continue without valid parse
         }
 
@@ -228,7 +248,8 @@ public class BarcodeValidationServiceImpl implements BarcodeValidationService {
         response.setValid(isValid);
         if (!isValid) {
             response.setFailedStep(firstFailedStep);
-            response.setErrorMessage(firstErrorMessage);
+            // Format error message with raw barcode and parsed components
+            response.setErrorMessage(formatErrorMessage(barcode, parsed, firstErrorMessage));
         }
 
         return response;
@@ -243,5 +264,126 @@ public class BarcodeValidationServiceImpl implements BarcodeValidationService {
         map.put("name", name);
         map.put("code", code);
         return map;
+    }
+
+    /**
+     * Format error message per FR-024g specification
+     * Format: "Scanned code: {barcode} ({parsed components}). {specific error}"
+     * If parsing fails: "Scanned code: {barcode}. Invalid barcode format."
+     * 
+     * @param rawBarcode The original barcode string
+     * @param parsed The parsed barcode object (may be invalid)
+     * @param specificError The specific error message
+     * @return Formatted error message
+     */
+    private String formatErrorMessage(String rawBarcode, ParsedBarcode parsed, String specificError) {
+        StringBuilder message = new StringBuilder();
+        message.append("Scanned code: ").append(rawBarcode);
+        
+        // If parsing succeeded, include parsed components
+        if (parsed != null && parsed.isValid()) {
+            message.append(" (");
+            boolean first = true;
+            
+            if (parsed.getRoomCode() != null) {
+                message.append("Room: ").append(parsed.getRoomCode());
+                first = false;
+            }
+            if (parsed.getDeviceCode() != null) {
+                if (!first) message.append(", ");
+                message.append("Device: ").append(parsed.getDeviceCode());
+                first = false;
+            }
+            if (parsed.getShelfCode() != null) {
+                if (!first) message.append(", ");
+                message.append("Shelf: ").append(parsed.getShelfCode());
+                first = false;
+            }
+            if (parsed.getRackCode() != null) {
+                if (!first) message.append(", ");
+                message.append("Rack: ").append(parsed.getRackCode());
+                first = false;
+            }
+            if (parsed.getPositionCode() != null) {
+                if (!first) message.append(", ");
+                message.append("Position: ").append(parsed.getPositionCode());
+            }
+            
+            message.append("). ");
+        } else {
+            // Parsing failed - just show raw barcode
+            message.append(". ");
+        }
+        
+        // Add specific error
+        if (specificError != null && !specificError.isEmpty()) {
+            message.append(specificError);
+        } else if (parsed != null && !parsed.isValid() && parsed.getErrorMessage() != null) {
+            message.append(parsed.getErrorMessage());
+        } else {
+            message.append("Invalid barcode format.");
+        }
+        
+        return message.toString();
+    }
+
+    /**
+     * Detect barcode type: location, sample, or unknown
+     * Location barcodes: Hierarchical format with hyphens (e.g., "MAIN-FRZ01-SHA-RKR1")
+     * Sample barcodes: Accession number formats (e.g., "25-00001", "S-2025-001")
+     * 
+     * @param barcode The barcode string to analyze
+     * @return "location", "sample", or "unknown"
+     */
+    private String detectBarcodeType(String barcode) {
+        if (barcode == null || barcode.trim().isEmpty()) {
+            return "unknown";
+        }
+
+        // Try parsing as location barcode (hierarchical format)
+        ParsedBarcode parsed = barcodeParsingService.parseBarcode(barcode);
+        if (parsed.isValid()) {
+            // Valid hierarchical format = location barcode
+            return "location";
+        }
+
+        // Check if it matches sample accession number patterns
+        // Common patterns:
+        // - YY-XXXXX (year-based with hyphen, e.g., "25-00001")
+        // - YYXXXXX (year-based without hyphen, e.g., "2500001")
+        // - S-YYYY-NNNNN (site-based, e.g., "S-2025-001")
+        // - Alphanumeric codes (e.g., "ABC123", "PROG-001")
+        
+        String trimmed = barcode.trim();
+        
+        // Pattern 1: YY-XXXXX or YYXXXXX (2-digit year + numbers)
+        if (trimmed.matches("\\d{2}-?\\d{4,}")) {
+            return "sample";
+        }
+        
+        // Pattern 2: S-YYYY-NNNNN or similar site-based formats
+        if (trimmed.matches("[A-Z]{1,4}-\\d{4}-\\d{3,}")) {
+            return "sample";
+        }
+        
+        // Pattern 3: Alphanumeric codes (letters + numbers, may have hyphens but not hierarchical)
+        // Exclude hierarchical format (multiple hyphens with specific structure)
+        if (trimmed.matches("[A-Z0-9-]+") && !trimmed.matches(".*-.*-.*-.*")) {
+            // If it's alphanumeric but doesn't match hierarchical pattern, likely a sample
+            // Hierarchical format typically has 2-4 parts separated by hyphens
+            // Sample codes are usually shorter or have different structure
+            int hyphenCount = trimmed.length() - trimmed.replace("-", "").length();
+            if (hyphenCount <= 2 && trimmed.length() <= 20) {
+                return "sample";
+            }
+        }
+        
+        // Pattern 4: Pure numeric (likely sample accession)
+        if (trimmed.matches("\\d{5,}")) {
+            return "sample";
+        }
+
+        // Default: unknown
+        return "unknown";
     }
 }

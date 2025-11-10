@@ -11,6 +11,7 @@ public class BarcodeValidationResponse {
 
     private boolean valid;
     private String barcode;
+    private String barcodeType; // 'location' | 'sample' | 'unknown'
     private String failedStep;
     private String errorMessage;
     private Map<String, Object> validComponents;
@@ -34,6 +35,14 @@ public class BarcodeValidationResponse {
 
     public void setBarcode(String barcode) {
         this.barcode = barcode;
+    }
+
+    public String getBarcodeType() {
+        return barcodeType;
+    }
+
+    public void setBarcodeType(String barcodeType) {
+        this.barcodeType = barcodeType;
     }
 
     public String getFailedStep() {
