@@ -154,4 +154,97 @@ describe("StorageLocationSelector", () => {
     const barcodeInput = screen.queryByPlaceholderText(/scan barcode/i);
     expect(barcodeInput).toBeTruthy();
   });
+
+  /**
+   * Test two-tier design: compact view + modal for orders workflow
+   */
+  test("should render compact view for orders workflow", () => {
+    const mockSampleInfo = {
+      sampleId: "S-2025-001",
+      type: "Blood Serum",
+      status: "Active",
+    };
+
+    renderWithIntl(
+      <StorageLocationSelector
+        workflow="orders"
+        sampleInfo={mockSampleInfo}
+      />,
+    );
+
+    // Should show compact location view
+    expect(screen.getByTestId("compact-location-view")).toBeTruthy();
+    // Should not show legacy dropdown mode
+    expect(screen.queryByTestId("room-dropdown")).toBeNull();
+  });
+
+  /**
+   * Test two-tier design: compact view + modal for results workflow
+   */
+  test("should render compact view with quick-find for results workflow", () => {
+    const mockSampleInfo = {
+      sampleId: "S-2025-002",
+      type: "Blood Serum",
+      status: "Active",
+    };
+
+    renderWithIntl(
+      <StorageLocationSelector
+        workflow="results"
+        sampleInfo={mockSampleInfo}
+        showQuickFind={true}
+      />,
+    );
+
+    // Should show compact location view
+    expect(screen.getByTestId("compact-location-view")).toBeTruthy();
+    // Should show quick-find search
+    expect(screen.getByTestId("quick-find-container")).toBeTruthy();
+  });
+
+  /**
+   * Test modal opens when expand button clicked in two-tier design
+   */
+  test("should open modal when expand button clicked", () => {
+    const mockSampleInfo = {
+      sampleId: "S-2025-001",
+      type: "Blood Serum",
+      status: "Active",
+    };
+
+    renderWithIntl(
+      <StorageLocationSelector
+        workflow="orders"
+        sampleInfo={mockSampleInfo}
+      />,
+    );
+
+    const expandButton = screen.getByTestId("expand-button");
+    fireEvent.click(expandButton);
+
+    // Modal should be open (LocationManagementModal)
+    expect(screen.getByTestId("location-management-modal")).toBeTruthy();
+  });
+
+  /**
+   * Test initial hierarchicalPath prop is displayed
+   */
+  test("should display initial hierarchicalPath when provided", () => {
+    const mockSampleInfo = {
+      sampleId: "S-2025-001",
+      type: "Blood Serum",
+      status: "Active",
+    };
+
+    renderWithIntl(
+      <StorageLocationSelector
+        workflow="results"
+        sampleInfo={mockSampleInfo}
+        hierarchicalPath="Main Laboratory > Freezer Unit 1"
+      />,
+    );
+
+    const pathText = screen.getByTestId("location-path-text");
+    expect(pathText.textContent).toContain("Main Laboratory > Freezer Unit 1");
+  });
 });
