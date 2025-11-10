@@ -17,6 +17,7 @@ import "./LocationSearchAndCreate.css";
  * - allowInactive: boolean - Allow inactive locations (default: false)
  * - showCreateButton: boolean - Show "Add Location" button (default: true)
  * - searchPlaceholder: string - Placeholder text for search input (default: "Search for location...")
+ * - isActive: boolean - Whether this input method is currently active (for visual feedback)
  */
 const LocationSearchAndCreate = ({
   onLocationChange,
@@ -24,6 +25,7 @@ const LocationSearchAndCreate = ({
   allowInactive = false,
   showCreateButton = true,
   searchPlaceholder,
+  isActive = false,
 }) => {
   const intl = useIntl();
   const [showCreateForm, setShowCreateForm] = useState(false);
@@ -696,7 +698,7 @@ const LocationSearchAndCreate = ({
 
   return (
     <div
-      className="location-search-and-create"
+      className={`location-search-and-create ${isActive ? "active-input-method" : ""}`}
       data-testid="location-search-and-create"
     >
       {!showCreateForm ? (

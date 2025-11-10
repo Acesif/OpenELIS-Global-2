@@ -46,8 +46,7 @@ export const useSampleStorage = () => {
             // Unexpected response format - log it for debugging
             console.error("Unexpected response format:", response);
             const errorMessage =
-              response.toString() ||
-              "Unexpected response format from server";
+              response.toString() || "Unexpected response format from server";
             setError(errorMessage);
             reject(new Error(errorMessage));
           }
@@ -93,8 +92,7 @@ export const useSampleStorage = () => {
             // Unexpected response format - log it for debugging
             console.error("Unexpected response format:", response);
             const errorMessage =
-              response.toString() ||
-              "Unexpected response format from server";
+              response.toString() || "Unexpected response format from server";
             setError(errorMessage);
             reject(new Error(errorMessage));
           }
