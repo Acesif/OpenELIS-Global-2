@@ -43,6 +43,9 @@ public class StorageShelf extends BaseObject<Integer> {
     @Column(name = "CAPACITY_LIMIT")
     private Integer capacityLimit;
 
+    @Column(name = "SHORT_CODE", length = 10)
+    private String shortCode;
+
     @Column(name = "ACTIVE", nullable = false)
     private Boolean active;
 
@@ -85,6 +88,14 @@ public class StorageShelf extends BaseObject<Integer> {
 
     public void setCapacityLimit(Integer capacityLimit) {
         this.capacityLimit = capacityLimit;
+    }
+
+    public String getShortCode() {
+        return shortCode;
+    }
+
+    public void setShortCode(String shortCode) {
+        this.shortCode = shortCode;
     }
 
     public Boolean getActive() {

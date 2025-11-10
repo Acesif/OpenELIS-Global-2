@@ -49,6 +49,9 @@ public class StorageRack extends BaseObject<Integer> {
     @Column(name = "POSITION_SCHEMA_HINT", length = 50)
     private String positionSchemaHint;
 
+    @Column(name = "SHORT_CODE", length = 10)
+    private String shortCode;
+
     @Column(name = "ACTIVE", nullable = false)
     private Boolean active;
 
@@ -148,6 +151,14 @@ public class StorageRack extends BaseObject<Integer> {
 
     public void setPositionSchemaHint(String positionSchemaHint) {
         this.positionSchemaHint = positionSchemaHint;
+    }
+
+    public String getShortCode() {
+        return shortCode;
+    }
+
+    public void setShortCode(String shortCode) {
+        this.shortCode = shortCode;
     }
 
     public Boolean getActive() {
