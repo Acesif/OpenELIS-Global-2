@@ -310,6 +310,24 @@ resources and sync to the FHIR server. Sample-to-location links will use
 Specimen.container references. This validates the architectural pattern works
 for storage entities and ensures external interoperability from the start.
 
+### User Story 4 (P4) POC Scope Breakdown
+
+**Included in POC**:
+- ✅ Metrics cards (Total Samples, Active, Disposed counts)
+- ✅ Storage Locations metric card (breakdown by type with color-coding)
+- ✅ 5 tabs (Rooms, Devices, Shelves, Racks, Samples)
+- ✅ Basic data tables (columns per tab as specified)
+- ✅ Basic filters per tab
+- ✅ Expandable rows (per Constitution V.7 amendment)
+
+**Deferred to Post-POC**:
+- ⏸️ Drill-down navigation (clicking location name to filter child levels)
+- ⏸️ CSV export functionality
+- ⏸️ Advanced occupancy color-coding (green/yellow/red)
+- ⏸️ Visual grid view for racks/positions
+
+**Rationale**: POC includes basic dashboard to validate that location data is captured correctly and can be displayed for management review. Advanced features (drill-down, export, visualization) deferred to ensure POC focuses on core tracking workflows.
+
 ## User Scenarios & Testing
 
 ### User Story 1 - Basic Storage Assignment (Priority: P1 - MVP)
@@ -779,55 +797,56 @@ samples are assigned/moved/disposed.
   processes export in background and provides download link when complete
   (within reasonable time, <1 minute for 100k records).
 
-## E2E Test Scenarios
+## E2E Test Requirements
 
-**Purpose**: E2E tests validate complete user workflows end-to-end, ensuring
-critical user journeys work correctly from a user's perspective. These tests
-focus on user-facing functionality rather than implementation details.
+**Purpose**: E2E tests validate complete user workflows end-to-end. Tests focus on happy path user journeys, NOT edge cases or validation errors (those are unit/integration tests).
 
-**Test Execution Requirements**: All E2E tests MUST follow Constitution Section
-V.5 requirements:
-- Run tests individually during development (not full suite)
-- Browser console logging enabled and reviewed after each run
-- Video recording disabled by default
-- Post-run review of console logs and screenshots required
+**Execution**: Per Constitution V.5, run tests individually during development (max 5-10 per execution). Full suite only in CI/CD.
 
-### User Story P1 - Basic Storage Assignment
+### User Story P1 - Basic Storage Assignment (3 tests)
 
-E2E tests validate the three assignment methods and key user-facing behaviors:
+- **E2E Test**: "Should assign sample via cascading dropdowns" (happy path)
+- **E2E Test**: "Should assign sample via type-ahead autocomplete" (happy path)
+- **E2E Test**: "Should assign sample via barcode scan" (happy path)
 
-- **E2E Test**: "should assign sample to location via cascading dropdowns"
-- **E2E Test**: "should assign sample to location via type-ahead autocomplete"
-- **E2E Test**: "should assign sample to location via barcode scan"
-- **E2E Test**: "should create new location inline during assignment"
-- **E2E Test**: "should display capacity warnings at 80%, 90%, 100%"
+**Edge Cases** (unit/integration tests, NOT E2E):
+- Inline location creation → unit test in StorageLocationServiceTest
+- Capacity warnings → unit test for capacity calculation logic
+- Position occupied errors → unit test in SampleStorageServiceTest
+- Inactive location errors → integration test in StorageLocationRestControllerTest
+- Validation errors → unit tests for each validation rule
 
-**Note**: Edge cases and validation scenarios (e.g., occupied position errors,
-inactive location errors) are covered by unit/integration tests, not E2E tests.
+### User Story P2A - Sample Search and Retrieval (2 tests)
 
-### User Story P2A - Sample Search and Retrieval
+- **E2E Test**: "Should search samples by accession number" (happy path)
+- **E2E Test**: "Should filter samples by storage location" (happy path)
 
-E2E tests validate search and filtering functionality:
+**Edge Cases** (unit/integration tests, NOT E2E):
+- Search performance with 100k+ samples → integration test with database seeding
+- Empty search results → unit test
+- Multiple filter criteria → unit test for filter composition logic
+- Clear filters functionality → unit test
 
-- **E2E Test**: "should search samples by accession number"
-- **E2E Test**: "should filter samples by storage room"
-- **E2E Test**: "should filter samples by multiple criteria"
-- **E2E Test**: "should clear filters and show all samples"
+### User Story P2B - Sample Movement (2 tests)
 
-**Note**: Performance testing (e.g., search with 100,000+ samples) is covered
-by integration tests, not E2E tests.
+- **E2E Test**: "Should move single sample between locations" (happy path)
+- **E2E Test**: "Should move multiple samples with auto-assigned positions" (happy path)
 
-### User Story P2B - Sample Movement
+**Edge Cases** (unit/integration tests, NOT E2E):
+- Concurrent access conflicts → integration test with transaction isolation
+- Occupied position errors → unit test in SampleStorageServiceTest
+- Disposed sample movement → unit test in SampleStorageServiceTest
+- Insufficient capacity for bulk move → unit test
+- Manual position editing during bulk move → unit test for UI validation logic
 
-E2E tests validate movement workflows:
+**Execution Command** (development):
+```bash
+# Run individual test file
+npm run cy:run -- --spec "cypress/e2e/storageAssignment.cy.js"
 
-- **E2E Test**: "should move single sample between locations"
-- **E2E Test**: "should prevent moving to occupied position"
-- **E2E Test**: "should move multiple samples with auto-assigned positions"
-- **E2E Test**: "should allow manual position editing during bulk move"
-
-**Note**: Edge cases (e.g., concurrent access conflicts, disposed sample
-movement) are covered by unit/integration tests, not E2E tests.
+# Full suite (CI/CD only)
+npm run cy:run
+```
 
 ## Requirements
 

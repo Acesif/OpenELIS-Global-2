@@ -53,9 +53,6 @@ public class StoragePosition extends BaseObject<Integer> {
     @Column(name = "COLUMN_INDEX")
     private Integer columnIndex;
 
-    @Column(name = "OCCUPIED", nullable = false)
-    private Boolean occupied;
-
     @ManyToOne(fetch = jakarta.persistence.FetchType.EAGER)
     @JoinColumn(name = "PARENT_DEVICE_ID", nullable = false)
     private StorageDevice parentDevice;
@@ -111,14 +108,6 @@ public class StoragePosition extends BaseObject<Integer> {
 
     public void setColumnIndex(Integer columnIndex) {
         this.columnIndex = columnIndex;
-    }
-
-    public Boolean getOccupied() {
-        return occupied;
-    }
-
-    public void setOccupied(Boolean occupied) {
-        this.occupied = occupied;
     }
 
     public StorageDevice getParentDevice() {

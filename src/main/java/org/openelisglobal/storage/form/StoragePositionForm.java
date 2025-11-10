@@ -18,8 +18,6 @@ public class StoragePositionForm {
 
     private Integer columnIndex;
 
-    private Boolean occupied = false;
-
     @NotBlank(message = "Parent rack ID is required")
     private String parentRackId;
 
@@ -55,14 +53,6 @@ public class StoragePositionForm {
 
     public void setColumnIndex(Integer columnIndex) {
         this.columnIndex = columnIndex;
-    }
-
-    public Boolean getOccupied() {
-        return occupied;
-    }
-
-    public void setOccupied(Boolean occupied) {
-        this.occupied = occupied;
     }
 
     public String getParentRackId() {

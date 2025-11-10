@@ -215,9 +215,6 @@
             <column name="coordinate" type="VARCHAR(50)"/>
             <column name="row_index" type="INT"/>
             <column name="column_index" type="INT"/>
-            <column name="occupied" type="BOOLEAN" defaultValueBoolean="false">
-                <constraints nullable="false"/>
-            </column>
             <column name="parent_device_id" type="numeric(10,0)">
                 <constraints nullable="false"
                     foreignKeyName="fk_position_device"

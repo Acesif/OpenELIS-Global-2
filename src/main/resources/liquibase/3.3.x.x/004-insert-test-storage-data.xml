@@ -205,7 +205,7 @@
     </changeSet>
 
     <changeSet id="storage-test-005-insert-test-positions" author="sample-storage-feature" context="test">
-        <comment>Insert test positions - mix of occupied and unoccupied</comment>
+        <comment>Insert test positions - occupancy now calculated from SampleStorageAssignment</comment>
 
         <!-- Rack R1 (8x12 grid) - First few positions -->
         <!-- Rack 30 -> Shelf 20 -> Device 10 -->
@@ -215,7 +215,6 @@
             <column name="coordinate" value="A1"/>
             <column name="row_index" value="1"/>
             <column name="column_index" value="1"/>
-            <column name="occupied" valueBoolean="false"/>
             <column name="parent_rack_id" value="30"/>
             <column name="parent_shelf_id" value="20"/>
             <column name="parent_device_id" value="10"/>
@@ -229,7 +228,6 @@
             <column name="coordinate" value="A2"/>
             <column name="row_index" value="1"/>
             <column name="column_index" value="2"/>
-            <column name="occupied" valueBoolean="false"/>
             <column name="parent_rack_id" value="30"/>
             <column name="parent_shelf_id" value="20"/>
             <column name="parent_device_id" value="10"/>
@@ -243,7 +241,6 @@
             <column name="coordinate" value="A3"/>
             <column name="row_index" value="1"/>
             <column name="column_index" value="3"/>
-            <column name="occupied" valueBoolean="true"/>
             <column name="parent_rack_id" value="30"/>
             <column name="parent_shelf_id" value="20"/>
             <column name="parent_device_id" value="10"/>
@@ -257,7 +254,6 @@
             <column name="coordinate" value="A4"/>
             <column name="row_index" value="1"/>
             <column name="column_index" value="4"/>
-            <column name="occupied" valueBoolean="false"/>
             <column name="parent_rack_id" value="30"/>
             <column name="parent_shelf_id" value="20"/>
             <column name="parent_device_id" value="10"/>
@@ -271,7 +267,6 @@
             <column name="coordinate" value="A5"/>
             <column name="row_index" value="1"/>
             <column name="column_index" value="5"/>
-            <column name="occupied" valueBoolean="false"/>
             <column name="parent_rack_id" value="30"/>
             <column name="parent_shelf_id" value="20"/>
             <column name="parent_device_id" value="10"/>
@@ -287,7 +282,6 @@
             <column name="coordinate" value="1-1"/>
             <column name="row_index" value="1"/>
             <column name="column_index" value="1"/>
-            <column name="occupied" valueBoolean="false"/>
             <column name="parent_rack_id" value="31"/>
             <column name="parent_shelf_id" value="20"/>
             <column name="parent_device_id" value="10"/>
@@ -301,7 +295,6 @@
             <column name="id" value="110"/>
             <column name="fhir_uuid" valueComputed="gen_random_uuid()"/>
             <column name="coordinate" value="RED-01"/>
-            <column name="occupied" valueBoolean="false"/>
             <column name="parent_rack_id" value="32"/>
             <column name="parent_shelf_id" value="21"/>
             <column name="parent_device_id" value="10"/>
@@ -313,7 +306,6 @@
             <column name="id" value="111"/>
             <column name="fhir_uuid" valueComputed="gen_random_uuid()"/>
             <column name="coordinate" value="RED-02"/>
-            <column name="occupied" valueBoolean="false"/>
             <column name="parent_rack_id" value="32"/>
             <column name="parent_shelf_id" value="21"/>
             <column name="parent_device_id" value="10"/>
@@ -326,7 +318,6 @@
             <column name="id" value="112"/>
             <column name="fhir_uuid" valueComputed="gen_random_uuid()"/>
             <column name="coordinate" value="RED-01"/>
-            <column name="occupied" valueBoolean="false"/>
             <column name="parent_rack_id" value="32"/>
             <column name="parent_shelf_id" value="21"/>
             <column name="parent_device_id" value="10"/>
@@ -340,7 +331,6 @@
             <column name="id" value="120"/>
             <column name="fhir_uuid" valueComputed="gen_random_uuid()"/>
             <column name="coordinate" value="X1"/>
-            <column name="occupied" valueBoolean="false"/>
             <column name="parent_rack_id" value="33"/>
             <column name="parent_shelf_id" value="22"/>
             <column name="parent_device_id" value="11"/>
@@ -350,19 +340,18 @@
     </changeSet>
 
     <changeSet id="storage-test-006-insert-additional-positions-for-capacity" author="sample-storage-feature" context="test">
-        <comment>Insert additional positions for capacity testing (80% threshold)</comment>
+        <comment>Insert additional positions for capacity testing - occupancy now calculated from SampleStorageAssignment</comment>
 
         <!-- Add 80 more positions to Rack R2 to test capacity warnings -->
         <!-- Rack 31 -> Shelf 20 -> Device 10 -->
         <sql><![CDATA[
-            INSERT INTO storage_position (id, fhir_uuid, coordinate, row_index, column_index, occupied, parent_rack_id, parent_shelf_id, parent_device_id, sys_user_id, last_updated)
+            INSERT INTO storage_position (id, fhir_uuid, coordinate, row_index, column_index, parent_rack_id, parent_shelf_id, parent_device_id, sys_user_id, last_updated)
             SELECT
                 200 + row_num * 10 + col_num,
                 gen_random_uuid(),
                 row_num || '-' || col_num,
                 row_num,
                 col_num,
-                CASE WHEN (row_num * 10 + col_num) <= 80 THEN true ELSE false END,
                 31,
                 20,
                 10,

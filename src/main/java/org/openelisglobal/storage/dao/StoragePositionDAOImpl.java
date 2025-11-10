@@ -35,7 +35,10 @@ public class StoragePositionDAOImpl extends BaseDAOImpl<StoragePosition, Integer
     @Transactional(readOnly = true)
     public int countOccupied(Integer rackId) {
         try {
-            String hql = "SELECT COUNT(*) FROM StoragePosition p WHERE p.parentRack.id = :rackId AND p.occupied = true";
+            // Count SampleStorageAssignment records where locationType='rack' and locationId matches rackId
+            // This reflects actual sample assignments (source of truth) instead of StoragePosition.occupied flag
+            String hql = "SELECT COUNT(*) FROM SampleStorageAssignment ssa "
+                    + "WHERE ssa.locationType = 'rack' AND ssa.locationId = :rackId";
             Query<Long> query = entityManager.unwrap(Session.class).createQuery(hql, Long.class);
             query.setParameter("rackId", rackId);
             Long count = query.uniqueResult();
@@ -49,9 +52,17 @@ public class StoragePositionDAOImpl extends BaseDAOImpl<StoragePosition, Integer
     @Transactional(readOnly = true)
     public int countOccupiedInDevice(Integer deviceId) {
         try {
-            // Updated to use direct parent_device_id relationship
-            String hql = "SELECT COUNT(*) FROM StoragePosition p "
-                    + "WHERE p.parentDevice.id = :deviceId AND p.occupied = true";
+            // Count SampleStorageAssignment records that match device hierarchy:
+            // - locationType='device' AND locationId=deviceId OR
+            // - locationType='shelf' AND locationId IN (shelves in device) OR
+            // - locationType='rack' AND locationId IN (racks in shelves in device)
+            // This reflects actual sample assignments (source of truth) instead of StoragePosition.occupied flag
+            String hql = "SELECT COUNT(*) FROM SampleStorageAssignment ssa "
+                    + "WHERE (ssa.locationType = 'device' AND ssa.locationId = :deviceId) "
+                    + "OR (ssa.locationType = 'shelf' AND ssa.locationId IN "
+                    + "(SELECT s.id FROM StorageShelf s WHERE s.parentDevice.id = :deviceId)) "
+                    + "OR (ssa.locationType = 'rack' AND ssa.locationId IN "
+                    + "(SELECT r.id FROM StorageRack r WHERE r.parentShelf.parentDevice.id = :deviceId))";
             Query<Long> query = entityManager.unwrap(Session.class).createQuery(hql, Long.class);
             query.setParameter("deviceId", deviceId);
             Long count = query.uniqueResult();
@@ -66,12 +77,14 @@ public class StoragePositionDAOImpl extends BaseDAOImpl<StoragePosition, Integer
     @Transactional(readOnly = true)
     public int countOccupiedInShelf(Integer shelfId) {
         try {
-            // Count all occupied positions in racks that belong to this shelf
-            // Positions can be directly under shelf (no rack) or in racks under shelf
-            String hql = "SELECT COUNT(*) FROM StoragePosition p "
-                    + "WHERE ((p.parentShelf.id = :shelfId AND p.parentRack IS NULL) OR "
-                    + "(p.parentRack.id IN (SELECT r.id FROM StorageRack r WHERE r.parentShelf.id = :shelfId))) "
-                    + "AND p.occupied = true";
+            // Count SampleStorageAssignment records that match shelf hierarchy:
+            // - locationType='shelf' AND locationId=shelfId OR
+            // - locationType='rack' AND locationId IN (racks in shelf)
+            // This reflects actual sample assignments (source of truth) instead of StoragePosition.occupied flag
+            String hql = "SELECT COUNT(*) FROM SampleStorageAssignment ssa "
+                    + "WHERE (ssa.locationType = 'shelf' AND ssa.locationId = :shelfId) "
+                    + "OR (ssa.locationType = 'rack' AND ssa.locationId IN "
+                    + "(SELECT r.id FROM StorageRack r WHERE r.parentShelf.id = :shelfId))";
             Query<Long> query = entityManager.unwrap(Session.class).createQuery(hql, Long.class);
             query.setParameter("shelfId", shelfId);
             Long count = query.uniqueResult();

@@ -12,5 +12,6 @@
   <include relativeToChangelogFile="true" file="004-insert-test-storage-data.xml" context="test"/>
   <include relativeToChangelogFile="true" file="005-add-storage-menu-item.xml"/>
   <include relativeToChangelogFile="true" file="006-add-storage-menu-localization.xml"/>
+  <include relativeToChangelogFile="true" file="007-remove-occupied-column.xml"/>
 
 </databaseChangeLog>

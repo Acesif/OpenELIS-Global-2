@@ -37,7 +37,7 @@ DELETE FROM storage_room WHERE id BETWEEN 1 AND 100;
 INSERT INTO storage_room (id, fhir_uuid, name, code, description, active, sys_user_id, last_updated) VALUES
 (1, gen_random_uuid(), 'Main Laboratory', 'MAIN', 'Primary laboratory storage facility', true, 1, CURRENT_TIMESTAMP),
 (2, gen_random_uuid(), 'Secondary Laboratory', 'SEC', 'Secondary storage area', true, 1, CURRENT_TIMESTAMP),
-(3, gen_random_uuid(), 'Inactive Room', 'INACTIVE', 'Deactivated room for testing inactive validation', false, 1, CURRENT_TIMESTAMP);
+(3, gen_random_uuid(), 'Inactive Room', 'INACTIVE', 'Deactivated room for testing inactive validation', 1, CURRENT_TIMESTAMP);
 
 -- Insert Test Devices
 -- Each room has unique devices with descriptive names
@@ -49,7 +49,7 @@ INSERT INTO storage_device (id, fhir_uuid, name, code, type, temperature_setting
 (12, gen_random_uuid(), 'Secondary Lab Cabinet Unit 1', 'SEC-CAB01', 'cabinet', NULL, NULL, true, 2, 1, CURRENT_TIMESTAMP),
 (14, gen_random_uuid(), 'Secondary Lab Freezer Unit 1', 'SEC-FRZ01', 'freezer', -20.0, 200, true, 2, 1, CURRENT_TIMESTAMP),
 -- Inactive Room device
-(13, gen_random_uuid(), 'Inactive Freezer', 'INACTIVE-FRZ', 'freezer', NULL, NULL, false, 3, 1, CURRENT_TIMESTAMP);
+(13, gen_random_uuid(), 'Inactive Freezer', 'INACTIVE-FRZ', 'freezer', NULL, NULL, 3, 1, CURRENT_TIMESTAMP);
 
 -- Insert Test Shelves
 -- Each device has uniquely named shelves
@@ -88,49 +88,49 @@ INSERT INTO storage_rack (id, fhir_uuid, label, rows, columns, position_schema_h
 -- Rack 32: Main Freezer Shelf-B Rack 1 -> Shelf 21 -> Device 10
 -- Rack 33: Main Refrigerator Shelf-1 Rack 1 -> Shelf 22 -> Device 11
 -- Rack 34: Secondary Cabinet Shelf-1 Rack 1 -> Shelf 23 -> Device 12
-INSERT INTO storage_position (id, fhir_uuid, coordinate, row_index, column_index, occupied, parent_device_id, parent_shelf_id, parent_rack_id, sys_user_id, last_updated) VALUES
+INSERT INTO storage_position (id, fhir_uuid, coordinate, row_index, column_index, parent_device_id, parent_shelf_id, parent_rack_id, sys_user_id, last_updated) VALUES
 -- Main Freezer Shelf-A Rack 1 (rack 30) - 8x12 grid positions
 -- Shelf 20, Device 10
-(100, gen_random_uuid(), 'A1', 1, 1, false, 10, 20, 30, 1, CURRENT_TIMESTAMP),
-(101, gen_random_uuid(), 'A2', 1, 2, false, 10, 20, 30, 1, CURRENT_TIMESTAMP),
-(102, gen_random_uuid(), 'A3', 1, 3, true, 10, 20, 30, 1, CURRENT_TIMESTAMP), -- Occupied for testing
-(103, gen_random_uuid(), 'A4', 1, 4, false, 10, 20, 30, 1, CURRENT_TIMESTAMP),
-(104, gen_random_uuid(), 'A5', 1, 5, false, 10, 20, 30, 1, CURRENT_TIMESTAMP),
-(105, gen_random_uuid(), 'A6', 1, 6, false, 10, 20, 30, 1, CURRENT_TIMESTAMP),
-(106, gen_random_uuid(), 'A7', 1, 7, false, 10, 20, 30, 1, CURRENT_TIMESTAMP),
-(107, gen_random_uuid(), 'A8', 1, 8, false, 10, 20, 30, 1, CURRENT_TIMESTAMP),
+(100, gen_random_uuid(), 'A1', 1, 1, 10, 20, 30, 1, CURRENT_TIMESTAMP),
+(101, gen_random_uuid(), 'A2', 1, 2, 10, 20, 30, 1, CURRENT_TIMESTAMP),
+(102, gen_random_uuid(), 'A3', 1, 3, 10, 20, 30, 1, CURRENT_TIMESTAMP),
+(103, gen_random_uuid(), 'A4', 1, 4, 10, 20, 30, 1, CURRENT_TIMESTAMP),
+(104, gen_random_uuid(), 'A5', 1, 5, 10, 20, 30, 1, CURRENT_TIMESTAMP),
+(105, gen_random_uuid(), 'A6', 1, 6, 10, 20, 30, 1, CURRENT_TIMESTAMP),
+(106, gen_random_uuid(), 'A7', 1, 7, 10, 20, 30, 1, CURRENT_TIMESTAMP),
+(107, gen_random_uuid(), 'A8', 1, 8, 10, 20, 30, 1, CURRENT_TIMESTAMP),
 
 -- Main Freezer Shelf-A Rack 2 (rack 31) - 10x10 grid, first position
 -- Shelf 20, Device 10
-(200, gen_random_uuid(), '1-1', 1, 1, false, 10, 20, 31, 1, CURRENT_TIMESTAMP),
+(200, gen_random_uuid(), '1-1', 1, 1, 10, 20, 31, 1, CURRENT_TIMESTAMP),
 
 -- Main Freezer Shelf-B Rack 1 (rack 32) - flexible positions (no grid)
 -- Shelf 21, Device 10
-(110, gen_random_uuid(), 'RED-01', NULL, NULL, false, 10, 21, 32, 1, CURRENT_TIMESTAMP),
-(111, gen_random_uuid(), 'RED-02', NULL, NULL, false, 10, 21, 32, 1, CURRENT_TIMESTAMP),
-(112, gen_random_uuid(), 'RED-03', NULL, NULL, false, 10, 21, 32, 1, CURRENT_TIMESTAMP),
+(110, gen_random_uuid(), 'RED-01', NULL, NULL, 10, 21, 32, 1, CURRENT_TIMESTAMP),
+(111, gen_random_uuid(), 'RED-02', NULL, NULL, 10, 21, 32, 1, CURRENT_TIMESTAMP),
+(112, gen_random_uuid(), 'RED-03', NULL, NULL, 10, 21, 32, 1, CURRENT_TIMESTAMP),
 
 -- Main Refrigerator Shelf-1 Rack 1 (rack 33) - positions
 -- Shelf 22, Device 11
-(120, gen_random_uuid(), 'X1', NULL, NULL, false, 11, 22, 33, 1, CURRENT_TIMESTAMP),
-(121, gen_random_uuid(), 'A1', 1, 1, false, 11, 22, 33, 1, CURRENT_TIMESTAMP),
+(120, gen_random_uuid(), 'X1', NULL, NULL, 11, 22, 33, 1, CURRENT_TIMESTAMP),
+(121, gen_random_uuid(), 'A1', 1, 1, 11, 22, 33, 1, CURRENT_TIMESTAMP),
 
 -- Secondary Cabinet Shelf-1 Rack 1 (rack 34) - positions
 -- Shelf 23, Device 12
-(130, gen_random_uuid(), 'A1', 1, 1, false, 12, 23, 34, 1, CURRENT_TIMESTAMP),
-(131, gen_random_uuid(), 'A2', 1, 2, false, 12, 23, 34, 1, CURRENT_TIMESTAMP),
-(132, gen_random_uuid(), 'A3', 1, 3, false, 12, 23, 34, 1, CURRENT_TIMESTAMP);
+(130, gen_random_uuid(), 'A1', 1, 1, 12, 23, 34, 1, CURRENT_TIMESTAMP),
+(131, gen_random_uuid(), 'A2', 1, 2, 12, 23, 34, 1, CURRENT_TIMESTAMP),
+(132, gen_random_uuid(), 'A3', 1, 3, 12, 23, 34, 1, CURRENT_TIMESTAMP);
 
--- Add more positions to Main Freezer Shelf-A Rack 2 (rack 31) for capacity testing (80 occupied out of 100 = 80%)
+-- Add more positions to Main Freezer Shelf-A Rack 2 (rack 31) for capacity testing
+-- Note: Occupancy is now calculated from SampleStorageAssignment records
 -- Shelf 20, Device 10
-INSERT INTO storage_position (id, fhir_uuid, coordinate, row_index, column_index, occupied, parent_device_id, parent_shelf_id, parent_rack_id, sys_user_id, last_updated)
+INSERT INTO storage_position (id, fhir_uuid, coordinate, row_index, column_index, parent_device_id, parent_shelf_id, parent_rack_id, sys_user_id, last_updated)
 SELECT 
     200 + (row_num - 1) * 10 + col_num,
     gen_random_uuid(),
     row_num || '-' || col_num,
     row_num,
     col_num,
-    CASE WHEN ((row_num - 1) * 10 + col_num) <= 80 THEN true ELSE false END,
     10,  -- parent_device_id
     20,  -- parent_shelf_id
     31,  -- parent_rack_id
@@ -162,19 +162,20 @@ UNION ALL
 SELECT 'Positions', COUNT(*) FROM storage_position;
 
 \echo ''
-\echo 'Sample Hierarchy:'
+\echo 'Sample Hierarchy (Occupancy from SampleStorageAssignment):'
 SELECT 
     r.code AS room_code,
     d.code AS device_code,
     s.label AS shelf_label,
     k.label AS rack_label,
     COUNT(p.id) AS position_count,
-    SUM(CASE WHEN p.occupied THEN 1 ELSE 0 END) AS occupied_count
+    COUNT(DISTINCT CASE WHEN ssa.location_type = 'rack' AND ssa.location_id = k.id THEN ssa.sample_id END) AS occupied_count_from_assignments
 FROM storage_room r
 LEFT JOIN storage_device d ON d.parent_room_id = r.id
 LEFT JOIN storage_shelf s ON s.parent_device_id = d.id
 LEFT JOIN storage_rack k ON k.parent_shelf_id = s.id
 LEFT JOIN storage_position p ON p.parent_rack_id = k.id
+LEFT JOIN sample_storage_assignment ssa ON (ssa.location_type = 'rack' AND ssa.location_id = k.id)
 GROUP BY r.code, d.code, s.label, k.label
 ORDER BY r.code, d.code, s.label, k.label;
 
@@ -508,7 +509,7 @@ BEGIN
   VALUES
   (1004, 1005, NULL, NULL, NULL, 34, 'rack', 'A1', CURRENT_TIMESTAMP, 1, 'Initial assignment', CURRENT_TIMESTAMP),
   (1005, 1006, NULL, NULL, NULL, 34, 'rack', 'A2', CURRENT_TIMESTAMP, 1, 'Initial assignment', CURRENT_TIMESTAMP),
-  (1006, 1007, NULL, NULL, NULL, 31, 'rack', '1-1', CURRENT_TIMESTAMP, 1, 'Initial assignment', CURRENT_TIMESTAMP),
+  (1006, 1007, NULL, NULL, NULL, 30, 'rack', 'A6', CURRENT_TIMESTAMP, 1, 'Initial assignment', CURRENT_TIMESTAMP),
   (1007, 1008, NULL, NULL, NULL, 34, 'rack', 'A3', CURRENT_TIMESTAMP, 1, 'Initial assignment', CURRENT_TIMESTAMP),
   (1008, 1009, NULL, NULL, NULL, 33, 'rack', 'A1', CURRENT_TIMESTAMP, 1, 'Initial assignment', CURRENT_TIMESTAMP)
   ON CONFLICT (id) DO UPDATE SET

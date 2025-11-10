@@ -4,10 +4,13 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import java.util.List;
+import java.util.Map;
 import javax.sql.DataSource;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+import static org.junit.Assert.*;
 import org.openelisglobal.BaseWebContextSensitiveTest;
 import org.openelisglobal.storage.form.StorageDeviceForm;
 import org.openelisglobal.storage.form.StoragePositionForm;
@@ -1142,5 +1145,70 @@ public class StorageLocationRestControllerTest extends BaseWebContextSensitiveTe
         // Then: Expect successful deletion (confirmation handled in frontend)
         mockMvc.perform(delete("/rest/storage/rooms/" + roomId).contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isNoContent());
+    }
+
+    // ========== Occupancy Counting Fix Tests ==========
+
+    /**
+     * Test that occupancy counting reflects actual SampleStorageAssignment records,
+     * not StoragePosition.occupied flag. This verifies the fix for the bug where
+     * occupancy showed incorrect values (73) instead of actual assignment count (9).
+     */
+    @Test
+    public void testOccupancyCount_MatchesActualAssignments() throws Exception {
+        // Given: Create storage hierarchy
+        String roomId = createRoomAndGetId("Occupancy Test Room", "OCC-TEST-ROOM");
+        String deviceId = createDeviceAndGetId("Occupancy Test Device", "OCC-DEV", "freezer", roomId);
+        String shelfId = createShelfAndGetId("Occupancy Test Shelf", deviceId);
+        String rack1Id = createRackAndGetId("Rack 1", 8, 12, shelfId);
+        String rack2Id = createRackAndGetId("Rack 2", 10, 10, shelfId);
+
+        // Create 5 sample assignments to rack 1
+        for (int i = 1; i <= 5; i++) {
+            Integer sampleId = 10000 + i;
+            jdbcTemplate.update(
+                    "INSERT INTO sample (id, accession_number, fhir_uuid, domain, status_id, entered_date, received_date, lastupdated, is_confirmation) "
+                            + "VALUES (?, 'TEST-SAMPLE-' || ?, gen_random_uuid(), 'H', 1, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, false) "
+                            + "ON CONFLICT (id) DO NOTHING",
+                    sampleId, i);
+            jdbcTemplate.update(
+                    "INSERT INTO sample_storage_assignment (id, sample_id, location_id, location_type, position_coordinate, assigned_date, assigned_by_user_id, notes, last_updated) "
+                            + "VALUES (?, ?, ?::integer, 'rack', 'A' || ?, CURRENT_TIMESTAMP, 1, 'Test assignment', CURRENT_TIMESTAMP) "
+                            + "ON CONFLICT (id) DO UPDATE SET location_id = EXCLUDED.location_id",
+                    1000 + i, sampleId, rack1Id, i);
+        }
+
+        // Create 4 sample assignments to rack 2
+        for (int i = 1; i <= 4; i++) {
+            Integer sampleId = 10005 + i;
+            jdbcTemplate.update(
+                    "INSERT INTO sample (id, accession_number, fhir_uuid, domain, status_id, entered_date, received_date, lastupdated, is_confirmation) "
+                            + "VALUES (?, 'TEST-SAMPLE-' || ?, gen_random_uuid(), 'H', 1, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, false) "
+                            + "ON CONFLICT (id) DO NOTHING",
+                    sampleId, 5 + i);
+            jdbcTemplate.update(
+                    "INSERT INTO sample_storage_assignment (id, sample_id, location_id, location_type, position_coordinate, assigned_date, assigned_by_user_id, notes, last_updated) "
+                            + "VALUES (?, ?, ?::integer, 'rack', '1-' || ?, CURRENT_TIMESTAMP, 1, 'Test assignment', CURRENT_TIMESTAMP) "
+                            + "ON CONFLICT (id) DO UPDATE SET location_id = EXCLUDED.location_id",
+                    1005 + i, sampleId, rack2Id, i);
+        }
+
+        // When: Get shelves for API (which includes occupiedCount)
+        List<Map<String, Object>> shelves = storageLocationService.getShelvesForAPI(null);
+
+        // Then: Find our test shelf and verify occupancy count matches assignments (5 + 4 = 9)
+        Map<String, Object> testShelf = null;
+        for (Map<String, Object> shelf : shelves) {
+            if (shelfId.equals(shelf.get("id").toString())) {
+                testShelf = shelf;
+                break;
+            }
+        }
+
+        assertNotNull("Test shelf should be found", testShelf);
+        Integer occupiedCount = (Integer) testShelf.get("occupiedCount");
+        assertNotNull("Occupied count should not be null", occupiedCount);
+        assertEquals("Occupancy should match actual assignments (5 in rack 1 + 4 in rack 2 = 9)", 9,
+                occupiedCount.intValue());
     }
 }

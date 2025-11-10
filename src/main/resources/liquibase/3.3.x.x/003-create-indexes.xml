@@ -137,20 +137,8 @@
         </rollback>
     </changeSet>
 
-    <!-- Position Occupancy Query Index -->
-    <changeSet id="storage-013-create-position-occupancy-index" author="sample-storage-feature">
-        <preConditions onFail="MARK_RAN">
-            <not>
-                <indexExists indexName="idx_position_occupied" tableName="storage_position"/>
-            </not>
-        </preConditions>
-        <createIndex indexName="idx_position_occupied" tableName="storage_position">
-            <column name="parent_rack_id"/>
-            <column name="occupied"/>
-        </createIndex>
-        <rollback>
-            <dropIndex indexName="idx_position_occupied" tableName="storage_position"/>
-        </rollback>
-    </changeSet>
+    <!-- Position Occupancy Query Index - REMOVED -->
+    <!-- Occupancy is now calculated dynamically from SampleStorageAssignment records -->
+    <!-- Index removed in changeset storage-014-remove-occupied-column -->
 
 </databaseChangeLog>

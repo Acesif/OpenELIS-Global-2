@@ -18,13 +18,18 @@ import org.openelisglobal.common.log.LogEvent;
 import org.openelisglobal.dataexchange.fhir.exception.FhirLocalPersistingException;
 import org.openelisglobal.dataexchange.fhir.service.FhirPersistanceService;
 import org.openelisglobal.spring.util.SpringContext;
+import org.openelisglobal.storage.dao.SampleStorageAssignmentDAO;
 import org.openelisglobal.storage.valueholder.*;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class StorageLocationFhirTransform {
+
+    @Autowired
+    private SampleStorageAssignmentDAO sampleStorageAssignmentDAO;
 
     private static final String OPENELIS_STORAGE_CODE_SYSTEM = "http://openelis.org/storage-location-code";
     private static final String MCSD_PROFILE = "http://ihe.net/fhir/StructureDefinition/IHE.mCSD.Location";
@@ -303,8 +308,11 @@ public class StorageLocationFhirTransform {
         location.setPartOf(partOf);
 
         // Extensions: Occupancy and grid position
+        // Calculate occupied dynamically from SampleStorageAssignment (source of truth)
+        // instead of using StoragePosition.occupied flag
+        boolean isOccupied = calculatePositionOccupied(position);
         Extension occExt = new Extension(EXT_POSITION_OCCUPANCY);
-        occExt.setValue(new BooleanType(position.getOccupied() != null && position.getOccupied()));
+        occExt.setValue(new BooleanType(isOccupied));
         location.addExtension(occExt);
 
         if (position.getRowIndex() != null) {
@@ -322,6 +330,24 @@ public class StorageLocationFhirTransform {
         location.getMeta().addTag(STORAGE_HIERARCHY_TAG_SYSTEM, "position", "Position");
 
         return location;
+    }
+
+    /**
+     * Calculate if a StoragePosition is occupied by checking SampleStorageAssignment records.
+     * This replaces the StoragePosition.occupied flag which is no longer maintained.
+     * 
+     * @param position StoragePosition to check
+     * @return true if there's a SampleStorageAssignment matching this position, false otherwise
+     */
+    @Transactional(readOnly = true)
+    private boolean calculatePositionOccupied(StoragePosition position) {
+        try {
+            return sampleStorageAssignmentDAO.isPositionOccupied(position);
+        } catch (Exception e) {
+            LogEvent.logError("Error calculating position occupancy: " + e.getMessage(), e);
+            // On error, return false (position appears unoccupied)
+            return false;
+        }
     }
 
     private String capitalizeFirst(String str) {

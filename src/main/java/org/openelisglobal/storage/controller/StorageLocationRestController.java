@@ -46,6 +46,9 @@ public class StorageLocationRestController extends BaseRestController {
     @Autowired
     private StorageDeviceDAO storageDeviceDAO;
 
+    @Autowired
+    private SampleStorageAssignmentDAO sampleStorageAssignmentDAO;
+
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     // ========== Room Endpoints ==========
@@ -639,7 +642,6 @@ public class StorageLocationRestController extends BaseRestController {
             position.setCoordinate(form.getCoordinate());
             position.setRowIndex(form.getRowIndex());
             position.setColumnIndex(form.getColumnIndex());
-            position.setOccupied(form.getOccupied() != null ? form.getOccupied() : false);
             position.setFhirUuid(UUID.randomUUID());
             position.setSysUserId("1"); // Default system user for REST API
 
@@ -688,11 +690,16 @@ public class StorageLocationRestController extends BaseRestController {
                 Integer rackIdInt = Integer.parseInt(rackId);
                 positions = storageLocationService.getPositionsByRack(rackIdInt);
                 // Filter by occupied status if specified
+                // Calculate occupied dynamically from SampleStorageAssignment (source of truth)
                 if (occupied != null) {
-                    positions.removeIf(p -> p.getOccupied() != occupied);
+                    positions.removeIf(p -> sampleStorageAssignmentDAO.isPositionOccupied(p) != occupied);
                 }
             } else {
                 positions = storageLocationService.getAllPositions();
+                // Filter by occupied status if specified
+                if (occupied != null) {
+                    positions.removeIf(p -> sampleStorageAssignmentDAO.isPositionOccupied(p) != occupied);
+                }
             }
 
             List<Map<String, Object>> response = new ArrayList<>();
@@ -921,7 +928,9 @@ public class StorageLocationRestController extends BaseRestController {
             map.put("coordinate", position.getCoordinate());
             map.put("rowIndex", position.getRowIndex());
             map.put("columnIndex", position.getColumnIndex());
-            map.put("occupied", position.getOccupied());
+            // Calculate occupied dynamically from SampleStorageAssignment (source of truth)
+            // instead of using StoragePosition.occupied flag
+            map.put("occupied", sampleStorageAssignmentDAO.isPositionOccupied(position));
             map.put("fhirUuid", position.getFhirUuidAsString());
 
             // Add parent relationships for hierarchy display

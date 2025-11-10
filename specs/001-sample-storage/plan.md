@@ -11,8 +11,8 @@ biological samples through a flexible storage hierarchy (Room → Device → She
 Rack → Position). Positions can have 2-5 levels (minimum: room+device, maximum:
 room+device+shelf+rack+position). POC scope includes core tracking workflows:
 assignment (P1), search/retrieval (P2A), movement (P2B), and basic Storage
-Dashboard (P4 - metrics cards, tabs, data tables). Defers disposal workflow (P3)
-and advanced dashboard features (drill-down navigation, CSV export) to post-POC
+Dashboard (P4 - see spec.md POC Scope Matrix for included/deferred features).
+Defers disposal workflow (P3) and advanced dashboard features to post-POC
 iterations.
 
 **Technical Approach**: Leverage existing OpenELIS infrastructure (5-layer
@@ -70,7 +70,7 @@ updated capacity calculator implementation in Phase 2 below.
 **Storage**: PostgreSQL 14+ (existing OpenELIS database)  
 **Testing**:
 
-- Backend: JUnit 5 + Mockito (unit/integration)
+- Backend: JUnit 4 (4.13.1) + Mockito 2.21.0 (unit/integration)
 - Frontend: Jest + React Testing Library (unit), Cypress 12.17.3 (E2E - existing
   OpenELIS framework)
 - FHIR: Resource validation against R4 profiles
