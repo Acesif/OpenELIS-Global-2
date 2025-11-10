@@ -5,6 +5,7 @@ import {
   fireEvent,
   within,
   waitFor,
+  act,
 } from "@testing-library/react";
 import "@testing-library/jest-dom";
 import { IntlProvider } from "react-intl";
@@ -1339,5 +1340,191 @@ describe("StorageDashboard Capacity Display", () => {
     // Check that progress bar is displayed when capacity is calculated
     const progressBars = screen.queryAllByRole("progressbar");
     expect(progressBars.length).toBeGreaterThan(0);
+  });
+
+  /**
+   * T271: Test Label Management modal opens from overflow menu
+   */
+  test("testLabelManagementModalOpens_FromDeviceOverflowMenu", async () => {
+    jest
+      .spyOn(require("react-router-dom"), "useLocation")
+      .mockReturnValue(createMockLocation("/Storage/devices"));
+    const mockDevices = [
+      {
+        id: 10,
+        name: "Freezer Unit 1",
+        code: "FRZ01",
+        type: "device",
+        active: true,
+      },
+    ];
+
+    setupApiMocks({
+      metrics: mockMetrics,
+      rooms: mockRooms,
+      devices: mockDevices,
+      locationCounts: { rooms: 1, devices: 1, shelves: 0, racks: 0 },
+    });
+
+    renderWithIntl(<StorageDashboard />);
+
+    // Wait for devices tab and click it
+    const devicesTab = await screen.findByTestId("tab-devices");
+    fireEvent.click(devicesTab);
+
+    // Wait for device to appear
+    await screen.findByText("Freezer Unit 1");
+
+    // Find overflow menu and click it
+    const overflowMenus = await screen.findAllByTestId(
+      "location-actions-overflow-menu",
+    );
+    expect(overflowMenus.length).toBeGreaterThan(0);
+    fireEvent.click(overflowMenus[0]);
+
+    // Find and click "Label Management" menu item
+    const labelManagementItem = await screen.findByTestId(
+      "label-management-menu-item",
+    );
+    expect(labelManagementItem).toBeTruthy();
+    
+    // Click the menu item and wait for state to update
+    await act(async () => {
+      fireEvent.click(labelManagementItem);
+    });
+
+    // Verify Label Management modal opens - wait for modal to appear
+    // The modal has a data-testid, so we can find it directly
+    const modal = await screen.findByTestId("label-management-modal", {}, { timeout: 3000 });
+    expect(modal).toBeTruthy();
+    
+    // Also verify the modal title is visible
+    const modalTitle = await screen.findByText("Label Management");
+    expect(modalTitle).toBeTruthy();
+  });
+
+  /**
+   * T271: Test Label Management modal opens from shelf overflow menu
+   */
+  test("testLabelManagementModalOpens_FromShelfOverflowMenu", async () => {
+    jest
+      .spyOn(require("react-router-dom"), "useLocation")
+      .mockReturnValue(createMockLocation("/Storage/shelves"));
+    const mockShelves = [
+      {
+        id: 20,
+        label: "Shelf A",
+        type: "shelf",
+        active: true,
+      },
+    ];
+
+    setupApiMocks({
+      metrics: mockMetrics,
+      rooms: mockRooms,
+      devices: [],
+      shelves: mockShelves,
+      locationCounts: { rooms: 1, devices: 0, shelves: 1, racks: 0 },
+    });
+
+    renderWithIntl(<StorageDashboard />);
+
+    // Wait for shelves tab and click it
+    const shelvesTab = await screen.findByTestId("tab-shelves");
+    fireEvent.click(shelvesTab);
+
+    // Wait for shelf to appear
+    await screen.findByText("Shelf A");
+
+    // Find overflow menu and click it
+    const overflowMenus = await screen.findAllByTestId(
+      "location-actions-overflow-menu",
+    );
+    expect(overflowMenus.length).toBeGreaterThan(0);
+    fireEvent.click(overflowMenus[0]);
+
+    // Find and click "Label Management" menu item
+    const labelManagementItem = await screen.findByTestId(
+      "label-management-menu-item",
+    );
+    expect(labelManagementItem).toBeTruthy();
+    
+    // Click the menu item and wait for state to update
+    await act(async () => {
+      fireEvent.click(labelManagementItem);
+    });
+
+    // Verify Label Management modal opens - wait for modal to appear
+    // The modal has a data-testid, so we can find it directly
+    const modal = await screen.findByTestId("label-management-modal", {}, { timeout: 3000 });
+    expect(modal).toBeTruthy();
+    
+    // Also verify the modal title is visible
+    const modalTitle = await screen.findByText("Label Management");
+    expect(modalTitle).toBeTruthy();
+  });
+
+  /**
+   * T271: Test Label Management modal opens from rack overflow menu
+   */
+  test("testLabelManagementModalOpens_FromRackOverflowMenu", async () => {
+    jest
+      .spyOn(require("react-router-dom"), "useLocation")
+      .mockReturnValue(createMockLocation("/Storage/racks"));
+    const mockRacks = [
+      {
+        id: 30,
+        label: "Rack 1",
+        type: "rack",
+        rows: 10,
+        columns: 5,
+        active: true,
+      },
+    ];
+
+    setupApiMocks({
+      metrics: mockMetrics,
+      rooms: mockRooms,
+      devices: [],
+      shelves: [],
+      racks: mockRacks,
+      locationCounts: { rooms: 1, devices: 0, shelves: 0, racks: 1 },
+    });
+
+    renderWithIntl(<StorageDashboard />);
+
+    // Wait for racks tab and click it
+    const racksTab = await screen.findByTestId("tab-racks");
+    fireEvent.click(racksTab);
+
+    // Wait for rack to appear
+    await screen.findByText("Rack 1");
+
+    // Find overflow menu and click it
+    const overflowMenus = await screen.findAllByTestId(
+      "location-actions-overflow-menu",
+    );
+    expect(overflowMenus.length).toBeGreaterThan(0);
+    fireEvent.click(overflowMenus[0]);
+
+    // Find and click "Label Management" menu item
+    const labelManagementItem = await screen.findByTestId(
+      "label-management-menu-item",
+    );
+    expect(labelManagementItem).toBeTruthy();
+    
+    // Click the menu item and wait for state to update
+    await act(async () => {
+      fireEvent.click(labelManagementItem);
+    });
+
+    // Verify Label Management modal opens - wait for modal to appear
+    // The modal has a data-testid, so we can find it directly
+    const modal = await screen.findByTestId("label-management-modal", {}, { timeout: 3000 });
+    expect(modal).toBeTruthy();
+    
+    // Also verify the modal title is visible
+    const modalTitle = await screen.findByText("Label Management");
+    expect(modalTitle).toBeTruthy();
   });
 });

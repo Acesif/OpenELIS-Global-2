@@ -43,6 +43,7 @@ import SampleActionsContainer from "./SampleStorage/SampleActionsContainer";
 import LocationActionsOverflowMenu from "./LocationManagement/LocationActionsOverflowMenu";
 import EditLocationModal from "./LocationManagement/EditLocationModal";
 import DeleteLocationModal from "./LocationManagement/DeleteLocationModal";
+import LabelManagementModal from "./LocationManagement/LabelManagementModal";
 import { useSampleStorage } from "./hooks/useSampleStorage";
 import "./StorageDashboard.css";
 
@@ -98,6 +99,7 @@ const StorageDashboard = () => {
   // Location CRUD modal state
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [labelManagementModalOpen, setLabelManagementModalOpen] = useState(false);
   const [selectedLocation, setSelectedLocation] = useState(null);
   const [selectedLocationType, setSelectedLocationType] = useState(null);
 
@@ -230,6 +232,59 @@ const StorageDashboard = () => {
     });
     setNotificationVisible(true);
     handleDeleteModalClose();
+  };
+
+  // Handle Label Management
+  const handleLabelManagement = (location) => {
+    setSelectedLocation(location);
+    // Determine location type from current tab (rooms -> room, devices -> device, etc.)
+    const tabName = TAB_ROUTES[selectedTab] || "devices";
+    // Map tab names to location types (handle special cases like shelves -> shelf)
+    const locationTypeMap = {
+      rooms: "room",
+      devices: "device",
+      shelves: "shelf",
+      racks: "rack",
+      samples: "sample",
+    };
+    const locationType = locationTypeMap[tabName] || tabName.slice(0, -1);
+    setSelectedLocationType(locationType);
+    setLabelManagementModalOpen(true);
+  };
+
+  // Handle Label Management modal close
+  const handleLabelManagementModalClose = () => {
+    setLabelManagementModalOpen(false);
+    setSelectedLocation(null);
+    setSelectedLocationType(null);
+  };
+
+  // Handle Label Management modal short code update
+  const handleLabelManagementShortCodeUpdate = (updatedLocation) => {
+    // Refresh the appropriate table based on location type
+    const tabName = TAB_ROUTES[selectedTab] || "devices";
+    switch (tabName) {
+      case "devices":
+        loadDevices();
+        break;
+      case "shelves":
+        loadShelves();
+        break;
+      case "racks":
+        loadRacks();
+        break;
+    }
+    // Show success notification
+    addNotification({
+      title: intl.formatMessage({ id: "notification.title" }),
+      message: intl.formatMessage({
+        id: "label.shortCode.update.success",
+        defaultMessage: "Short code updated successfully",
+      }),
+      kind: "success",
+    });
+    setNotificationVisible(true);
+    handleLabelManagementModalClose();
   };
 
   // Determine which filters should be visible based on active tab
@@ -1094,6 +1149,8 @@ const StorageDashboard = () => {
       return [];
     }
     return devicesData.map((device) => {
+      // Ensure device has type field for overflow menu
+      const deviceWithType = { ...device, type: "device" };
       const occupied = device.occupiedCount || 0;
       const capacityType = device.capacityType; // "manual", "calculated", or null
       const total = device.capacityLimit || device.totalCapacity || 0;
@@ -1196,9 +1253,10 @@ const StorageDashboard = () => {
         ),
         actions: (
           <LocationActionsOverflowMenu
-            location={device}
+            location={deviceWithType}
             onEdit={handleEditLocation}
             onDelete={handleDeleteLocation}
+            onLabelManagement={handleLabelManagement}
           />
         ),
         isExpanded: !!expandedRowIds[String(device.id || "")],
@@ -1212,6 +1270,8 @@ const StorageDashboard = () => {
       return [];
     }
     return shelvesData.map((shelf) => {
+      // Ensure shelf has type field for overflow menu
+      const shelfWithType = { ...shelf, type: "shelf" };
       const occupied = shelf.occupiedCount || 0;
       const capacityType = shelf.capacityType; // "manual", "calculated", or null
       const total = shelf.capacityLimit || shelf.totalCapacity || 0;
@@ -1301,9 +1361,10 @@ const StorageDashboard = () => {
         ),
         actions: (
           <LocationActionsOverflowMenu
-            location={shelf}
+            location={shelfWithType}
             onEdit={handleEditLocation}
             onDelete={handleDeleteLocation}
+            onLabelManagement={handleLabelManagement}
           />
         ),
         isExpanded: !!expandedRowIds[String(shelf.id || "")],
@@ -1319,6 +1380,8 @@ const StorageDashboard = () => {
       return [];
     }
     return racksData.map((rack) => {
+      // Ensure rack has type field for overflow menu
+      const rackWithType = { ...rack, type: "rack" };
       const occupied = rack.occupiedCount || 0;
       // Rack capacity is ALWAYS calculated as rows × columns (per FR-017)
       const total = (rack.rows || 0) * (rack.columns || 0);
@@ -1363,9 +1426,10 @@ const StorageDashboard = () => {
         ),
         actions: (
           <LocationActionsOverflowMenu
-            location={rack}
+            location={rackWithType}
             onEdit={handleEditLocation}
             onDelete={handleDeleteLocation}
+            onLabelManagement={handleLabelManagement}
           />
         ),
         isExpanded: !!expandedRowIds[String(rack.id || "")],
@@ -3544,6 +3608,12 @@ const StorageDashboard = () => {
         locationType={selectedLocationType}
         onClose={handleDeleteModalClose}
         onDelete={handleDeleteModalConfirm}
+      />
+      <LabelManagementModal
+        open={labelManagementModalOpen}
+        location={selectedLocation}
+        onClose={handleLabelManagementModalClose}
+        onShortCodeUpdate={handleLabelManagementShortCodeUpdate}
       />
     </div>
   );

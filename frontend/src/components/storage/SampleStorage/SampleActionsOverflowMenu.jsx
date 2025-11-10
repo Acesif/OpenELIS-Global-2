@@ -12,11 +12,7 @@ import "./SampleActionsOverflowMenu.css";
  * - onManageLocation: function - Callback when Manage Location clicked
  * - onDispose: function - Callback when Dispose clicked
  */
-const SampleActionsOverflowMenu = ({
-  sample,
-  onManageLocation,
-  onDispose,
-}) => {
+const SampleActionsOverflowMenu = ({ sample, onManageLocation, onDispose }) => {
   const intl = useIntl();
 
   // Debug: Log component props on mount and when they change
