@@ -2,7 +2,9 @@
 
 ## Overview
 
-This directory contains a **single unified script** for loading all test fixtures:
+This directory contains a **single unified script** for loading all test
+fixtures:
+
 - Storage hierarchy (rooms, devices, shelves, racks, positions)
 - E2E test data (patients, samples, sample items, storage assignments)
 
@@ -24,7 +26,8 @@ This directory contains a **single unified script** for loading all test fixture
 
 ### Method 3: Via Cypress Tests (Automatic)
 
-Cypress tests automatically use the unified loader via `cy.loadStorageFixtures()`.
+Cypress tests automatically use the unified loader via
+`cy.loadStorageFixtures()`.
 
 ## Features
 
@@ -33,7 +36,7 @@ Cypress tests automatically use the unified loader via `cy.loadStorageFixtures()
 ✅ **Verification**: Verifies data was loaded correctly  
 ✅ **Docker Support**: Works with `openelisglobal-database` container  
 ✅ **Direct psql Support**: Works without Docker (configurable via env vars)  
-✅ **Clear Output**: Shows what was loaded and verification results  
+✅ **Clear Output**: Shows what was loaded and verification results
 
 ## Environment Variables (for direct psql)
 
@@ -82,6 +85,7 @@ CYPRESS_SKIP_FIXTURES=true npm run cy:run -- --spec "cypress/e2e/storage*.cy.js"
 ## What Gets Loaded
 
 ### Storage Hierarchy
+
 - 3 Rooms (Main Laboratory, Secondary Laboratory, Inactive Room)
 - 5 Devices (Freezers, Refrigerators, Cabinets)
 - 6 Shelves
@@ -89,6 +93,7 @@ CYPRESS_SKIP_FIXTURES=true npm run cy:run -- --spec "cypress/e2e/storage*.cy.js"
 - 100+ Positions (mix of occupied/unoccupied)
 
 ### E2E Test Data
+
 - 3 Test Patients (John E2E-Smith, Jane E2E-Jones, Bob E2E-Williams)
 - 10 Test Samples (E2E-001 through E2E-010)
 - 20+ Test Sample Items
@@ -116,6 +121,7 @@ E2E Test Data     | Patients            |     3
 ### Script Not Found
 
 Ensure you're running from project root:
+
 ```bash
 cd /path/to/OpenELIS-Global-2
 ./src/test/resources/load-test-fixtures.sh
@@ -124,6 +130,7 @@ cd /path/to/OpenELIS-Global-2
 ### Docker Container Not Found
 
 Ensure the database container is running:
+
 ```bash
 docker compose -f dev.docker-compose.yml up -d database
 ```
@@ -131,6 +138,7 @@ docker compose -f dev.docker-compose.yml up -d database
 ### Direct psql Connection Issues
 
 Check PostgreSQL is running and credentials are correct:
+
 ```bash
 psql -U clinlims -d clinlims -h localhost -p 5432 -c "SELECT 1;"
 ```
@@ -143,5 +151,6 @@ The following scripts have been **consolidated** into `load-test-fixtures.sh`:
 - ❌ `load-storage-test-data.sh` (removed)
 - ✅ `load-test-fixtures.sh` (unified replacement)
 
-The Cypress convenience wrapper (`frontend/cypress/support/load-storage-fixtures.sh`) still exists but now calls the unified script.
-
+The Cypress convenience wrapper
+(`frontend/cypress/support/load-storage-fixtures.sh`) still exists but now calls
+the unified script.

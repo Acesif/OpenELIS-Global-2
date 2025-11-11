@@ -13,13 +13,13 @@ Added Sections:
     * NEW: Maximum 5-10 test cases per execution during development
     * NEW: Full suite runs only in CI/CD pipeline or pre-merge validation
     * Rationale: Faster feedback, easier debugging, prevents cascading failures
-  
+
   - Principle V > Section V.5: Enhanced Browser Console Logging
     * CHANGED: From "strategic" to "MUST be enabled and reviewed"
     * NEW: Mandatory review of browser console logs after each test run
     * NEW: Check for JavaScript errors, API failures, unexpected warnings
     * Rationale: Console logs reveal underlying issues not visible in test output
-  
+
   - Principle V > Section V.5: Post-Run Review Requirements
     * NEW: Mandatory review checklist (console logs, screenshots, test output)
     * NEW: Review required before marking tests as passing or filing bug reports
@@ -704,7 +704,8 @@ implementation details.
   1. **Console Logs**: Review browser console in Cypress UI for errors, failed
      API requests, warnings
   2. **Screenshots**: Review failure screenshots for UI state at failure point
-  3. **Test Output**: Review Cypress command log for execution order and timeouts
+  3. **Test Output**: Review Cypress command log for execution order and
+     timeouts
 - **Documentation**: Document findings in test file comments or PR description
   if issues are discovered.
 
@@ -718,9 +719,9 @@ implementation details.
   - Target: Individual test <30 seconds, full suite <5 minutes
   - If tests exceed targets, refactor to reduce setup/teardown overhead
 
-**Note**: Technical implementation details (code examples, configuration
-syntax) belong in plan.md and research.md, not in the constitution. This
-section focuses on functional requirements and principles.
+**Note**: Technical implementation details (code examples, configuration syntax)
+belong in plan.md and research.md, not in the constitution. This section focuses
+on functional requirements and principles.
 
 **Rationale**: During implementation of feature 001-sample-storage, Cypress E2E
 tests grew to 65+ test cases with video recording enabled, causing slow
@@ -743,8 +744,8 @@ debugging information without performance overhead.
   automatically retry instead of immediate checks
 - ❌ **Setting up intercepts after actions** - Intercepts must be set up before
   actions that trigger them
-- ❌ **Redundant test cases** - Don't test the same workflow multiple times
-  with minor variations
+- ❌ **Redundant test cases** - Don't test the same workflow multiple times with
+  minor variations
 - ❌ **Per-test setup/teardown** - Use shared setup hooks for efficiency
 - ❌ **No console log review** - Always review browser console logs after test
   execution

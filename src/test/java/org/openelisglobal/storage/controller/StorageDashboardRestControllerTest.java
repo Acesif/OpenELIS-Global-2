@@ -406,7 +406,8 @@ public class StorageDashboardRestControllerTest extends BaseWebContextSensitiveT
                 "INSERT INTO storage_rack (id, label, rows, columns, parent_shelf_id, active, sys_user_id, last_updated, fhir_uuid) VALUES (?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, gen_random_uuid())",
                 testRackId, "Test Rack", 9, 9, testShelfId, true, 1);
 
-        // Create position (occupancy is now calculated dynamically from SampleStorageAssignment)
+        // Create position (occupancy is now calculated dynamically from
+        // SampleStorageAssignment)
         jdbcTemplate.update(
                 "INSERT INTO storage_position (id, coordinate, parent_rack_id, parent_device_id, parent_shelf_id, sys_user_id, last_updated, fhir_uuid) VALUES (?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, gen_random_uuid())",
                 testPositionId, "A1", testRackId, testDeviceId, testShelfId, 1);
@@ -418,16 +419,20 @@ public class StorageDashboardRestControllerTest extends BaseWebContextSensitiveT
                 testSampleId, "TEST-SAMPLE-" + timestamp);
 
         // Create SampleItem for the sample
-        // Use numeric ID (sample_item.id is numeric in DB, but Hibernate treats it as String)
+        // Use numeric ID (sample_item.id is numeric in DB, but Hibernate treats it as
+        // String)
         int sampleItemId = 30000 + (int) timestamp;
         // Get default status_id and typeosamp_id from database
-        Integer statusId = jdbcTemplate.queryForObject("SELECT id FROM status_of_sample ORDER BY id LIMIT 1", Integer.class);
-        Integer typeOfSampleId = jdbcTemplate.queryForObject("SELECT id FROM type_of_sample ORDER BY id LIMIT 1", Integer.class);
+        Integer statusId = jdbcTemplate.queryForObject("SELECT id FROM status_of_sample ORDER BY id LIMIT 1",
+                Integer.class);
+        Integer typeOfSampleId = jdbcTemplate.queryForObject("SELECT id FROM type_of_sample ORDER BY id LIMIT 1",
+                Integer.class);
         jdbcTemplate.update(
                 "INSERT INTO sample_item (id, samp_id, sort_order, sampitem_id, external_id, typeosamp_id, status_id, lastupdated) VALUES (?, ?, 1, NULL, ?, ?, ?, CURRENT_TIMESTAMP)",
                 sampleItemId, testSampleId, "TEST-SAMPLE-" + timestamp + "-TUBE-1", typeOfSampleId, statusId);
 
-        // Create assignment using flexible assignment model (location_id + location_type, SampleItem-level)
+        // Create assignment using flexible assignment model (location_id +
+        // location_type, SampleItem-level)
         // Assign to rack level with position coordinate
         jdbcTemplate.update(
                 "INSERT INTO sample_storage_assignment (id, sample_item_id, location_id, location_type, position_coordinate, assigned_by_user_id, assigned_date, last_updated) VALUES (?, ?, ?, 'rack', ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)",

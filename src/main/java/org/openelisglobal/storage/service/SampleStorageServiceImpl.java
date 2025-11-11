@@ -156,13 +156,17 @@ public class SampleStorageServiceImpl implements SampleStorageService {
             map.put("sampleItemExternalId", sampleItem.getExternalId() != null ? sampleItem.getExternalId() : "");
             // Get parent Sample accession number for context
             if (sampleItem.getSample() != null) {
-                map.put("sampleAccessionNumber", sampleItem.getSample().getAccessionNumber() != null 
-                    ? sampleItem.getSample().getAccessionNumber() : "");
+                map.put("sampleAccessionNumber",
+                        sampleItem.getSample().getAccessionNumber() != null
+                                ? sampleItem.getSample().getAccessionNumber()
+                                : "");
             } else {
                 map.put("sampleAccessionNumber", "");
             }
-            map.put("type", sampleItem.getTypeOfSample() != null && sampleItem.getTypeOfSample().getDescription() != null 
-                ? sampleItem.getTypeOfSample().getDescription() : "");
+            map.put("type",
+                    sampleItem.getTypeOfSample() != null && sampleItem.getTypeOfSample().getDescription() != null
+                            ? sampleItem.getTypeOfSample().getDescription()
+                            : "");
             map.put("status", sampleItem.getStatusId() != null ? sampleItem.getStatusId() : "active");
             map.put("location", hierarchicalPath);
             map.put("assignedBy", assignment.getAssignedByUserId());
@@ -280,8 +284,8 @@ public class SampleStorageServiceImpl implements SampleStorageService {
 
             // Log assignment details for debugging
             if (logger.isDebugEnabled()) {
-                logger.debug("Assigning SampleItem {} to: locationId={}, locationType={}, positionCoordinate={}", 
-                    sampleItemId, locationIdInt, locationType, positionCoordinate);
+                logger.debug("Assigning SampleItem {} to: locationId={}, locationType={}, positionCoordinate={}",
+                        sampleItemId, locationIdInt, locationType, positionCoordinate);
             }
 
             // Create SampleStorageAssignment - always use locationId + locationType
@@ -301,8 +305,8 @@ public class SampleStorageServiceImpl implements SampleStorageService {
 
             // Log successful assignment creation
             if (logger.isDebugEnabled()) {
-                logger.debug("Created assignment for SampleItem {}: assignmentId={}, positionCoordinate={}", 
-                    sampleItemId, assignmentId, assignment.getPositionCoordinate());
+                logger.debug("Created assignment for SampleItem {}: assignmentId={}, positionCoordinate={}",
+                        sampleItemId, assignmentId, assignment.getPositionCoordinate());
             }
 
             // Build hierarchical path
@@ -340,8 +344,9 @@ public class SampleStorageServiceImpl implements SampleStorageService {
 
             // Log movement audit record for debugging
             if (logger.isDebugEnabled()) {
-                logger.debug("Creating movement audit for SampleItem {}: new locationId={}, locationType={}, positionCoordinate={}", 
-                    sampleItemId, locationIdInt, locationType, positionCoordinate);
+                logger.debug(
+                        "Creating movement audit for SampleItem {}: new locationId={}, locationType={}, positionCoordinate={}",
+                        sampleItemId, locationIdInt, locationType, positionCoordinate);
             }
 
             sampleStorageMovementDAO.insert(movement);
@@ -459,19 +464,19 @@ public class SampleStorageServiceImpl implements SampleStorageService {
             Integer previousLocationId = null;
             String previousLocationType = null;
             String previousPositionCoordinate = null;
-            
+
             if (existingAssignment != null) {
                 // Store previous values before updating
                 previousLocationId = existingAssignment.getLocationId();
                 previousLocationType = existingAssignment.getLocationType();
                 previousPositionCoordinate = existingAssignment.getPositionCoordinate();
-                
+
                 // Log previous state for debugging
                 if (logger.isDebugEnabled()) {
-                    logger.debug("Moving SampleItem {} from: locationId={}, locationType={}, positionCoordinate={}", 
-                        sampleItemId, previousLocationId, previousLocationType, previousPositionCoordinate);
+                    logger.debug("Moving SampleItem {} from: locationId={}, locationType={}, positionCoordinate={}",
+                            sampleItemId, previousLocationId, previousLocationType, previousPositionCoordinate);
                 }
-                
+
                 // Update existing assignment - always use locationId + locationType
                 existingAssignment.setLocationId(locationIdInt);
                 existingAssignment.setLocationType(locationType);
@@ -483,11 +488,12 @@ public class SampleStorageServiceImpl implements SampleStorageService {
                 existingAssignment.setAssignedDate(new Timestamp(System.currentTimeMillis()));
                 existingAssignment.setNotes(reason);
                 sampleStorageAssignmentDAO.update(existingAssignment);
-                
+
                 // Log new state for debugging
                 if (logger.isDebugEnabled()) {
-                    logger.debug("Updated assignment for SampleItem {}: locationId={}, locationType={}, positionCoordinate={}", 
-                        sampleItemId, locationIdInt, locationType, existingAssignment.getPositionCoordinate());
+                    logger.debug(
+                            "Updated assignment for SampleItem {}: locationId={}, locationType={}, positionCoordinate={}",
+                            sampleItemId, locationIdInt, locationType, existingAssignment.getPositionCoordinate());
                 }
             } else {
                 // Create new assignment (SampleItem was not previously assigned) - always use
@@ -503,11 +509,12 @@ public class SampleStorageServiceImpl implements SampleStorageService {
                 assignment.setNotes(reason);
                 assignment.setAssignedByUserId(1); // Default to system user for tests
                 sampleStorageAssignmentDAO.insert(assignment);
-                
+
                 // Log initial assignment for debugging
                 if (logger.isDebugEnabled()) {
-                    logger.debug("Initial assignment for SampleItem {}: locationId={}, locationType={}, positionCoordinate={}", 
-                        sampleItemId, locationIdInt, locationType, assignment.getPositionCoordinate());
+                    logger.debug(
+                            "Initial assignment for SampleItem {}: locationId={}, locationType={}, positionCoordinate={}",
+                            sampleItemId, locationIdInt, locationType, assignment.getPositionCoordinate());
                 }
             }
 
@@ -520,18 +527,18 @@ public class SampleStorageServiceImpl implements SampleStorageService {
                 movement.setPreviousLocationId(previousLocationId);
                 movement.setPreviousLocationType(previousLocationType);
                 movement.setPreviousPositionCoordinate(previousPositionCoordinate);
-                
+
                 // Log movement audit record for debugging
                 if (logger.isDebugEnabled()) {
-                    logger.debug("Movement audit - previous: locationId={}, locationType={}, positionCoordinate={}", 
-                        previousLocationId, previousLocationType, previousPositionCoordinate);
+                    logger.debug("Movement audit - previous: locationId={}, locationType={}, positionCoordinate={}",
+                            previousLocationId, previousLocationType, previousPositionCoordinate);
                 }
             } else {
                 // Initial assignment - no previous location
                 movement.setPreviousLocationId(null);
                 movement.setPreviousLocationType(null);
                 movement.setPreviousPositionCoordinate(null);
-                
+
                 // Log initial assignment audit record for debugging
                 if (logger.isDebugEnabled()) {
                     logger.debug("Movement audit - initial assignment (no previous location)");
@@ -555,8 +562,8 @@ public class SampleStorageServiceImpl implements SampleStorageService {
 
             // Log new location for debugging
             if (logger.isDebugEnabled()) {
-                logger.debug("Movement audit - new: locationId={}, locationType={}, positionCoordinate={}", 
-                    locationIdInt, locationType, newPositionCoordinateValue);
+                logger.debug("Movement audit - new: locationId={}, locationType={}, positionCoordinate={}",
+                        locationIdInt, locationType, newPositionCoordinateValue);
             }
 
             Integer movementIdInt = sampleStorageMovementDAO.insert(movement);

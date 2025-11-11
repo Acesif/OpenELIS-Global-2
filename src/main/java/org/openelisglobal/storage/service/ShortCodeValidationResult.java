@@ -1,8 +1,8 @@
 package org.openelisglobal.storage.service;
 
 /**
- * Validation result for short code validation
- * Contains validation status, normalized code, and error message
+ * Validation result for short code validation Contains validation status,
+ * normalized code, and error message
  */
 public class ShortCodeValidationResult {
 
@@ -58,4 +58,3 @@ public class ShortCodeValidationResult {
         return new ShortCodeValidationResult(false, null, errorMessage);
     }
 }
-

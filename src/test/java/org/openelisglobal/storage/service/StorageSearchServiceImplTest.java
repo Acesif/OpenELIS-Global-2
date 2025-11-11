@@ -57,7 +57,8 @@ public class StorageSearchServiceImplTest {
     }
 
     private void setupMockData() {
-        // Mock SampleItems with different IDs, external IDs, parent Sample accession numbers, and locations
+        // Mock SampleItems with different IDs, external IDs, parent Sample accession
+        // numbers, and locations
         mockSamples = new ArrayList<>();
 
         Map<String, Object> sampleItem1 = new HashMap<>();

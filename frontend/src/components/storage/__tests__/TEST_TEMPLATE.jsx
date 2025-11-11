@@ -61,7 +61,9 @@ const mockNotificationContext = {
 // Standard render helper with IntlProvider
 const renderWithIntl = (component) => {
   return render(
-    <BrowserRouter> {/* Include if component uses routing */}
+    <BrowserRouter>
+      {" "}
+      {/* Include if component uses routing */}
       <IntlProvider locale="en" messages={messages}>
         {/* Include NotificationContext.Provider if needed */}
         {component}
@@ -107,10 +109,7 @@ describe("ComponentName", () => {
   test("testName", async () => {
     // Arrange: Setup test data and render component
     renderWithIntl(
-      <ComponentName
-        prop1={mockData.prop1}
-        onCallback={mockCallback}
-      />,
+      <ComponentName prop1={mockData.prop1} onCallback={mockCallback} />,
     );
 
     // Act: Perform user actions
@@ -178,4 +177,3 @@ describe("ComponentName", () => {
  * ✅ Clear mocks in beforeEach
  * ✅ Use setupApiMocks helper for complex API mocking scenarios
  */
-

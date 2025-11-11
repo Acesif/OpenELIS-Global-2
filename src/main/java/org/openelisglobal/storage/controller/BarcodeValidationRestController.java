@@ -13,8 +13,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
- * REST controller for barcode validation
- * Provides endpoint for validating storage location barcodes
+ * REST controller for barcode validation Provides endpoint for validating
+ * storage location barcodes
  */
 @RestController
 @RequestMapping("/rest/storage/barcode")
@@ -31,9 +31,7 @@ public class BarcodeValidationRestController {
      * @param request BarcodeValidationRequest with barcode string
      * @return BarcodeValidationResponse with validation result
      */
-    @PostMapping(value = "/validate",
-                 consumes = MediaType.APPLICATION_JSON_VALUE,
-                 produces = MediaType.APPLICATION_JSON_VALUE)
+    @PostMapping(value = "/validate", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<BarcodeValidationResponse> validateBarcode(@RequestBody BarcodeValidationRequest request) {
         // Validate request
         if (request == null || request.getBarcode() == null || request.getBarcode().trim().isEmpty()) {
@@ -47,7 +45,8 @@ public class BarcodeValidationRestController {
         // Perform validation
         BarcodeValidationResponse response = barcodeValidationService.validateBarcode(request.getBarcode());
 
-        // Return 200 OK with validation result (both valid and invalid results return 200)
+        // Return 200 OK with validation result (both valid and invalid results return
+        // 200)
         return ResponseEntity.ok(response);
     }
 }

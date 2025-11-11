@@ -34,7 +34,7 @@ describe("Location CRUD Operations", function () {
     cy.visit("/Storage");
     cy.get(".storage-dashboard", { timeout: 10000 }).should("be.visible");
   });
-  
+
   beforeEach(function () {
     // Only set up intercepts if needed - no navigation
     // Navigation already done in before() - we're already on Storage Dashboard
@@ -153,7 +153,7 @@ describe("Location CRUD Operations", function () {
           cy.get('[data-testid="edit-location-save-button"]')
             .should("not.be.disabled")
             .click();
-          
+
           // Wait for API calls to complete
           cy.wait("@updateRoom", { timeout: 10000 }).then((interception) => {
             expect(interception.response.statusCode).to.be.oneOf([200, 201]);
@@ -292,7 +292,7 @@ describe("Location CRUD Operations", function () {
           cy.get('[data-testid="edit-location-save-button"]')
             .should("not.be.disabled")
             .click();
-          
+
           // Wait for API calls to complete
           cy.wait("@updateDevice", { timeout: 10000 }).then((interception) => {
             expect(interception.response.statusCode).to.be.oneOf([200, 201]);
@@ -430,7 +430,7 @@ describe("Location CRUD Operations", function () {
           cy.get('[data-testid="edit-location-save-button"]')
             .should("not.be.disabled")
             .click();
-          
+
           // Wait for API calls to complete
           cy.wait("@updateShelf", { timeout: 10000 }).then((interception) => {
             expect(interception.response.statusCode).to.be.oneOf([200, 201]);
@@ -568,7 +568,7 @@ describe("Location CRUD Operations", function () {
           cy.get('[data-testid="edit-location-save-button"]')
             .should("not.be.disabled")
             .click();
-          
+
           // Wait for API calls to complete
           cy.wait("@updateRack", { timeout: 10000 }).then((interception) => {
             expect(interception.response.statusCode).to.be.oneOf([200, 201]);
@@ -659,7 +659,7 @@ describe("Location CRUD Operations", function () {
           cy.get('[data-testid="delete-location-cancel-button"]')
             .should("be.visible")
             .click();
-          
+
           // Verify modal closes (retry-ability)
           cy.get('[data-testid="delete-location-modal"]', {
             timeout: 10000,
@@ -741,7 +741,7 @@ describe("Location CRUD Operations", function () {
           cy.get('[data-testid="delete-location-confirm-button"]')
             .should("not.be.disabled")
             .click();
-          
+
           // Wait for delete API call
           cy.wait("@deleteRoom").then((interception) => {
             expect(interception.response.statusCode).to.be.oneOf([200, 204]);

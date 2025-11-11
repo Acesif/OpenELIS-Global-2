@@ -11,8 +11,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 /**
- * Implementation of ShortCodeValidationService
- * Validates short code format, uniqueness, and generates change warnings
+ * Implementation of ShortCodeValidationService Validates short code format,
+ * uniqueness, and generates change warnings
  */
 @Service
 public class ShortCodeValidationServiceImpl implements ShortCodeValidationService {
@@ -27,7 +27,8 @@ public class ShortCodeValidationServiceImpl implements ShortCodeValidationServic
     private StorageRackDAO storageRackDAO;
 
     private static final int MAX_SHORT_CODE_LENGTH = 10;
-    private static final String SHORT_CODE_PATTERN = "^[A-Z0-9][A-Z0-9_-]*$"; // Starts with letter/number, then alphanumeric/hyphen/underscore
+    private static final String SHORT_CODE_PATTERN = "^[A-Z0-9][A-Z0-9_-]*$"; // Starts with letter/number, then
+                                                                              // alphanumeric/hyphen/underscore
 
     @Override
     public ShortCodeValidationResult validateFormat(String shortCode) {
@@ -41,19 +42,20 @@ public class ShortCodeValidationServiceImpl implements ShortCodeValidationServic
 
         // Length check
         if (normalized.length() > MAX_SHORT_CODE_LENGTH) {
-            return ShortCodeValidationResult.invalid(
-                String.format("Short code cannot exceed %d characters", MAX_SHORT_CODE_LENGTH));
+            return ShortCodeValidationResult
+                    .invalid(String.format("Short code cannot exceed %d characters", MAX_SHORT_CODE_LENGTH));
         }
 
-        // Pattern check: must start with letter or number, then alphanumeric/hyphen/underscore
+        // Pattern check: must start with letter or number, then
+        // alphanumeric/hyphen/underscore
         if (!normalized.matches(SHORT_CODE_PATTERN)) {
             if (normalized.startsWith("-") || normalized.startsWith("_")) {
                 return ShortCodeValidationResult.invalid("Short code must start with a letter or number");
             }
             // Check for invalid characters
             if (!normalized.matches("^[A-Z0-9_-]+$")) {
-                return ShortCodeValidationResult.invalid(
-                    "Short code can only contain letters, numbers, hyphens, and underscores");
+                return ShortCodeValidationResult
+                        .invalid("Short code can only contain letters, numbers, hyphens, and underscores");
             }
             return ShortCodeValidationResult.invalid("Invalid short code format");
         }
@@ -73,32 +75,32 @@ public class ShortCodeValidationServiceImpl implements ShortCodeValidationServic
 
         // Check uniqueness based on context
         switch (context.toLowerCase()) {
-            case "device":
-                StorageDevice existingDevice = storageDeviceDAO.findByShortCode(normalized);
-                if (existingDevice != null && !String.valueOf(existingDevice.getId()).equals(locationId)) {
-                    return ShortCodeValidationResult.invalid(
-                        String.format("Short code '%s' already exists for another device", normalized));
-                }
-                break;
+        case "device":
+            StorageDevice existingDevice = storageDeviceDAO.findByShortCode(normalized);
+            if (existingDevice != null && !String.valueOf(existingDevice.getId()).equals(locationId)) {
+                return ShortCodeValidationResult
+                        .invalid(String.format("Short code '%s' already exists for another device", normalized));
+            }
+            break;
 
-            case "shelf":
-                StorageShelf existingShelf = storageShelfDAO.findByShortCode(normalized);
-                if (existingShelf != null && !String.valueOf(existingShelf.getId()).equals(locationId)) {
-                    return ShortCodeValidationResult.invalid(
-                        String.format("Short code '%s' already exists for another shelf", normalized));
-                }
-                break;
+        case "shelf":
+            StorageShelf existingShelf = storageShelfDAO.findByShortCode(normalized);
+            if (existingShelf != null && !String.valueOf(existingShelf.getId()).equals(locationId)) {
+                return ShortCodeValidationResult
+                        .invalid(String.format("Short code '%s' already exists for another shelf", normalized));
+            }
+            break;
 
-            case "rack":
-                StorageRack existingRack = storageRackDAO.findByShortCode(normalized);
-                if (existingRack != null && !String.valueOf(existingRack.getId()).equals(locationId)) {
-                    return ShortCodeValidationResult.invalid(
-                        String.format("Short code '%s' already exists for another rack", normalized));
-                }
-                break;
+        case "rack":
+            StorageRack existingRack = storageRackDAO.findByShortCode(normalized);
+            if (existingRack != null && !String.valueOf(existingRack.getId()).equals(locationId)) {
+                return ShortCodeValidationResult
+                        .invalid(String.format("Short code '%s' already exists for another rack", normalized));
+            }
+            break;
 
-            default:
-                return ShortCodeValidationResult.invalid("Invalid context: " + context);
+        default:
+            return ShortCodeValidationResult.invalid("Invalid context: " + context);
         }
 
         // Unique
@@ -119,9 +121,8 @@ public class ShortCodeValidationServiceImpl implements ShortCodeValidationServic
 
         // Generate warning message
         return String.format(
-            "Changing short code from '%s' to '%s' will invalidate existing printed labels. " +
-            "Ensure all labels are reprinted with the new code.",
-            oldCode.toUpperCase(), newCode.toUpperCase());
+                "Changing short code from '%s' to '%s' will invalidate existing printed labels. "
+                        + "Ensure all labels are reprinted with the new code.",
+                oldCode.toUpperCase(), newCode.toUpperCase());
     }
 }
-

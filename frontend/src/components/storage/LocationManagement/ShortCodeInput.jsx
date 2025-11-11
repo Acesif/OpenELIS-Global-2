@@ -210,12 +210,10 @@ const ShortCodeInput = ({
         invalidText={errorMessage}
         maxLength={10}
         placeholder="FRZ01"
-        helperText={intl.formatMessage(
-          {
-            id: "label.shortCode.helper",
-            defaultMessage: "Max 10 characters, alphanumeric, hyphen, underscore",
-          },
-        )}
+        helperText={intl.formatMessage({
+          id: "label.shortCode.helper",
+          defaultMessage: "Max 10 characters, alphanumeric, hyphen, underscore",
+        })}
       />
       {errorMessage && (
         <InlineNotification
@@ -247,4 +245,3 @@ ShortCodeInput.defaultProps = {
 };
 
 export default ShortCodeInput;
-

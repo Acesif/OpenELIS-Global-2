@@ -122,42 +122,46 @@ public class SampleStorageRestControllerIntegrationTest extends BaseWebContextSe
                 sampleId, "TEST-SAMPLE-" + timestamp);
 
         // Create SampleItem for the sample
-        // Use numeric ID (sample_item.id is numeric in DB, but Hibernate treats it as String)
+        // Use numeric ID (sample_item.id is numeric in DB, but Hibernate treats it as
+        // String)
         int sampleItemId = 20000 + (int) timestamp;
         // Get default status_id and typeosamp_id from database
-        Integer statusId = jdbcTemplate.queryForObject("SELECT id FROM status_of_sample ORDER BY id LIMIT 1", Integer.class);
-        Integer typeOfSampleId = jdbcTemplate.queryForObject("SELECT id FROM type_of_sample ORDER BY id LIMIT 1", Integer.class);
+        Integer statusId = jdbcTemplate.queryForObject("SELECT id FROM status_of_sample ORDER BY id LIMIT 1",
+                Integer.class);
+        Integer typeOfSampleId = jdbcTemplate.queryForObject("SELECT id FROM type_of_sample ORDER BY id LIMIT 1",
+                Integer.class);
         jdbcTemplate.update(
                 "INSERT INTO sample_item (id, samp_id, sort_order, sampitem_id, external_id, typeosamp_id, status_id, lastupdated) VALUES (?, ?, 1, NULL, ?, ?, ?, CURRENT_TIMESTAMP)",
                 sampleItemId, sampleId, "TEST-SAMPLE-" + timestamp + "-TUBE-1", typeOfSampleId, statusId);
 
         // Assign SampleItem to position using flexible assignment API
-        // API expects locationId (rack ID) and locationType="rack", with positionCoordinate
+        // API expects locationId (rack ID) and locationType="rack", with
+        // positionCoordinate
         // Positions are coordinates within a rack, not separate entities
-        MvcResult assignmentResult = mockMvc
-                .perform(post("/rest/storage/sample-items/assign").contentType(MediaType.APPLICATION_JSON)
-                        .content(String.format(
-                                "{\"sampleItemId\":\"%s\",\"locationId\":\"%d\",\"locationType\":\"rack\",\"positionCoordinate\":\"A1\",\"notes\":\"Integration test assignment\"}",
-                                String.valueOf(sampleItemId), rackId)))
+        MvcResult assignmentResult = mockMvc.perform(post("/rest/storage/sample-items/assign")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(String.format(
+                        "{\"sampleItemId\":\"%s\",\"locationId\":\"%d\",\"locationType\":\"rack\",\"positionCoordinate\":\"A1\",\"notes\":\"Integration test assignment\"}",
+                        String.valueOf(sampleItemId), rackId)))
                 .andReturn();
-        
+
         int status = assignmentResult.getResponse().getStatus();
         String responseBody = assignmentResult.getResponse().getContentAsString();
-        
+
         if (status != 201) {
             System.err.println("Assignment failed with status " + status);
             System.err.println("Response body: " + responseBody);
             System.err.println("SampleItem ID: " + sampleItemId);
             System.err.println("Position ID: " + positionId);
         }
-        
+
         assertEquals("Assignment should succeed", 201, status);
         assertNotNull("Assignment response should not be null", responseBody);
     }
 
     /**
-     * CRITICAL TEST: Verify GET /rest/storage/sample-items returns SampleItems with complete
-     * hierarchical paths WITHOUT lazy loading exceptions.
+     * CRITICAL TEST: Verify GET /rest/storage/sample-items returns SampleItems with
+     * complete hierarchical paths WITHOUT lazy loading exceptions.
      * 
      * This test will FAIL if: - Service layer doesn't eagerly fetch all
      * relationships - Controller accesses relationships after transaction closes -
@@ -246,7 +250,8 @@ public class SampleStorageRestControllerIntegrationTest extends BaseWebContextSe
     }
 
     /**
-     * Verify GET /rest/storage/sample-items?countOnly=true returns metrics correctly.
+     * Verify GET /rest/storage/sample-items?countOnly=true returns metrics
+     * correctly.
      */
     @Test
     public void testGetSamples_CountOnly_ReturnsMetrics() throws Exception {

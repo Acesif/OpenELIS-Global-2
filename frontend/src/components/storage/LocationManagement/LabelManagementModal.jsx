@@ -122,12 +122,10 @@ const LabelManagementModal = ({
       (error) => {
         console.error("Error saving short code:", error);
         alert(
-          intl.formatMessage(
-            {
-              id: "label.shortCode.error.network",
-              defaultMessage: "Error saving short code. Please try again.",
-            },
-          ),
+          intl.formatMessage({
+            id: "label.shortCode.error.network",
+            defaultMessage: "Error saving short code. Please try again.",
+          }),
         );
       },
     );
@@ -212,8 +210,15 @@ const LabelManagementModal = ({
           </Stack>
         </ModalBody>
         <ModalFooter>
-          <Button kind="secondary" onClick={handleClose} data-testid="modal-close-button">
-            <FormattedMessage id="label.button.cancel" defaultMessage="Cancel" />
+          <Button
+            kind="secondary"
+            onClick={handleClose}
+            data-testid="modal-close-button"
+          >
+            <FormattedMessage
+              id="label.button.cancel"
+              defaultMessage="Cancel"
+            />
           </Button>
           <Button
             kind="primary"
@@ -240,21 +245,25 @@ const LabelManagementModal = ({
         />
         <ModalBody>
           <p>
-            {intl.formatMessage(
-              {
-                id: "label.shortCodeWarning",
-                defaultMessage:
-                  "Changing short code will invalidate existing labels",
-              },
-            )}
+            {intl.formatMessage({
+              id: "label.shortCodeWarning",
+              defaultMessage:
+                "Changing short code will invalidate existing labels",
+            })}
           </p>
         </ModalBody>
         <ModalFooter>
           <Button kind="secondary" onClick={handleWarningCancel}>
-            <FormattedMessage id="label.button.cancel" defaultMessage="Cancel" />
+            <FormattedMessage
+              id="label.button.cancel"
+              defaultMessage="Cancel"
+            />
           </Button>
           <Button kind="danger" onClick={handleWarningConfirm}>
-            <FormattedMessage id="label.button.confirm" defaultMessage="Confirm" />
+            <FormattedMessage
+              id="label.button.confirm"
+              defaultMessage="Confirm"
+            />
           </Button>
         </ModalFooter>
       </ComposedModal>
@@ -281,4 +290,3 @@ LabelManagementModal.defaultProps = {
 };
 
 export default LabelManagementModal;
-

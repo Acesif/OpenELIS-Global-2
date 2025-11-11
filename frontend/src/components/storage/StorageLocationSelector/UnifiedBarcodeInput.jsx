@@ -97,7 +97,7 @@ const UnifiedBarcodeInput = ({
       (response) => {
         // Check barcode type from response
         const barcodeType = response.barcodeType || "unknown";
-        
+
         if (barcodeType === "sample") {
           // Sample barcode detected - call onSampleScan callback
           if (onSampleScan) {
@@ -115,10 +115,12 @@ const UnifiedBarcodeInput = ({
               success: response.valid || false,
               data: response,
               // Include errorMessage in error object for LocationManagementModal to extract
-              error: response.valid ? null : {
-                errorMessage: response.errorMessage,
-                message: response.errorMessage,
-              },
+              error: response.valid
+                ? null
+                : {
+                    errorMessage: response.errorMessage,
+                    message: response.errorMessage,
+                  },
             });
           }
         } else {
@@ -128,10 +130,12 @@ const UnifiedBarcodeInput = ({
               success: response.valid || false,
               data: response,
               // Include errorMessage in error object
-              error: response.valid ? null : {
-                errorMessage: response.errorMessage,
-                message: response.errorMessage,
-              },
+              error: response.valid
+                ? null
+                : {
+                    errorMessage: response.errorMessage,
+                    message: response.errorMessage,
+                  },
             });
           }
         }

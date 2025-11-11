@@ -9,34 +9,36 @@ import org.openelisglobal.common.util.ConfigurationProperties.Property;
 import org.openelisglobal.internationalization.MessageUtil;
 
 /**
- * Label for storage locations (Device, Shelf, Rack)
- * Displays location name, code, hierarchical path, and barcode
- * Uses short code or hierarchical path for barcode value
+ * Label for storage locations (Device, Shelf, Rack) Displays location name,
+ * code, hierarchical path, and barcode Uses short code or hierarchical path for
+ * barcode value
  */
 public class StorageLocationLabel extends Label {
 
     /**
      * Create label for a storage location
      * 
-     * @param locationName The display name of the location
-     * @param locationCode The code of the location
-     * @param hierarchicalPath The full hierarchical path (e.g., "MAIN-FRZ01-SHA-RKR1")
-     * @param shortCode Optional short code (if provided, used for barcode; otherwise uses hierarchical path)
+     * @param locationName     The display name of the location
+     * @param locationCode     The code of the location
+     * @param hierarchicalPath The full hierarchical path (e.g.,
+     *                         "MAIN-FRZ01-SHA-RKR1")
+     * @param shortCode        Optional short code (if provided, used for barcode;
+     *                         otherwise uses hierarchical path)
      */
     public StorageLocationLabel(String locationName, String locationCode, String hierarchicalPath, String shortCode) {
         // Set dimensions from configuration properties
         try {
             String widthStr = ConfigurationProperties.getInstance()
-                .getPropertyValue(Property.STORAGE_LOCATION_BARCODE_WIDTH);
+                    .getPropertyValue(Property.STORAGE_LOCATION_BARCODE_WIDTH);
             String heightStr = ConfigurationProperties.getInstance()
-                .getPropertyValue(Property.STORAGE_LOCATION_BARCODE_HEIGHT);
-            
+                    .getPropertyValue(Property.STORAGE_LOCATION_BARCODE_HEIGHT);
+
             if (widthStr != null && !widthStr.isEmpty()) {
                 width = Float.parseFloat(widthStr);
             } else {
                 width = 3.0f; // Default width
             }
-            
+
             if (heightStr != null && !heightStr.isEmpty()) {
                 height = Float.parseFloat(heightStr);
             } else {
@@ -55,33 +57,27 @@ public class StorageLocationLabel extends Label {
 
         // Add location name above barcode
         LabelField nameField = new LabelField(
-            MessageUtil.getMessage("barcode.label.info.locationname", "Location Name"),
-            locationName != null ? locationName : "",
-            12);
+                MessageUtil.getMessage("barcode.label.info.locationname", "Location Name"),
+                locationName != null ? locationName : "", 12);
         nameField.setDisplayFieldName(true);
         nameField.setUnderline(true);
         aboveFields.add(nameField);
 
         // Add location code above barcode
-        LabelField codeField = new LabelField(
-            MessageUtil.getMessage("barcode.label.info.locationcode", "Code"),
-            locationCode != null ? locationCode : "",
-            8);
+        LabelField codeField = new LabelField(MessageUtil.getMessage("barcode.label.info.locationcode", "Code"),
+                locationCode != null ? locationCode : "", 8);
         codeField.setDisplayFieldName(true);
         aboveFields.add(codeField);
 
         // Add hierarchical path below barcode
-        LabelField pathField = new LabelField(
-            MessageUtil.getMessage("barcode.label.info.hierarchicalpath", "Path"),
-            hierarchicalPath != null ? hierarchicalPath : "",
-            8);
+        LabelField pathField = new LabelField(MessageUtil.getMessage("barcode.label.info.hierarchicalpath", "Path"),
+                hierarchicalPath != null ? hierarchicalPath : "", 8);
         pathField.setDisplayFieldName(true);
         belowFields.add(pathField);
 
         // Set barcode code: use short code if provided, otherwise use hierarchical path
-        String barcodeValue = (shortCode != null && !shortCode.trim().isEmpty()) 
-            ? shortCode.toUpperCase().trim() 
-            : (hierarchicalPath != null ? hierarchicalPath : locationCode);
+        String barcodeValue = (shortCode != null && !shortCode.trim().isEmpty()) ? shortCode.toUpperCase().trim()
+                : (hierarchicalPath != null ? hierarchicalPath : locationCode);
         setCode(barcodeValue);
         setCodeLabel(barcodeValue);
     }
@@ -92,7 +88,7 @@ public class StorageLocationLabel extends Label {
         int numRows = 0;
         int curColumns = 0;
         boolean completeRow = true;
-        
+
         for (LabelField field : aboveFields) {
             if (field.isStartNewline() && !completeRow) {
                 ++numRows;
@@ -109,11 +105,11 @@ public class StorageLocationLabel extends Label {
                 completeRow = false;
             }
         }
-        
+
         if (!completeRow) {
             ++numRows;
         }
-        
+
         return numRows;
     }
 
@@ -123,7 +119,7 @@ public class StorageLocationLabel extends Label {
         int numRows = 0;
         int curColumns = 0;
         boolean completeRow = true;
-        
+
         for (LabelField field : belowFields) {
             if (field.isStartNewline() && !completeRow) {
                 ++numRows;
@@ -140,11 +136,11 @@ public class StorageLocationLabel extends Label {
                 completeRow = false;
             }
         }
-        
+
         if (!completeRow) {
             ++numRows;
         }
-        
+
         return numRows;
     }
 
@@ -155,4 +151,3 @@ public class StorageLocationLabel extends Label {
         return Integer.MAX_VALUE;
     }
 }
-

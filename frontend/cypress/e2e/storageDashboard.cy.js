@@ -31,10 +31,10 @@ describe("Storage Dashboard", function () {
     // Set up intercepts BEFORE navigation
     cy.intercept("GET", "**/rest/storage/dashboard/metrics**").as("getMetrics");
     cy.intercept("GET", "**/rest/storage/samples**").as("getSamples");
-    
+
     // Navigate directly to Storage page (more reliable than menu navigation)
     cy.visit("/Storage");
-    
+
     // Wait for dashboard to load (retry-ability)
     cy.get(".storage-dashboard", { timeout: 10000 }).should("be.visible");
 

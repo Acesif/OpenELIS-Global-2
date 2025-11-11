@@ -16,11 +16,13 @@ public interface SampleStorageAssignmentDAO extends BaseDAO<SampleStorageAssignm
     SampleStorageAssignment findByStoragePosition(StoragePosition position);
 
     /**
-     * Check if a StoragePosition is occupied by checking for matching SampleStorageAssignment.
-     * This replaces the StoragePosition.occupied flag which is no longer maintained.
+     * Check if a StoragePosition is occupied by checking for matching
+     * SampleStorageAssignment. This replaces the StoragePosition.occupied flag
+     * which is no longer maintained.
      * 
      * @param position StoragePosition to check
-     * @return true if there's a SampleStorageAssignment matching this position, false otherwise
+     * @return true if there's a SampleStorageAssignment matching this position,
+     *         false otherwise
      */
     boolean isPositionOccupied(StoragePosition position);
 }

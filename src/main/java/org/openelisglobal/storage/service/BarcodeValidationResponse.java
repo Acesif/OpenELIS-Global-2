@@ -4,8 +4,8 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- * Response object for barcode validation
- * Contains validation result and component details for form pre-filling
+ * Response object for barcode validation Contains validation result and
+ * component details for form pre-filling
  */
 public class BarcodeValidationResponse {
 

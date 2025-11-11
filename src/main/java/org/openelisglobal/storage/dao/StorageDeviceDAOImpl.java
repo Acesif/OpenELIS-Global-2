@@ -98,7 +98,8 @@ public class StorageDeviceDAOImpl extends BaseDAOImpl<StorageDevice, Integer> im
 
     @Override
     @Transactional(readOnly = true)
-    public StorageDevice findByCodeAndParentRoom(String code, org.openelisglobal.storage.valueholder.StorageRoom parentRoom) {
+    public StorageDevice findByCodeAndParentRoom(String code,
+            org.openelisglobal.storage.valueholder.StorageRoom parentRoom) {
         try {
             if (parentRoom == null) {
                 return null;

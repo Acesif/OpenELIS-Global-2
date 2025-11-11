@@ -333,11 +333,13 @@ public class StorageLocationFhirTransform {
     }
 
     /**
-     * Calculate if a StoragePosition is occupied by checking SampleStorageAssignment records.
-     * This replaces the StoragePosition.occupied flag which is no longer maintained.
+     * Calculate if a StoragePosition is occupied by checking
+     * SampleStorageAssignment records. This replaces the StoragePosition.occupied
+     * flag which is no longer maintained.
      * 
      * @param position StoragePosition to check
-     * @return true if there's a SampleStorageAssignment matching this position, false otherwise
+     * @return true if there's a SampleStorageAssignment matching this position,
+     *         false otherwise
      */
     @Transactional(readOnly = true)
     private boolean calculatePositionOccupied(StoragePosition position) {

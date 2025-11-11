@@ -81,7 +81,8 @@ const PrintHistoryDisplay = ({ locationType, locationId }) => {
   /**
    * Get last print record
    */
-  const lastPrint = printHistory && printHistory.length > 0 ? printHistory[0] : null;
+  const lastPrint =
+    printHistory && printHistory.length > 0 ? printHistory[0] : null;
 
   if (isLoading) {
     return (
@@ -116,10 +117,12 @@ const PrintHistoryDisplay = ({ locationType, locationId }) => {
           {
             date: formatDateTime(lastPrint.printedDate).split(" ")[0],
             time: formatDateTime(lastPrint.printedDate).split(" ")[1],
-            user: lastPrint.printedBy || intl.formatMessage({
-              id: "label.printHistory.unknownUser",
-              defaultMessage: "Unknown",
-            }),
+            user:
+              lastPrint.printedBy ||
+              intl.formatMessage({
+                id: "label.printHistory.unknownUser",
+                defaultMessage: "Unknown",
+              }),
           },
         )}
       </div>
@@ -149,29 +152,38 @@ const PrintHistoryDisplay = ({ locationType, locationId }) => {
                   <div style={{ fontWeight: "bold" }}>
                     {formatDateTime(record.printedDate)}
                   </div>
-                  <div style={{ fontSize: "0.875rem", color: "var(--cds-text-secondary)" }}>
+                  <div
+                    style={{
+                      fontSize: "0.875rem",
+                      color: "var(--cds-text-secondary)",
+                    }}
+                  >
                     {intl.formatMessage(
                       {
                         id: "label.printHistory.byUser",
                         defaultMessage: "By {user}",
                       },
                       {
-                        user: record.printedBy || intl.formatMessage({
-                          id: "label.printHistory.unknownUser",
-                          defaultMessage: "Unknown",
-                        }),
+                        user:
+                          record.printedBy ||
+                          intl.formatMessage({
+                            id: "label.printHistory.unknownUser",
+                            defaultMessage: "Unknown",
+                          }),
                       },
                     )}
                     {record.printCount > 1 && (
                       <span>
                         {" "}
-                        ({intl.formatMessage(
+                        (
+                        {intl.formatMessage(
                           {
                             id: "label.printHistory.count",
                             defaultMessage: "{count} labels",
                           },
                           { count: record.printCount },
-                        )})
+                        )}
+                        )
                       </span>
                     )}
                   </div>
@@ -191,4 +203,3 @@ PrintHistoryDisplay.propTypes = {
 };
 
 export default PrintHistoryDisplay;
-

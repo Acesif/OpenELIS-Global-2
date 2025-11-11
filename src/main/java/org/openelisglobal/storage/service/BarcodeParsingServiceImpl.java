@@ -6,8 +6,8 @@ import java.util.List;
 import org.springframework.stereotype.Service;
 
 /**
- * Implementation of BarcodeParsingService
- * Parses storage location barcodes per FR-023
+ * Implementation of BarcodeParsingService Parses storage location barcodes per
+ * FR-023
  */
 @Service
 public class BarcodeParsingServiceImpl implements BarcodeParsingService {

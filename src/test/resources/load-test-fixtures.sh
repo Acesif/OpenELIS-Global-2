@@ -36,17 +36,17 @@ if [ "$USE_DOCKER" = true ]; then
     # Load via Docker
     echo "Loading fixtures via Docker..."
     docker exec -i openelisglobal-database psql -U clinlims -d clinlims < "$SQL_FILE"
-    
+
     if [ $? -eq 0 ]; then
         echo ""
         echo "✅ Fixtures loaded successfully!"
         echo ""
         echo "Verifying fixture data..."
         echo ""
-        
+
         # Verify storage hierarchy
         docker exec openelisglobal-database psql -U clinlims -d clinlims -t -c "
-            SELECT 
+            SELECT
                 'Storage Hierarchy' AS category,
                 'Rooms' AS type, COUNT(*) AS count FROM storage_room WHERE code IN ('MAIN', 'SEC', 'INACTIVE')
             UNION ALL
@@ -58,12 +58,12 @@ if [ "$USE_DOCKER" = true ]; then
             UNION ALL
             SELECT '', 'Positions', COUNT(*) FROM storage_position WHERE id BETWEEN 100 AND 10000;
         " | sed 's/^[[:space:]]*//' | grep -v '^$'
-        
+
         echo ""
-        
+
         # Verify E2E test data
         docker exec openelisglobal-database psql -U clinlims -d clinlims -t -c "
-            SELECT 
+            SELECT
                 'E2E Test Data' AS category,
                 'Patients' AS type, COUNT(*) AS count FROM patient WHERE external_id LIKE 'E2E-%'
             UNION ALL
@@ -73,7 +73,7 @@ if [ "$USE_DOCKER" = true ]; then
             UNION ALL
             SELECT '', 'Storage Assignments', COUNT(*) FROM sample_storage_assignment WHERE id >= 1000;
         " | sed 's/^[[:space:]]*//' | grep -v '^$'
-        
+
         echo ""
         echo "======================================"
         echo "✅ Verification complete!"
@@ -98,23 +98,23 @@ else
         echo "Alternatively, ensure Docker is running with openelisglobal-database container."
         exit 1
     fi
-    
+
     # Database connection parameters
     DB_USER="${DB_USER:-clinlims}"
     DB_NAME="${DB_NAME:-clinlims}"
     DB_HOST="${DB_HOST:-localhost}"
     DB_PORT="${DB_PORT:-5432}"
-    
+
     echo "Using direct psql connection"
     echo "Database: $DB_NAME@$DB_HOST:$DB_PORT"
     echo "User: $DB_USER"
     echo ""
     echo "Loading test data..."
     echo ""
-    
+
     # Execute SQL script
     psql -U "$DB_USER" -d "$DB_NAME" -h "$DB_HOST" -p "$DB_PORT" -f "$SQL_FILE"
-    
+
     if [ $? -eq 0 ]; then
         echo ""
         echo "======================================"
@@ -123,10 +123,10 @@ else
         echo ""
         echo "Verifying fixture data..."
         echo ""
-        
+
         # Verify storage hierarchy
         psql -U "$DB_USER" -d "$DB_NAME" -h "$DB_HOST" -p "$DB_PORT" -t -c "
-            SELECT 
+            SELECT
                 'Storage Hierarchy' AS category,
                 'Rooms' AS type, COUNT(*) AS count FROM storage_room WHERE code IN ('MAIN', 'SEC', 'INACTIVE')
             UNION ALL
@@ -138,12 +138,12 @@ else
             UNION ALL
             SELECT '', 'Positions', COUNT(*) FROM storage_position WHERE id BETWEEN 100 AND 10000;
         " | sed 's/^[[:space:]]*//' | grep -v '^$'
-        
+
         echo ""
-        
+
         # Verify E2E test data
         psql -U "$DB_USER" -d "$DB_NAME" -h "$DB_HOST" -p "$DB_PORT" -t -c "
-            SELECT 
+            SELECT
                 'E2E Test Data' AS category,
                 'Patients' AS type, COUNT(*) AS count FROM patient WHERE external_id LIKE 'E2E-%'
             UNION ALL
@@ -153,7 +153,7 @@ else
             UNION ALL
             SELECT '', 'Storage Assignments', COUNT(*) FROM sample_storage_assignment WHERE id >= 1000;
         " | sed 's/^[[:space:]]*//' | grep -v '^$'
-        
+
         echo ""
         echo "======================================"
         echo "✅ Verification complete!"
@@ -172,4 +172,3 @@ else
         exit 1
     fi
 fi
-

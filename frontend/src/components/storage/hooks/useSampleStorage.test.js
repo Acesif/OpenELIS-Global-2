@@ -75,9 +75,9 @@ describe("useSampleStorage", () => {
       const { result } = renderHook(() => useSampleStorage());
 
       await act(async () => {
-        await expect(result.current.moveSampleItem(movementData)).rejects.toThrow(
-          "Target position is already occupied",
-        );
+        await expect(
+          result.current.moveSampleItem(movementData),
+        ).rejects.toThrow("Target position is already occupied");
       });
 
       expect(result.current.error).toBe("Target position is already occupied");
@@ -101,9 +101,9 @@ describe("useSampleStorage", () => {
       const { result } = renderHook(() => useSampleStorage());
 
       await act(async () => {
-        await expect(result.current.moveSampleItem(movementData)).rejects.toThrow(
-          "Sample not found",
-        );
+        await expect(
+          result.current.moveSampleItem(movementData),
+        ).rejects.toThrow("Sample not found");
       });
 
       expect(result.current.error).toBe("Sample not found");
@@ -127,12 +127,16 @@ describe("useSampleStorage", () => {
       const { result } = renderHook(() => useSampleStorage());
 
       await act(async () => {
-        await expect(result.current.moveSampleItem(movementData)).rejects.toThrow();
+        await expect(
+          result.current.moveSampleItem(movementData),
+        ).rejects.toThrow();
       });
 
       // The error message will be "[object Object]" because response.toString() returns that for objects
       expect(result.current.error).toBeTruthy();
-      expect(result.current.error).toMatch(/Unexpected response format|\[object Object\]/);
+      expect(result.current.error).toMatch(
+        /Unexpected response format|\[object Object\]/,
+      );
       expect(result.current.isSubmitting).toBe(false);
     });
 
@@ -296,7 +300,9 @@ describe("useSampleStorage", () => {
 
       // The error message will be "[object Object]" because response.toString() returns that for objects
       expect(result.current.error).toBeTruthy();
-      expect(result.current.error).toMatch(/Unexpected response format|\[object Object\]/);
+      expect(result.current.error).toMatch(
+        /Unexpected response format|\[object Object\]/,
+      );
       expect(result.current.isSubmitting).toBe(false);
     });
 

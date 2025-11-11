@@ -38,7 +38,9 @@ const PrintLabelButton = ({
 
     setIsLoading(true);
     const url = `/rest/storage/${locationType}/${locationId}/print-label`;
-    const params = shortCode ? `?shortCode=${encodeURIComponent(shortCode)}` : "";
+    const params = shortCode
+      ? `?shortCode=${encodeURIComponent(shortCode)}`
+      : "";
     const fullUrl = url + params;
 
     // Use postToOpenElisServer to get PDF blob
@@ -64,13 +66,11 @@ const PrintLabelButton = ({
         if (!newWindow) {
           // Popup blocked - show error
           alert(
-            intl.formatMessage(
-              {
-                id: "label.print.error.popupBlocked",
-                defaultMessage:
-                  "Popup blocked. Please allow popups for this site to print labels.",
-              },
-            ),
+            intl.formatMessage({
+              id: "label.print.error.popupBlocked",
+              defaultMessage:
+                "Popup blocked. Please allow popups for this site to print labels.",
+            }),
           );
         }
         // Clean up blob URL after a delay (let browser load it first)
@@ -82,12 +82,10 @@ const PrintLabelButton = ({
       .catch((error) => {
         console.error("Error printing label:", error);
         alert(
-          intl.formatMessage(
-            {
-              id: "label.print.error",
-              defaultMessage: "Error generating label. Please try again.",
-            },
-          ),
+          intl.formatMessage({
+            id: "label.print.error",
+            defaultMessage: "Error generating label. Please try again.",
+          }),
         );
         setIsLoading(false);
       });
@@ -127,4 +125,3 @@ PrintLabelButton.defaultProps = {
 };
 
 export default PrintLabelButton;
-

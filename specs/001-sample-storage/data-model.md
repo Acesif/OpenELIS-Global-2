@@ -365,21 +365,23 @@ and enforced by database constraint.
   `parent_shelf_id`, `parent_rack_id`, and `coordinate` fields. Represents a
   physical storage position in the hierarchy.
 - **Position coordinate**: The text field (`position_coordinate` in
-  `SampleStorageAssignment`). A free-text
-  identifier for a specific position within a location (e.g., "A1", "Top shelf",
-  "Rack 3, Position 5").
+  `SampleStorageAssignment`). A free-text identifier for a specific position
+  within a location (e.g., "A1", "Top shelf", "Rack 3, Position 5").
 
 ---
 
 ## 6. SampleStorageAssignment
 
-**Purpose**: Current storage location assignment for a SampleItem (physical specimen). One-to-one
-relationship (one SampleItem, one current location). Supports flexible assignment to
-any hierarchy level (device, shelf, or rack) with optional text-based position
-coordinate. Position is represented as a text field (`position_coordinate`), not
-a separate entity reference.
+**Purpose**: Current storage location assignment for a SampleItem (physical
+specimen). One-to-one relationship (one SampleItem, one current location).
+Supports flexible assignment to any hierarchy level (device, shelf, or rack)
+with optional text-based position coordinate. Position is represented as a text
+field (`position_coordinate`), not a separate entity reference.
 
-**Storage Granularity**: Storage tracking operates at the **SampleItem level** (physical specimens), not at the Sample level (orders). Each SampleItem can be stored independently, even when multiple SampleItems belong to the same parent Sample.
+**Storage Granularity**: Storage tracking operates at the **SampleItem level**
+(physical specimens), not at the Sample level (orders). Each SampleItem can be
+stored independently, even when multiple SampleItems belong to the same parent
+Sample.
 
 **Table**: `SAMPLE_STORAGE_ASSIGNMENT`
 
@@ -388,7 +390,7 @@ a separate entity reference.
 | Field                 | Type        | Constraints             | Description                                                                  |
 | --------------------- | ----------- | ----------------------- | ---------------------------------------------------------------------------- |
 | `id`                  | VARCHAR(36) | PK, AUTO                | Primary key                                                                  |
-| `sample_item_id`      | VARCHAR(36) | NOT NULL, UNIQUE        | SampleItem reference (one current location per SampleItem)                  |
+| `sample_item_id`      | VARCHAR(36) | NOT NULL, UNIQUE        | SampleItem reference (one current location per SampleItem)                   |
 | `location_id`         | NUMERIC(10) | NOT NULL                | Polymorphic location ID (references device, shelf, or rack)                  |
 | `location_type`       | VARCHAR(20) | NOT NULL                | Type discriminator: 'device', 'shelf', or 'rack'                             |
 | `position_coordinate` | VARCHAR(50) | NULL                    | Optional text-based position coordinate (can be used with any location_type) |
@@ -425,7 +427,8 @@ a separate entity reference.
 - **On UPDATE (SampleItem moved)**: Update location reference, create audit log
   entry
 - **On DELETE (SampleItem disposed)**: Create audit log entry with
-  `new_location_id = NULL`, `new_location_type = NULL`, `new_position_coordinate = NULL`
+  `new_location_id = NULL`, `new_location_type = NULL`,
+  `new_position_coordinate = NULL`
 
 **Validation Rules**:
 
@@ -440,8 +443,8 @@ a separate entity reference.
   `StorageRack` (4 levels: room + device + shelf + rack)
 - Cannot assign SampleItem to inactive storage location (check entire hierarchy:
   room, device, shelf, rack)
-- SampleItem can have only one current assignment (enforced by UNIQUE constraint on
-  sample_item_id)
+- SampleItem can have only one current assignment (enforced by UNIQUE constraint
+  on sample_item_id)
 - `position_coordinate` is optional text (max 50 chars per FR-010), can be used
   with any `location_type` to provide specific position information
 
@@ -458,38 +461,40 @@ location states for each movement event.
 
 **Fields**:
 
-| Field                        | Type        | Constraints             | Description                                                                  |
-| ---------------------------- | ----------- | ----------------------- | ---------------------------------------------------------------------------- |
-| `id`                         | VARCHAR(36) | PK, AUTO                | Primary key                                                                  |
-| `sample_item_id`             | VARCHAR(36) | NOT NULL, FK            | SampleItem reference                                                         |
-| `previous_location_id`       | NUMERIC(10) | NULL                    | Previous location ID (polymorphic: device, shelf, or rack)                   |
-| `previous_location_type`    | VARCHAR(20) | NULL                    | Previous location type: 'device', 'shelf', or 'rack'                         |
-| `previous_position_coordinate` | VARCHAR(50) | NULL                    | Previous position coordinate (optional text field)                           |
-| `new_location_id`            | NUMERIC(10) | NULL                    | New location ID (polymorphic: device, shelf, or rack)                        |
-| `new_location_type`          | VARCHAR(20) | NULL                    | New location type: 'device', 'shelf', or 'rack'                               |
-| `new_position_coordinate`    | VARCHAR(50) | NULL                    | New position coordinate (optional text field)                                 |
-| `moved_by_user_id`           | INT         | NOT NULL, FK            | User who performed move                                                      |
-| `movement_date`              | TIMESTAMP   | NOT NULL, DEFAULT NOW() | Movement timestamp                                                           |
-| `reason`                     | TEXT        | NULL                    | Optional reason for move                                                      |
+| Field                          | Type        | Constraints             | Description                                                |
+| ------------------------------ | ----------- | ----------------------- | ---------------------------------------------------------- |
+| `id`                           | VARCHAR(36) | PK, AUTO                | Primary key                                                |
+| `sample_item_id`               | VARCHAR(36) | NOT NULL, FK            | SampleItem reference                                       |
+| `previous_location_id`         | NUMERIC(10) | NULL                    | Previous location ID (polymorphic: device, shelf, or rack) |
+| `previous_location_type`       | VARCHAR(20) | NULL                    | Previous location type: 'device', 'shelf', or 'rack'       |
+| `previous_position_coordinate` | VARCHAR(50) | NULL                    | Previous position coordinate (optional text field)         |
+| `new_location_id`              | NUMERIC(10) | NULL                    | New location ID (polymorphic: device, shelf, or rack)      |
+| `new_location_type`            | VARCHAR(20) | NULL                    | New location type: 'device', 'shelf', or 'rack'            |
+| `new_position_coordinate`      | VARCHAR(50) | NULL                    | New position coordinate (optional text field)              |
+| `moved_by_user_id`             | INT         | NOT NULL, FK            | User who performed move                                    |
+| `movement_date`                | TIMESTAMP   | NOT NULL, DEFAULT NOW() | Movement timestamp                                         |
+| `reason`                       | TEXT        | NULL                    | Optional reason for move                                   |
 
 **Constraints**:
 
 - PRIMARY KEY (`id`)
 - FOREIGN KEY (`sample_item_id`) REFERENCES `sample_item(id)` ON DELETE CASCADE
 - FOREIGN KEY (`moved_by_user_id`) REFERENCES `system_user(id)`
-- CHECK (`previous_location_id` IS NOT NULL AND `previous_location_type` IS NOT NULL) OR
-  (`new_location_id` IS NOT NULL AND `new_location_type` IS NOT NULL) - At least one
-  location (previous or new) must be specified
-- CHECK (`previous_location_type` IS NULL OR `previous_location_type` IN ('device', 'shelf', 'rack'))
-- CHECK (`new_location_type` IS NULL OR `new_location_type` IN ('device', 'shelf', 'rack'))
+- CHECK (`previous_location_id` IS NOT NULL AND `previous_location_type` IS NOT
+  NULL) OR (`new_location_id` IS NOT NULL AND `new_location_type` IS NOT NULL) -
+  At least one location (previous or new) must be specified
+- CHECK (`previous_location_type` IS NULL OR `previous_location_type` IN
+  ('device', 'shelf', 'rack'))
+- CHECK (`new_location_type` IS NULL OR `new_location_type` IN ('device',
+  'shelf', 'rack'))
 
 **Relationships**:
 
 - Many-to-One with `SampleItem`
-- Polymorphic relationship to `StorageDevice`, `StorageShelf`, or `StorageRack` via
-  `previous_location_id` + `previous_location_type` (previous location)
-- Polymorphic relationship to `StorageDevice`, `StorageShelf`, or `StorageRack` via
-  `new_location_id` + `new_location_type` (new location)
+- Polymorphic relationship to `StorageDevice`, `StorageShelf`, or `StorageRack`
+  via `previous_location_id` + `previous_location_type` (previous location)
+- Polymorphic relationship to `StorageDevice`, `StorageShelf`, or `StorageRack`
+  via `new_location_id` + `new_location_type` (new location)
 - Many-to-One with `SystemUser` (moved by)
 
 **Immutability**:
@@ -500,33 +505,36 @@ location states for each movement event.
 
 **Event Types**:
 
-- **Initial Assignment**: `previous_location_id = NULL`, `previous_location_type = NULL`,
-  `previous_position_coordinate = NULL`, `new_location_id` and `new_location_type`
-  populated with assigned location
-- **Movement**: Both previous and new location fields populated (captures the change from
-  one location to another)
+- **Initial Assignment**: `previous_location_id = NULL`,
+  `previous_location_type = NULL`, `previous_position_coordinate = NULL`,
+  `new_location_id` and `new_location_type` populated with assigned location
+- **Movement**: Both previous and new location fields populated (captures the
+  change from one location to another)
 - **Disposal/Removal**: `new_location_id = NULL`, `new_location_type = NULL`,
-  `new_position_coordinate = NULL`, previous location fields contain the last known location
+  `new_position_coordinate = NULL`, previous location fields contain the last
+  known location
 
 **Validation Rules**:
 
 - At least one of (previous_location_id + previous_location_type) or
   (new_location_id + new_location_type) must be non-NULL
-- `previous_location_type` and `new_location_type` must be one of: 'device', 'shelf', or
-  'rack' (enforced by CHECK constraint)
+- `previous_location_type` and `new_location_type` must be one of: 'device',
+  'shelf', or 'rack' (enforced by CHECK constraint)
 - `movement_date` must not be in the future
 - Cannot update or delete existing records (immutability enforced via database
   permissions)
 
 **Relationship to SampleStorageAssignment**:
 
-- `SampleStorageMovement` is an **audit log** of all changes to `SampleStorageAssignment`
+- `SampleStorageMovement` is an **audit log** of all changes to
+  `SampleStorageAssignment`
 - When a SampleItem is assigned or moved:
-  1. `SampleStorageAssignment` is created or updated with the new current location
-  2. A `SampleStorageMovement` record is created capturing both the previous state (from
-     the old assignment) and the new state (the updated assignment)
-- This provides a complete audit trail: the assignment table shows "where is it now", the
-  movement table shows "how did it get there"
+  1. `SampleStorageAssignment` is created or updated with the new current
+     location
+  2. A `SampleStorageMovement` record is created capturing both the previous
+     state (from the old assignment) and the new state (the updated assignment)
+- This provides a complete audit trail: the assignment table shows "where is it
+  now", the movement table shows "how did it get there"
 
 ---
 
@@ -548,8 +556,10 @@ location states for each movement event.
     └─(direct disposal without assignment - P3, out of POC scope)─> [Disposed, No Location]
 ```
 
-Note: Each location assignment can include an optional `position_coordinate` (text field) for
-additional specificity within the assigned location (device, shelf, or rack). Storage tracking operates at the SampleItem level (physical specimens), not at the Sample level (orders).
+Note: Each location assignment can include an optional `position_coordinate`
+(text field) for additional specificity within the assigned location (device,
+shelf, or rack). Storage tracking operates at the SampleItem level (physical
+specimens), not at the Sample level (orders).
 
 ### Location Hierarchy Active Status
 
@@ -612,32 +622,35 @@ CREATE INDEX idx_position_occupied ON storage_position(parent_rack_id, occupied)
 - 6-month POC duration
 - 5 storage rooms, 20 devices, 50 shelves, 200 racks, 10,000 positions
 
-| Entity                  | Estimated Rows                            | Storage (MB) |
-| ----------------------- | ----------------------------------------- | ------------ |
-| StorageRoom             | 5                                         | <1           |
-| StorageDevice           | 20                                        | <1           |
-| StorageShelf            | 50                                        | <1           |
-| StorageRack             | 200                                       | <1           |
-| StoragePosition         | 10,000                                    | ~2           |
-| SampleStorageAssignment | 12,000 (6 months × 2k/month)              | ~3           |
+| Entity                  | Estimated Rows                                | Storage (MB) |
+| ----------------------- | --------------------------------------------- | ------------ |
+| StorageRoom             | 5                                             | <1           |
+| StorageDevice           | 20                                            | <1           |
+| StorageShelf            | 50                                            | <1           |
+| StorageRack             | 200                                           | <1           |
+| StoragePosition         | 10,000                                        | ~2           |
+| SampleStorageAssignment | 12,000 (6 months × 2k/month)                  | ~3           |
 | SampleStorageMovement   | 15,000 (audit log, 1.25 moves/SampleItem avg) | ~4           |
-| **Total**               | **37,275**                                | **~11 MB**   |
+| **Total**               | **37,275**                                    | **~11 MB**   |
 
 **Growth Rate**: +2,000 assignments/month, +2,500 movements/month during POC
 
-**Scalability**: Design supports 100,000+ SampleItems with <100MB storage footprint
-and <100ms query times (with proper indexing).
+**Scalability**: Design supports 100,000+ SampleItems with <100MB storage
+footprint and <100ms query times (with proper indexing).
 
 ---
 
 ## Summary
 
 **Entities**: 7 (5 hierarchy + 2 assignment/audit)  
-**Relationships**: 6 parent-child + 4 cross-entity (including Sample → SampleItem)  
-**FHIR Resources**: 5 Location resources (Room, Device, Shelf, Rack, Position) + Specimen.container for SampleItem storage  
-**Storage Granularity**: SampleItem level (physical specimens), not Sample level (orders)  
+**Relationships**: 6 parent-child + 4 cross-entity (including Sample →
+SampleItem)  
+**FHIR Resources**: 5 Location resources (Room, Device, Shelf, Rack, Position) +
+Specimen.container for SampleItem storage  
+**Storage Granularity**: SampleItem level (physical specimens), not Sample level
+(orders)  
 **Audit Trail**: Complete (SampleStorageMovement immutable log)  
 **Flexibility**: Position coordinates free-text, duplicate positions allowed
 within racks  
-**Performance**: Indexed for common queries (parent traversal, SampleItem lookup,
-audit queries)
+**Performance**: Indexed for common queries (parent traversal, SampleItem
+lookup, audit queries)

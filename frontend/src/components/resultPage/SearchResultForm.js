@@ -1277,7 +1277,8 @@ export function SearchResults(props) {
         if (response && response.length > 0) {
           // Get first SampleItem (or could allow user to select which SampleItem if multiple)
           const sampleItem = response[0];
-          const locationPath = sampleItem.hierarchicalPath || sampleItem.location || "";
+          const locationPath =
+            sampleItem.hierarchicalPath || sampleItem.location || "";
           // Store SampleItem data for later use in assignment
           setSampleLocations((prev) => ({
             ...prev,
@@ -1285,7 +1286,8 @@ export function SearchResults(props) {
               locationPath,
               sampleItemId: sampleItem.sampleItemId || sampleItem.id,
               sampleItemExternalId: sampleItem.sampleItemExternalId || null,
-              sampleAccessionNumber: sampleItem.sampleAccessionNumber || accessionNumber,
+              sampleAccessionNumber:
+                sampleItem.sampleAccessionNumber || accessionNumber,
             },
           }));
         }
@@ -1302,18 +1304,24 @@ export function SearchResults(props) {
   const handleLocationAssignment = async (locationData, accessionNumber) => {
     // locationData format: { sample, newLocation, reason?, conditionNotes?, positionCoordinate? }
     const newLocation = locationData?.newLocation || locationData;
-    
+
     // Get SampleItem ID from stored location data (from fetchSampleLocation) or from locationData
     const storedLocationData = sampleLocations[accessionNumber];
-    const sampleItemId = 
-      locationData?.sample?.sampleItemId || 
-      locationData?.sample?.id || 
+    const sampleItemId =
+      locationData?.sample?.sampleItemId ||
+      locationData?.sample?.id ||
       locationData?.sample?.sampleId ||
-      (storedLocationData && typeof storedLocationData === 'object' ? storedLocationData.sampleItemId : null) ||
+      (storedLocationData && typeof storedLocationData === "object"
+        ? storedLocationData.sampleItemId
+        : null) ||
       null;
-    
+
     if (!sampleItemId || !newLocation) {
-      console.error("Missing SampleItem ID or location for assignment", { sampleItemId, newLocation, locationData });
+      console.error("Missing SampleItem ID or location for assignment", {
+        sampleItemId,
+        newLocation,
+        locationData,
+      });
       return;
     }
 
@@ -1321,9 +1329,19 @@ export function SearchResults(props) {
       // Call assignment API with SampleItem ID
       const assignmentData = {
         sampleItemId: sampleItemId,
-        locationId: newLocation.rack?.id || newLocation.shelf?.id || newLocation.device?.id,
-        locationType: newLocation.rack ? "rack" : newLocation.shelf ? "shelf" : "device",
-        positionCoordinate: locationData.positionCoordinate || newLocation.position?.coordinate || "",
+        locationId:
+          newLocation.rack?.id ||
+          newLocation.shelf?.id ||
+          newLocation.device?.id,
+        locationType: newLocation.rack
+          ? "rack"
+          : newLocation.shelf
+            ? "shelf"
+            : "device",
+        positionCoordinate:
+          locationData.positionCoordinate ||
+          newLocation.position?.coordinate ||
+          "",
         notes: locationData.conditionNotes || "", // Assignment form uses "notes" field
       };
 
@@ -1337,9 +1355,10 @@ export function SearchResults(props) {
             const storedData = sampleLocations[accessionNumber];
             setSampleLocations((prev) => ({
               ...prev,
-              [accessionNumber]: storedData && typeof storedData === 'object' 
-                ? { ...storedData, locationPath }
-                : locationPath,
+              [accessionNumber]:
+                storedData && typeof storedData === "object"
+                  ? { ...storedData, locationPath }
+                  : locationPath,
             }));
             addNotification({
               title: intl.formatMessage({ id: "notification.title" }),
@@ -1387,9 +1406,10 @@ export function SearchResults(props) {
 
     // Get location path from stored data (can be string or object)
     const locationData = sampleLocations[accessionNumber];
-    const currentLocationPath = typeof locationData === 'object' 
-      ? (locationData.locationPath || "") 
-      : (locationData || "");
+    const currentLocationPath =
+      typeof locationData === "object"
+        ? locationData.locationPath || ""
+        : locationData || "";
 
     return (
       <>
@@ -1398,7 +1418,9 @@ export function SearchResults(props) {
             <Select
               id={"testMethod" + data.id}
               name={"testResult[" + data.id + "].testMethod"}
-              labelText={intl.formatMessage({ id: "referral.label.testmethod" })}
+              labelText={intl.formatMessage({
+                id: "referral.label.testmethod",
+              })}
               onChange={(e) => handleChange(e, data.id)}
               value={data.testMethod}
             >
@@ -1527,10 +1549,22 @@ export function SearchResults(props) {
               showQuickFind={true}
               sampleInfo={{
                 // Use SampleItem data if available, otherwise fall back to Sample accession number
-                sampleItemId: locationData && typeof locationData === 'object' ? locationData.sampleItemId : null,
-                sampleItemExternalId: locationData && typeof locationData === 'object' ? locationData.sampleItemExternalId : null,
-                sampleAccessionNumber: locationData && typeof locationData === 'object' ? locationData.sampleAccessionNumber : accessionNumber,
-                sampleId: locationData && typeof locationData === 'object' ? locationData.sampleItemId : accessionNumber, // Legacy fallback
+                sampleItemId:
+                  locationData && typeof locationData === "object"
+                    ? locationData.sampleItemId
+                    : null,
+                sampleItemExternalId:
+                  locationData && typeof locationData === "object"
+                    ? locationData.sampleItemExternalId
+                    : null,
+                sampleAccessionNumber:
+                  locationData && typeof locationData === "object"
+                    ? locationData.sampleAccessionNumber
+                    : accessionNumber,
+                sampleId:
+                  locationData && typeof locationData === "object"
+                    ? locationData.sampleItemId
+                    : accessionNumber, // Legacy fallback
                 type: data.sampleType || "",
                 status: data.sampleStatus || "Active",
               }}

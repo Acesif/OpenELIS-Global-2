@@ -17,14 +17,13 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
- * Implementation of BarcodeValidationService
- * Implements 5-step validation process per FR-024 through FR-027
+ * Implementation of BarcodeValidationService Implements 5-step validation
+ * process per FR-024 through FR-027
  *
- * Key features:
- * - Two-step validation: existence check + hierarchy check
- * - Partial validation: continues through all levels even after failure
- * - Tracks first failure point for user feedback
- * - Populates validComponents for form pre-filling
+ * Key features: - Two-step validation: existence check + hierarchy check -
+ * Partial validation: continues through all levels even after failure - Tracks
+ * first failure point for user feedback - Populates validComponents for form
+ * pre-filling
  */
 @Service
 @Transactional(readOnly = true)
@@ -63,8 +62,8 @@ public class BarcodeValidationServiceImpl implements BarcodeValidationService {
             response.setFailedStep("BARCODE_TYPE_MISMATCH");
             // Try to parse to get components, but use null if parsing fails
             ParsedBarcode sampleParsed = barcodeParsingService.parseBarcode(barcode);
-            response.setErrorMessage(formatErrorMessage(barcode, sampleParsed, 
-                "Scanned barcode appears to be a sample accession number, not a location barcode"));
+            response.setErrorMessage(formatErrorMessage(barcode, sampleParsed,
+                    "Scanned barcode appears to be a sample accession number, not a location barcode"));
             return response;
         }
 
@@ -73,7 +72,7 @@ public class BarcodeValidationServiceImpl implements BarcodeValidationService {
             // Continue with validation attempt, but type is unknown
         }
 
-        boolean isValid = true;  // Assume valid until proven otherwise
+        boolean isValid = true; // Assume valid until proven otherwise
         String firstFailedStep = null;
         String firstErrorMessage = null;
 
@@ -105,7 +104,8 @@ public class BarcodeValidationServiceImpl implements BarcodeValidationService {
             }
         }
 
-        // Step 2 & 3: Device validation (existence + hierarchy) - continue even if room failed
+        // Step 2 & 3: Device validation (existence + hierarchy) - continue even if room
+        // failed
         StorageDevice device = null;
         if (parsed.getDeviceCode() != null) {
             // First check: Does device code exist anywhere?
@@ -123,10 +123,13 @@ public class BarcodeValidationServiceImpl implements BarcodeValidationService {
                     if (isValid) { // Only record first failure
                         isValid = false;
                         firstFailedStep = "HIERARCHY_VALIDATION";
-                        firstErrorMessage = "Device '" + parsed.getDeviceCode() + "' exists but parent hierarchy is incorrect (not in room '" + (room.getName() != null ? room.getName() : room.getCode()) + "')";
+                        firstErrorMessage = "Device '" + parsed.getDeviceCode()
+                                + "' exists but parent hierarchy is incorrect (not in room '"
+                                + (room.getName() != null ? room.getName() : room.getCode()) + "')";
                     }
                 } else {
-                    response.addValidComponent("device", createComponentMap(device.getId(), device.getName(), device.getCode()));
+                    response.addValidComponent("device",
+                            createComponentMap(device.getId(), device.getName(), device.getCode()));
 
                     // Step 4: Device activity check
                     if (device.getActive() == null || !device.getActive()) {
@@ -140,7 +143,8 @@ public class BarcodeValidationServiceImpl implements BarcodeValidationService {
             }
         }
 
-        // Step 2 & 3: Shelf validation (existence + hierarchy) - continue even if device failed
+        // Step 2 & 3: Shelf validation (existence + hierarchy) - continue even if
+        // device failed
         StorageShelf shelf = null;
         if (parsed.getShelfCode() != null) {
             // First check: Does shelf label exist anywhere?
@@ -158,10 +162,13 @@ public class BarcodeValidationServiceImpl implements BarcodeValidationService {
                     if (isValid) { // Only record first failure
                         isValid = false;
                         firstFailedStep = "HIERARCHY_VALIDATION";
-                        firstErrorMessage = "Shelf '" + parsed.getShelfCode() + "' exists but parent hierarchy is incorrect (not in device '" + (device.getName() != null ? device.getName() : device.getCode()) + "')";
+                        firstErrorMessage = "Shelf '" + parsed.getShelfCode()
+                                + "' exists but parent hierarchy is incorrect (not in device '"
+                                + (device.getName() != null ? device.getName() : device.getCode()) + "')";
                     }
                 } else {
-                    response.addValidComponent("shelf", createComponentMap(shelf.getId(), shelf.getLabel(), shelf.getLabel()));
+                    response.addValidComponent("shelf",
+                            createComponentMap(shelf.getId(), shelf.getLabel(), shelf.getLabel()));
 
                     // Step 4: Shelf activity check
                     if (shelf.getActive() == null || !shelf.getActive()) {
@@ -175,7 +182,8 @@ public class BarcodeValidationServiceImpl implements BarcodeValidationService {
             }
         }
 
-        // Step 2 & 3: Rack validation (existence + hierarchy) - continue even if shelf failed
+        // Step 2 & 3: Rack validation (existence + hierarchy) - continue even if shelf
+        // failed
         StorageRack rack = null;
         if (parsed.getRackCode() != null) {
             // First check: Does rack label exist anywhere?
@@ -193,10 +201,13 @@ public class BarcodeValidationServiceImpl implements BarcodeValidationService {
                     if (isValid) { // Only record first failure
                         isValid = false;
                         firstFailedStep = "HIERARCHY_VALIDATION";
-                        firstErrorMessage = "Rack '" + parsed.getRackCode() + "' exists but parent hierarchy is incorrect (not in shelf '" + shelf.getLabel() + "')";
+                        firstErrorMessage = "Rack '" + parsed.getRackCode()
+                                + "' exists but parent hierarchy is incorrect (not in shelf '" + shelf.getLabel()
+                                + "')";
                     }
                 } else {
-                    response.addValidComponent("rack", createComponentMap(rack.getId(), rack.getLabel(), rack.getLabel()));
+                    response.addValidComponent("rack",
+                            createComponentMap(rack.getId(), rack.getLabel(), rack.getLabel()));
 
                     // Step 4: Rack activity check
                     if (rack.getActive() == null || !rack.getActive()) {
@@ -210,7 +221,8 @@ public class BarcodeValidationServiceImpl implements BarcodeValidationService {
             }
         }
 
-        // Step 2 & 3: Position validation (existence + hierarchy) - continue even if rack failed
+        // Step 2 & 3: Position validation (existence + hierarchy) - continue even if
+        // rack failed
         StoragePosition position = null;
         if (parsed.getPositionCode() != null) {
             // First check: Does position coordinate exist anywhere?
@@ -228,18 +240,22 @@ public class BarcodeValidationServiceImpl implements BarcodeValidationService {
                     if (isValid) { // Only record first failure
                         isValid = false;
                         firstFailedStep = "HIERARCHY_VALIDATION";
-                        firstErrorMessage = "Position '" + parsed.getPositionCode() + "' exists but parent hierarchy is incorrect (not in rack '" + rack.getLabel() + "')";
+                        firstErrorMessage = "Position '" + parsed.getPositionCode()
+                                + "' exists but parent hierarchy is incorrect (not in rack '" + rack.getLabel() + "')";
                     }
                 } else {
-                    response.addValidComponent("position", createComponentMap(position.getId(), position.getCoordinate(), position.getCoordinate()));
+                    response.addValidComponent("position",
+                            createComponentMap(position.getId(), position.getCoordinate(), position.getCoordinate()));
 
-                    // Note: StoragePosition doesn't have an active field - it inherits activity from its parent hierarchy
+                    // Note: StoragePosition doesn't have an active field - it inherits activity
+                    // from its parent hierarchy
                 }
             }
         }
 
         // Step 5: Conflict Check
-        // Note: With the polymorphic location model (Phase 4), we check if the exact location
+        // Note: With the polymorphic location model (Phase 4), we check if the exact
+        // location
         // (locationId + locationType + optional coordinate) is occupied
         // For barcode validation, we're validating the barcode format and hierarchy,
         // not checking occupancy at this level (that's done during assignment)
@@ -267,54 +283,58 @@ public class BarcodeValidationServiceImpl implements BarcodeValidationService {
     }
 
     /**
-     * Format error message per FR-024g specification
-     * Format: "Scanned code: {barcode} ({parsed components}). {specific error}"
-     * If parsing fails: "Scanned code: {barcode}. Invalid barcode format."
+     * Format error message per FR-024g specification Format: "Scanned code:
+     * {barcode} ({parsed components}). {specific error}" If parsing fails: "Scanned
+     * code: {barcode}. Invalid barcode format."
      * 
-     * @param rawBarcode The original barcode string
-     * @param parsed The parsed barcode object (may be invalid)
+     * @param rawBarcode    The original barcode string
+     * @param parsed        The parsed barcode object (may be invalid)
      * @param specificError The specific error message
      * @return Formatted error message
      */
     private String formatErrorMessage(String rawBarcode, ParsedBarcode parsed, String specificError) {
         StringBuilder message = new StringBuilder();
         message.append("Scanned code: ").append(rawBarcode);
-        
+
         // If parsing succeeded, include parsed components
         if (parsed != null && parsed.isValid()) {
             message.append(" (");
             boolean first = true;
-            
+
             if (parsed.getRoomCode() != null) {
                 message.append("Room: ").append(parsed.getRoomCode());
                 first = false;
             }
             if (parsed.getDeviceCode() != null) {
-                if (!first) message.append(", ");
+                if (!first)
+                    message.append(", ");
                 message.append("Device: ").append(parsed.getDeviceCode());
                 first = false;
             }
             if (parsed.getShelfCode() != null) {
-                if (!first) message.append(", ");
+                if (!first)
+                    message.append(", ");
                 message.append("Shelf: ").append(parsed.getShelfCode());
                 first = false;
             }
             if (parsed.getRackCode() != null) {
-                if (!first) message.append(", ");
+                if (!first)
+                    message.append(", ");
                 message.append("Rack: ").append(parsed.getRackCode());
                 first = false;
             }
             if (parsed.getPositionCode() != null) {
-                if (!first) message.append(", ");
+                if (!first)
+                    message.append(", ");
                 message.append("Position: ").append(parsed.getPositionCode());
             }
-            
+
             message.append("). ");
         } else {
             // Parsing failed - just show raw barcode
             message.append(". ");
         }
-        
+
         // Add specific error
         if (specificError != null && !specificError.isEmpty()) {
             message.append(specificError);
@@ -323,14 +343,14 @@ public class BarcodeValidationServiceImpl implements BarcodeValidationService {
         } else {
             message.append("Invalid barcode format.");
         }
-        
+
         return message.toString();
     }
 
     /**
-     * Detect barcode type: location, sample, or unknown
-     * Location barcodes: Hierarchical format with hyphens (e.g., "MAIN-FRZ01-SHA-RKR1")
-     * Sample barcodes: Accession number formats (e.g., "25-00001", "S-2025-001")
+     * Detect barcode type: location, sample, or unknown Location barcodes:
+     * Hierarchical format with hyphens (e.g., "MAIN-FRZ01-SHA-RKR1") Sample
+     * barcodes: Accession number formats (e.g., "25-00001", "S-2025-001")
      * 
      * @param barcode The barcode string to analyze
      * @return "location", "sample", or "unknown"
@@ -353,20 +373,21 @@ public class BarcodeValidationServiceImpl implements BarcodeValidationService {
         // - YYXXXXX (year-based without hyphen, e.g., "2500001")
         // - S-YYYY-NNNNN (site-based, e.g., "S-2025-001")
         // - Alphanumeric codes (e.g., "ABC123", "PROG-001")
-        
+
         String trimmed = barcode.trim();
-        
+
         // Pattern 1: YY-XXXXX or YYXXXXX (2-digit year + numbers)
         if (trimmed.matches("\\d{2}-?\\d{4,}")) {
             return "sample";
         }
-        
+
         // Pattern 2: S-YYYY-NNNNN or similar site-based formats
         if (trimmed.matches("[A-Z]{1,4}-\\d{4}-\\d{3,}")) {
             return "sample";
         }
-        
-        // Pattern 3: Alphanumeric codes (letters + numbers, may have hyphens but not hierarchical)
+
+        // Pattern 3: Alphanumeric codes (letters + numbers, may have hyphens but not
+        // hierarchical)
         // Exclude hierarchical format (multiple hyphens with specific structure)
         if (trimmed.matches("[A-Z0-9-]+") && !trimmed.matches(".*-.*-.*-.*")) {
             // If it's alphanumeric but doesn't match hierarchical pattern, likely a sample
@@ -377,7 +398,7 @@ public class BarcodeValidationServiceImpl implements BarcodeValidationService {
                 return "sample";
             }
         }
-        
+
         // Pattern 4: Pure numeric (likely sample accession)
         if (trimmed.matches("\\d{5,}")) {
             return "sample";

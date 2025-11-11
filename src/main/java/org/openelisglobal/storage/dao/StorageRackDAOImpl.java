@@ -73,7 +73,8 @@ public class StorageRackDAOImpl extends BaseDAOImpl<StorageRack, Integer> implem
 
     @Override
     @Transactional(readOnly = true)
-    public StorageRack findByLabelAndParentShelf(String label, org.openelisglobal.storage.valueholder.StorageShelf parentShelf) {
+    public StorageRack findByLabelAndParentShelf(String label,
+            org.openelisglobal.storage.valueholder.StorageShelf parentShelf) {
         try {
             if (parentShelf == null) {
                 return null;

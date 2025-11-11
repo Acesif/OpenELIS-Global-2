@@ -34,7 +34,9 @@ const StorageLocationSelector = ({
 }) => {
   const intl = useIntl();
   const [selectedLocation, setSelectedLocation] = useState(null);
-  const [hierarchicalPath, setHierarchicalPath] = useState(initialHierarchicalPath);
+  const [hierarchicalPath, setHierarchicalPath] = useState(
+    initialHierarchicalPath,
+  );
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   // Update hierarchicalPath when initialHierarchicalPath prop changes
@@ -103,8 +105,10 @@ const StorageLocationSelector = ({
     const sample = sampleInfo
       ? {
           id: sampleInfo.sampleItemId || sampleInfo.sampleId || sampleInfo.id,
-          sampleId: sampleInfo.sampleItemId || sampleInfo.sampleId || sampleInfo.id,
-          sampleItemId: sampleInfo.sampleItemId || sampleInfo.sampleId || sampleInfo.id,
+          sampleId:
+            sampleInfo.sampleItemId || sampleInfo.sampleId || sampleInfo.id,
+          sampleItemId:
+            sampleInfo.sampleItemId || sampleInfo.sampleId || sampleInfo.id,
           sampleItemExternalId: sampleInfo.sampleItemExternalId || null,
           sampleAccessionNumber: sampleInfo.sampleAccessionNumber || null,
           type: sampleInfo.type || "",

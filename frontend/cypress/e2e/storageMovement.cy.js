@@ -233,11 +233,13 @@ describe("Storage Movement - Bulk Move (P2B)", function () {
           );
 
           // Set up intercept for bulk move BEFORE action
-          cy.intercept("POST", "**/rest/storage/sample-items/bulk-move**").as("bulkMove");
+          cy.intercept("POST", "**/rest/storage/sample-items/bulk-move**").as(
+            "bulkMove",
+          );
 
           // Confirm bulk move
           cy.get('[data-testid="confirm-bulk-move-button"]').click();
-          
+
           // Wait for bulk move API call (intercept timing, not arbitrary wait)
           cy.wait("@bulkMove", { timeout: 10000 });
 
@@ -302,8 +304,9 @@ describe("Storage Movement - Bulk Move (P2B)", function () {
       });
 
       // Wait for position assignments to load (retry-ability, not arbitrary wait)
-      cy.get('[data-testid="position-assignment-preview"]', { timeout: 5000 })
-        .should("be.visible");
+      cy.get('[data-testid="position-assignment-preview"]', {
+        timeout: 5000,
+      }).should("be.visible");
 
       // Edit first position assignment (if editable)
       cy.get("body").then(($body2) => {
@@ -315,17 +318,18 @@ describe("Storage Movement - Bulk Move (P2B)", function () {
             .type("C1");
 
           // Set up intercept for bulk move BEFORE action
-          cy.intercept("POST", "**/rest/storage/sample-items/bulk-move**").as("bulkMove");
+          cy.intercept("POST", "**/rest/storage/sample-items/bulk-move**").as(
+            "bulkMove",
+          );
 
           // Confirm bulk move
           cy.get('[data-testid="confirm-bulk-move-button"]').click();
-          
+
           // Wait for bulk move API call (intercept timing)
           cy.wait("@bulkMove", { timeout: 10000 });
 
           // Verify success (retry-ability)
-          cy.get('div[role="status"]', { timeout: 5000 })
-            .should("be.visible");
+          cy.get('div[role="status"]', { timeout: 5000 }).should("be.visible");
         } else {
           cy.log(
             "Position assignment editing not yet implemented - skipping manual editing test",
@@ -346,7 +350,7 @@ describe("Storage Movement - Previous Position Freed (P2B)", function () {
     // This test verifies that after moving a sample, the previous position
     // becomes available for other samples
     cy.visit("/Storage/samples");
-    
+
     // Wait for samples to load using intercept (not arbitrary wait)
     cy.wait("@getSamples", { timeout: 10000 });
 

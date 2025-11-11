@@ -35,8 +35,10 @@ public class StoragePositionDAOImpl extends BaseDAOImpl<StoragePosition, Integer
     @Transactional(readOnly = true)
     public int countOccupied(Integer rackId) {
         try {
-            // Count SampleStorageAssignment records where locationType='rack' and locationId matches rackId
-            // This reflects actual sample assignments (source of truth) instead of StoragePosition.occupied flag
+            // Count SampleStorageAssignment records where locationType='rack' and
+            // locationId matches rackId
+            // This reflects actual sample assignments (source of truth) instead of
+            // StoragePosition.occupied flag
             String hql = "SELECT COUNT(*) FROM SampleStorageAssignment ssa "
                     + "WHERE ssa.locationType = 'rack' AND ssa.locationId = :rackId";
             Query<Long> query = entityManager.unwrap(Session.class).createQuery(hql, Long.class);
@@ -56,7 +58,8 @@ public class StoragePositionDAOImpl extends BaseDAOImpl<StoragePosition, Integer
             // - locationType='device' AND locationId=deviceId OR
             // - locationType='shelf' AND locationId IN (shelves in device) OR
             // - locationType='rack' AND locationId IN (racks in shelves in device)
-            // This reflects actual sample assignments (source of truth) instead of StoragePosition.occupied flag
+            // This reflects actual sample assignments (source of truth) instead of
+            // StoragePosition.occupied flag
             String hql = "SELECT COUNT(*) FROM SampleStorageAssignment ssa "
                     + "WHERE (ssa.locationType = 'device' AND ssa.locationId = :deviceId) "
                     + "OR (ssa.locationType = 'shelf' AND ssa.locationId IN "
@@ -80,7 +83,8 @@ public class StoragePositionDAOImpl extends BaseDAOImpl<StoragePosition, Integer
             // Count SampleStorageAssignment records that match shelf hierarchy:
             // - locationType='shelf' AND locationId=shelfId OR
             // - locationType='rack' AND locationId IN (racks in shelf)
-            // This reflects actual sample assignments (source of truth) instead of StoragePosition.occupied flag
+            // This reflects actual sample assignments (source of truth) instead of
+            // StoragePosition.occupied flag
             String hql = "SELECT COUNT(*) FROM SampleStorageAssignment ssa "
                     + "WHERE (ssa.locationType = 'shelf' AND ssa.locationId = :shelfId) "
                     + "OR (ssa.locationType = 'rack' AND ssa.locationId IN "
@@ -190,7 +194,8 @@ public class StoragePositionDAOImpl extends BaseDAOImpl<StoragePosition, Integer
 
     @Override
     @Transactional(readOnly = true)
-    public StoragePosition findByCoordinatesAndParentRack(String coordinates, org.openelisglobal.storage.valueholder.StorageRack parentRack) {
+    public StoragePosition findByCoordinatesAndParentRack(String coordinates,
+            org.openelisglobal.storage.valueholder.StorageRack parentRack) {
         try {
             if (parentRack == null) {
                 return null;

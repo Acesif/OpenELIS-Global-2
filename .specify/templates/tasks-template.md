@@ -95,9 +95,9 @@ parallel
 - [ ] T011 [P] [US1] Integration test for [user journey] in
       tests/integration/test\_[name].py
 - [ ] T011b [P] [US1] Cypress E2E test for [user story] in
-      frontend/cypress/e2e/[feature].cy.js (per Constitution V.5):
-      * Run individually during development
-      * Review console logs and screenshots post-run
+      frontend/cypress/e2e/[feature].cy.js (per Constitution V.5): _ Run
+      individually during development _ Review console logs and screenshots
+      post-run
 
 ### Implementation for User Story 1
 

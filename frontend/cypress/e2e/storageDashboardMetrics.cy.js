@@ -1,3 +1,12 @@
+/**
+ * Constitution V.5 Compliance:
+ * - Intercepts set up BEFORE actions that trigger them
+ * - Uses .should() assertions for retry-ability (cy.wait() only for intercept aliases)
+ * - Element readiness checks before all interactions
+ * - Navigation optimized (before() instead of beforeEach())
+ * - Focused on happy paths (user workflows, not implementation details)
+ */
+
 import HomePage from "../pages/HomePage";
 
 let homePage = null;
@@ -13,16 +22,19 @@ after("Cleanup storage tests", () => {
 });
 
 describe("Storage Locations Metric Card", function () {
-  beforeEach(() => {
-    // Navigate to Storage Dashboard before each test
+  before(() => {
+    // Navigate to Storage Dashboard ONCE for all tests
+    cy.intercept("GET", "**/rest/storage/dashboard/location-counts**").as(
+      "getLocationCounts",
+    );
     cy.visit("/Storage");
-    cy.wait(3000);
-
-    // Verify we're on the Storage page
-    cy.url().should("include", "/Storage");
-
-    // Verify dashboard container is visible
+    cy.wait("@getLocationCounts", { timeout: 10000 });
     cy.get(".storage-dashboard", { timeout: 10000 }).should("be.visible");
+  });
+
+  beforeEach(() => {
+    // Only set up intercepts if needed - no navigation
+    // Navigation already done in before() - we're already on Storage Dashboard
   });
 
   /**

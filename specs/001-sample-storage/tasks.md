@@ -10,35 +10,43 @@
 **Test Approach**: Test-Driven Development (TDD) - Tests written BEFORE
 implementation
 
-**Status Update Note (2025-01-27)**: This document has been updated to reflect actual implementation status verified through code review, git history, and E2E test verification. Phases 5, 6, 7, and 10 are marked as [COMPLETE] based on code verification showing all functional components implemented. Remaining work is primarily testing validation, polish (Phase 11), and compliance verification (Phase 12).
+**Status Update Note (2025-01-27)**: This document has been updated to reflect
+actual implementation status verified through code review, git history, and E2E
+test verification. Phases 5, 6, 7, and 10 are marked as [COMPLETE] based on code
+verification showing all functional components implemented. Remaining work is
+primarily testing validation, polish (Phase 11), and compliance verification
+(Phase 12).
 
 ## Implementation Status Overview
 
-This document breaks down the implementation phases from `plan.md` into actionable tasks. Each phase corresponds to an implementation phase in `plan.md`.
+This document breaks down the implementation phases from `plan.md` into
+actionable tasks. Each phase corresponds to an implementation phase in
+`plan.md`.
 
 **Status Legend**:
+
 - `[COMPLETE]` - All tasks checked, verified working
 - `[IN PROGRESS]` - Some tasks complete, some remaining
 - `[NOT STARTED]` - No tasks complete
 
 ### Phase Status Summary
 
-| Phase | Status | Description | Tasks Complete | Tasks Remaining |
-|-------|--------|-------------|----------------|-----------------|
-| Phase 1 | [COMPLETE] | Setup & Database Schema | 7/7 | 0 |
-| Phase 2 | [COMPLETE] | Foundational - Core Entities & FHIR Transform | All | 0 |
-| Phase 3 | [COMPLETE] | Position Hierarchy Structure Update | All | 0 |
-| Phase 4 | [COMPLETE] | Flexible Assignment Architecture | All | 0 |
-| Phase 5 | [COMPLETE] | User Story 1 - Basic Storage Assignment | All | 0 |
-| Phase 6 | [COMPLETE] | User Story 2A - SampleItem Search and Retrieval | All | 0 |
-| Phase 7 | [COMPLETE] | User Story 2B - SampleItem Movement | All | 0 |
-| Phase 7.5 | [COMPLETE] | Modal Consolidation | All | 0 |
-| Phase 8 | [COMPLETE] | Location CRUD Operations | All | 0 |
-| Phase 9 | [COMPLETE] | Expandable Row Functionality | All | 0 |
-| Phase 9.5 | [COMPLETE] | Capacity Calculation Logic | All | 0 |
-| Phase 10 | [COMPLETE] | Barcode Workflow Implementation | All | 0 |
-| Phase 11 | [NOT STARTED] | Polish & Cross-Cutting Concerns | 0 | All |
-| Phase 12 | [NOT STARTED] | Constitution Compliance Verification | 0 | All |
+| Phase     | Status        | Description                                     | Tasks Complete | Tasks Remaining |
+| --------- | ------------- | ----------------------------------------------- | -------------- | --------------- |
+| Phase 1   | [COMPLETE]    | Setup & Database Schema                         | 7/7            | 0               |
+| Phase 2   | [COMPLETE]    | Foundational - Core Entities & FHIR Transform   | All            | 0               |
+| Phase 3   | [COMPLETE]    | Position Hierarchy Structure Update             | All            | 0               |
+| Phase 4   | [COMPLETE]    | Flexible Assignment Architecture                | All            | 0               |
+| Phase 5   | [COMPLETE]    | User Story 1 - Basic Storage Assignment         | All            | 0               |
+| Phase 6   | [COMPLETE]    | User Story 2A - SampleItem Search and Retrieval | All            | 0               |
+| Phase 7   | [COMPLETE]    | User Story 2B - SampleItem Movement             | All            | 0               |
+| Phase 7.5 | [COMPLETE]    | Modal Consolidation                             | All            | 0               |
+| Phase 8   | [COMPLETE]    | Location CRUD Operations                        | All            | 0               |
+| Phase 9   | [COMPLETE]    | Expandable Row Functionality                    | All            | 0               |
+| Phase 9.5 | [COMPLETE]    | Capacity Calculation Logic                      | All            | 0               |
+| Phase 10  | [COMPLETE]    | Barcode Workflow Implementation                 | All            | 0               |
+| Phase 11  | [NOT STARTED] | Polish & Cross-Cutting Concerns                 | 0              | All             |
+| Phase 12  | [NOT STARTED] | Constitution Compliance Verification            | 0              | All             |
 
 ---
 
@@ -127,7 +135,8 @@ completes
       many-to-one to StorageRack, fhir_uuid, occupied boolean
 - [x] T016 [P] Create Hibernate mapping
       `src/main/resources/hibernate/hbm/SampleStorageAssignment.hbm.xml` with
-      many-to-one to SampleItem (not Sample), unique constraint on sample_item_id
+      many-to-one to SampleItem (not Sample), unique constraint on
+      sample_item_id
 - [x] T017 [P] Create Hibernate mapping
       `src/main/resources/hibernate/hbm/SampleStorageMovement.hbm.xml` for audit
       log (previous_position_id, new_position_id can be NULL)
@@ -323,7 +332,8 @@ need to create StoragePosition entities for every assignment.
 
 - [x] T026q [P] Write unit test
       `src/test/java/org/openelisglobal/storage/service/SampleStorageServiceFlexibleAssignmentTest.java`
-      for flexible assignment: testAssignSampleItemWithLocation_DeviceLevel_Valid,
+      for flexible assignment:
+      testAssignSampleItemWithLocation_DeviceLevel_Valid,
       testAssignSampleItemWithLocation_ShelfLevel_Valid,
       testAssignSampleItemWithLocation_RackLevel_Valid,
       testAssignSampleItemWithLocation_DeviceLevel_WithCoordinate_Valid,
@@ -603,7 +613,8 @@ hierarchical path and timestamp
       per plan.md enhancements
 - [x] T048 [US1] Create SampleAssignmentForm
       `src/main/java/org/openelisglobal/storage/form/SampleAssignmentForm.java`
-      with fields: sampleItemId, locationId, locationType, positionCoordinate, notes
+      with fields: sampleItemId, locationId, locationType, positionCoordinate,
+      notes
 - [x] T049 [US1] Implement SampleStorageRestController
       `src/main/java/org/openelisglobal/storage/controller/SampleStorageRestController.java`
       with POST /rest/storage/sample-items/assign endpoint
@@ -805,7 +816,8 @@ hierarchical path and timestamp
 - [x] T063a [P] [P4] Write integration test
       `src/test/java/org/openelisglobal/storage/controller/StorageSearchRestControllerTest.java`
       for dashboard search endpoints: -
-      testSearchSamples_BySampleItemId_ReturnsMatching - Search by SampleItem ID or parent Sample accession number -
+      testSearchSamples_BySampleItemId_ReturnsMatching - Search by SampleItem ID
+      or parent Sample accession number -
       testSearchSamples_ByAccessionPrefix_ReturnsMatching - Search by accession
       prefix (e.g., "S-2025" matches "S-2025-001") -
       testSearchSamples_ByLocationPath_ReturnsMatching - Search by location path
@@ -830,8 +842,9 @@ hierarchical path and timestamp
       (case-insensitive partial)
 - [x] T063b [P] [P4] Write unit test
       `src/test/java/org/openelisglobal/storage/service/StorageSearchServiceImplTest.java`
-      for search logic: - testSearchSamples_FiltersBySampleItemId - Filter SampleItems by ID, External ID, or parent Sample accession
-      by ID substring - testSearchSamples_FiltersByAccessionPrefix - Filter by
+      for search logic: - testSearchSamples_FiltersBySampleItemId - Filter
+      SampleItems by ID, External ID, or parent Sample accession by ID
+      substring - testSearchSamples_FiltersByAccessionPrefix - Filter by
       accession prefix - testSearchSamples_FiltersByLocationPath - Filter by
       location path substring - testSearchSamples_OR_Logic - Matches if ANY
       field matches - testSearchSamples_CaseInsensitive - Case-insensitive
@@ -849,10 +862,11 @@ hierarchical path and timestamp
 - [x] T063d [P4] Create or enhance StorageSearchService interface and
       implementation
       `src/main/java/org/openelisglobal/storage/service/StorageSearchService.java`
-      with methods: - searchSamples(String query) - Search by SampleItem ID, External ID, parent Sample accession number, or location path
-      accession prefix, location path (OR logic) - searchRooms(String query) -
-      Search by name OR code (case-insensitive LIKE) - searchDevices(String
-      query) - Search by name OR code OR type (case-insensitive LIKE) -
+      with methods: - searchSamples(String query) - Search by SampleItem ID,
+      External ID, parent Sample accession number, or location path accession
+      prefix, location path (OR logic) - searchRooms(String query) - Search by
+      name OR code (case-insensitive LIKE) - searchDevices(String query) -
+      Search by name OR code OR type (case-insensitive LIKE) -
       searchShelves(String query) - Search by label (case-insensitive LIKE) -
       searchRacks(String query) - Search by label (case-insensitive LIKE) - All
       searches use case-insensitive substring matching
@@ -906,17 +920,17 @@ hierarchical path and timestamp
 - [x] T063j [P4] Update existing Cypress E2E test file
       `frontend/cypress/e2e/storageSearch.cy.js` (or create new file
       `storageDashboardSearch.cy.js`) for dashboard tab search functionality: -
-      testSamplesSearch_BySampleItemId - Search by SampleItem ID or parent Sample accession, verify results -
-      testSamplesSearch_ByAccessionPrefix - Search by accession prefix, verify
-      results - testSamplesSearch_ByLocationPath - Search by location path,
-      verify results - testSamplesSearch_Debounced - Verify debounced search
-      (300-500ms delay) - testSamplesSearch_CaseInsensitive - Verify
-      case-insensitive matching - testSamplesSearch_PartialMatch - Verify
-      partial substring matching - testRoomsSearch_ByName - Search rooms by
-      name - testRoomsSearch_ByCode - Search rooms by code -
-      testDevicesSearch_ByName - Search devices by name -
-      testDevicesSearch_ByCode - Search devices by code -
-      testDevicesSearch_ByType - Search devices by type -
+      testSamplesSearch_BySampleItemId - Search by SampleItem ID or parent
+      Sample accession, verify results - testSamplesSearch_ByAccessionPrefix -
+      Search by accession prefix, verify results -
+      testSamplesSearch_ByLocationPath - Search by location path, verify
+      results - testSamplesSearch_Debounced - Verify debounced search (300-500ms
+      delay) - testSamplesSearch_CaseInsensitive - Verify case-insensitive
+      matching - testSamplesSearch_PartialMatch - Verify partial substring
+      matching - testRoomsSearch_ByName - Search rooms by name -
+      testRoomsSearch_ByCode - Search rooms by code - testDevicesSearch_ByName -
+      Search devices by name - testDevicesSearch_ByCode - Search devices by
+      code - testDevicesSearch_ByType - Search devices by type -
       testShelvesSearch_ByLabel - Search shelves by label -
       testRacksSearch_ByLabel - Search racks by label
 - [x] T063k [P4] Run Cypress test → Verify dashboard tab search scenarios work:
@@ -1062,11 +1076,18 @@ metric card with color-coding implemented with TDD.
 
 ## Phase 6: User Story 2A - SampleItem Search and Retrieval (Priority: P2) [COMPLETE]
 
-**Goal**: Lab technicians can search for SampleItems by ID/External ID or parent Sample accession number and retrieve storage location to physically find SampleItems
+**Goal**: Lab technicians can search for SampleItems by ID/External ID or parent
+Sample accession number and retrieve storage location to physically find
+SampleItems
 
-**Note**: Storage tracking is at the SampleItem level (physical specimens), not Sample level (orders). Search supports both SampleItem ID/External ID and parent Sample accession number for flexibility. Dashboard displays SampleItem information with parent Sample context and is sortable by Sample.
+**Note**: Storage tracking is at the SampleItem level (physical specimens), not
+Sample level (orders). Search supports both SampleItem ID/External ID and parent
+Sample accession number for flexibility. Dashboard displays SampleItem
+information with parent Sample context and is sortable by Sample.
 
-**Independent Test**: Assign SampleItem to location (using US1), then search by SampleItem ID or parent Sample accession number, verify hierarchical location path displays correctly
+**Independent Test**: Assign SampleItem to location (using US1), then search by
+SampleItem ID or parent Sample accession number, verify hierarchical location
+path displays correctly
 
 ### Tests First (Write BEFORE implementation)
 
@@ -1087,12 +1108,13 @@ metric card with color-coding implemented with TDD.
 
 - [x] T070 [US2A] Implement StorageSearchService interface and implementation
       `src/main/java/org/openelisglobal/storage/service/StorageSearchService.java`
-      with methods: getSampleItemLocation(sampleItemId), filterSampleItems(filters), uses
-      buildHierarchicalPath() helper from StorageLocationService
+      with methods: getSampleItemLocation(sampleItemId),
+      filterSampleItems(filters), uses buildHierarchicalPath() helper from
+      StorageLocationService
 - [x] T071 [US2A] Implement StorageSearchRestController
       `src/main/java/org/openelisglobal/storage/controller/StorageSearchRestController.java`
-      with GET /rest/storage/sample-items/search and GET /rest/storage/sample-items
-      endpoints per storage-api.json
+      with GET /rest/storage/sample-items/search and GET
+      /rest/storage/sample-items endpoints per storage-api.json
 - [x] T072 Run search tests → Verify all PASS:
       `mvn test -Dtest="StorageSearch*Test"`
 
@@ -1158,11 +1180,16 @@ ID, view hierarchical location path, filter by room/device/status.
 
 ## Phase 7: User Story 2B - SampleItem Movement (Priority: P2) [COMPLETE]
 
-**Goal**: Lab technicians can move SampleItems between storage locations (single and bulk), with audit trail tracking previous/new locations
+**Goal**: Lab technicians can move SampleItems between storage locations (single
+and bulk), with audit trail tracking previous/new locations
 
-**Note**: Movement operations work at the SampleItem level (physical specimens), not Sample level. Each SampleItem can be moved independently, even if multiple SampleItems belong to the same Sample.
+**Note**: Movement operations work at the SampleItem level (physical specimens),
+not Sample level. Each SampleItem can be moved independently, even if multiple
+SampleItems belong to the same Sample.
 
-**Independent Test**: Assign SampleItem to location A, move to location B, verify previous position freed (occupied=false), new position occupied (occupied=true), audit log records movement
+**Independent Test**: Assign SampleItem to location A, move to location B,
+verify previous position freed (occupied=false), new position occupied
+(occupied=true), audit log records movement
 
 ### Tests First (Write BEFORE implementation)
 
@@ -1194,11 +1221,12 @@ ID, view hierarchical location path, filter by room/device/status.
       position override via positionAssignments parameter, create individual
       audit records, return summary (total, successful, failed)
 - [x] T085 [US2B] Add movement endpoints to SampleStorageRestController: POST
-      /rest/storage/sample-items/move, POST /rest/storage/sample-items/bulk-move per
-      storage-api.json
+      /rest/storage/sample-items/move, POST /rest/storage/sample-items/bulk-move
+      per storage-api.json
 - [x] T086 [US2B] Create SampleMovementForm
       `src/main/java/org/openelisglobal/storage/form/SampleMovementForm.java`
-      with fields: sampleItemId, locationId, locationType, positionCoordinate, reason
+      with fields: sampleItemId, locationId, locationType, positionCoordinate,
+      reason
 - [x] T087 [US2B] Create BulkMovementForm with fields: sampleItemIds[],
       targetRackId, positionAssignments[], reason
 - [x] T088 Run movement tests → Verify all PASS:
@@ -1260,18 +1288,18 @@ ID, view hierarchical location path, filter by room/device/status.
 - [x] T091a [US2B] Implement SampleActionsOverflowMenu component
       `frontend/src/components/storage/SampleStorage/SampleActionsOverflowMenu.jsx`
       using Carbon OverflowMenu with four menu items: Move, Dispose, View Audit
-      (disabled), View Storage - **NOTE**: This task needs to be updated in Phase
-      2.5 (T209) to consolidate Move and View Storage into single "Manage Location"
-      menu item
+      (disabled), View Storage - **NOTE**: This task needs to be updated in
+      Phase 2.5 (T209) to consolidate Move and View Storage into single "Manage
+      Location" menu item
 - [x] T091b [US2B] Implement MoveSampleModal component
       `frontend/src/components/storage/SampleStorage/MoveSampleModal.jsx` per
       Figma design: modal title "Move Sample" with subtitle, current location in
       gray box, downward arrow icon, new location selector in bordered box,
       "Selected Location" preview box, validation requiring Room and Device
       selection (minimum 2 levels per FR-033a), optional reason textarea, Cancel
-      and "Confirm Move" buttons (primary/dark styling) - **NOTE**: This component
-      will be consolidated into LocationManagementModal in Phase 7.5 (T208), can be
-      used as starting point
+      and "Confirm Move" buttons (primary/dark styling) - **NOTE**: This
+      component will be consolidated into LocationManagementModal in Phase 7.5
+      (T208), can be used as starting point
 - [x] T091c [US2B] Implement DisposeSampleModal component
       `frontend/src/components/storage/SampleStorage/DisposeSampleModal.jsx` per
       Figma design: modal title "Dispose Sample" with subtitle, red warning
@@ -1292,8 +1320,8 @@ ID, view hierarchical location path, filter by room/device/status.
 - [ ] T091e [US2B] Add POST /rest/storage/sample-items/dispose endpoint to
       SampleStorageRestController
       `src/main/java/org/openelisglobal/storage/controller/SampleStorageRestController.java`
-      with request: { sample_item_id, reason, method, notes, date_time }, returns
-      disposal record - **Note**: Endpoint structure defined but full
+      with request: { sample_item_id, reason, method, notes, date_time },
+      returns disposal record - **Note**: Endpoint structure defined but full
       implementation deferred to P3
 
 ### Implementation - Frontend Movement UI
@@ -1315,8 +1343,8 @@ ID, view hierarchical location path, filter by room/device/status.
       overflow menu (⋮) to Actions column, trigger MoveSampleModal,
       DisposeSampleModal, ViewStorageModal on corresponding menu item clicks -
       **Note**: Used SampleActionsContainer component to encapsulate menu and
-      modals - **NOTE**: This integration needs to be updated in Phase 7.5 (T211)
-      to use LocationManagementModal instead of separate modals
+      modals - **NOTE**: This integration needs to be updated in Phase 7.5
+      (T211) to use LocationManagementModal instead of separate modals
 - [ ] T095 [US2B] Add "Bulk Move" action to StorageDashboard component: Add bulk
       selection checkboxes, trigger BulkMoveModal with selected samples
 - [x] T096 Run frontend tests → Verify PASS:
@@ -1355,8 +1383,9 @@ ID, view hierarchical location path, filter by room/device/status.
       testViewStorageModal_DisplaysSampleInfo,
       testViewStorageModal_DisplaysCurrentLocation,
       testViewStorageModal_AllowsEditingAssignment,
-      testViewStorageModal_SavesChanges - **NOTE**: This test file will be deleted
-      in Phase 7.5 (T205) as functionality is consolidated into LocationManagementModal
+      testViewStorageModal_SavesChanges - **NOTE**: This test file will be
+      deleted in Phase 7.5 (T205) as functionality is consolidated into
+      LocationManagementModal
 - [x] T098 [US2B] Run Cypress test → Verify P2B scenario works:
       `npm run cy:run -- --spec "cypress/e2e/storageMovement.cy.js"` **Note**:
       Requires Xvfb for headless execution or Docker environment
@@ -1369,59 +1398,64 @@ previous positions freed, audit trail tracks all movements.
 ## Phase 7.5: Modal Consolidation - Immediate Priority [COMPLETE]
 
 **Purpose**: Consolidate MoveSampleModal and ViewStorageModal into a single
-LocationManagementModal that handles both assignment and movement workflows. This
-phase ensures thorough consolidation, test updates, and cleanup of artifacts from
-the previous approach.
+LocationManagementModal that handles both assignment and movement workflows.
+This phase ensures thorough consolidation, test updates, and cleanup of
+artifacts from the previous approach.
 
-**Goal**: Single unified modal (LocationManagementModal) replaces separate Move and
-View Storage modals. Overflow menu updated to show "Manage Location" instead of
-separate "Move" and "View Storage" items. All tests updated and passing. No
+**Goal**: Single unified modal (LocationManagementModal) replaces separate Move
+and View Storage modals. Overflow menu updated to show "Manage Location" instead
+of separate "Move" and "View Storage" items. All tests updated and passing. No
 artifacts from previous approach remain.
 
 **Independent Test**: Open consolidated modal for sample with location → verify
-"Move Sample" title and "Confirm Move" button. Open consolidated modal for sample
-without location → verify "Assign Storage Location" title and "Assign" button.
-Verify "Reason for Move" field appears only when moving. Verify comprehensive
-sample details displayed. Verify no references to MoveSampleModal or
-ViewStorageModal remain in codebase.
+"Move Sample" title and "Confirm Move" button. Open consolidated modal for
+sample without location → verify "Assign Storage Location" title and "Assign"
+button. Verify "Reason for Move" field appears only when moving. Verify
+comprehensive sample details displayed. Verify no references to MoveSampleModal
+or ViewStorageModal remain in codebase.
 
 **Dependencies**: Requires Phase 2 (Foundational) completion. Can start
-immediately after foundational entities and services are in place. Does NOT require
-full Phase 5 completion - this consolidation should happen before continuing with
-other user story work.
+immediately after foundational entities and services are in place. Does NOT
+require full Phase 5 completion - this consolidation should happen before
+continuing with other user story work.
 
 ### Tests First - Update Unit Tests for Consolidated Modal
 
-- [X] T200 [P] Update unit test
+- [x] T200 [P] Update unit test
       `frontend/src/components/storage/SampleStorage/LocationManagementModal.test.jsx`
       (rename from MoveSampleModal.test.jsx): Update test suite to validate
       consolidated modal behavior: testDisplaysModalTitle_DynamicBasedOnLocation
       (shows "Assign Storage Location" if no location, "Move Sample" if location
-      exists), testDisplaysButtonText_DynamicBasedOnLocation (shows "Assign" if no
-      location, "Confirm Move" if location exists), testDisplaysComprehensiveSampleInfo
-      (shows SampleItem ID/External ID, parent Sample accession number, Type, Status, Date Collected, Patient ID, Test Orders),
-      testDisplaysCurrentLocation_OnlyWhenLocationExists (current location section
-      only appears if sample has location), testDisplaysReasonForMove_OnlyWhenMoving
-      (Reason for Move field appears only when location exists AND different location
-      selected), testDisplaysConditionNotes_AlwaysVisible (Condition Notes field
-      always visible), testLocationSelection_UpdatesPreview (selected location
-      preview updates in real-time), testValidation_PreventsMovingToSameLocation
-      (when moving, validates new location different from current)
+      exists), testDisplaysButtonText_DynamicBasedOnLocation (shows "Assign" if
+      no location, "Confirm Move" if location exists),
+      testDisplaysComprehensiveSampleInfo (shows SampleItem ID/External ID,
+      parent Sample accession number, Type, Status, Date Collected, Patient ID,
+      Test Orders), testDisplaysCurrentLocation_OnlyWhenLocationExists (current
+      location section only appears if sample has location),
+      testDisplaysReasonForMove_OnlyWhenMoving (Reason for Move field appears
+      only when location exists AND different location selected),
+      testDisplaysConditionNotes_AlwaysVisible (Condition Notes field always
+      visible), testLocationSelection_UpdatesPreview (selected location preview
+      updates in real-time), testValidation_PreventsMovingToSameLocation (when
+      moving, validates new location different from current)
 
-- [X] T201 [P] Update unit test
+- [x] T201 [P] Update unit test
       `frontend/src/components/storage/SampleStorage/SampleActionsOverflowMenu.test.jsx`:
-      Update test suite to validate consolidated menu: testOverflowMenu_RendersThreeItems
-      (menu renders with Manage Location, Dispose, View Audit), testOverflowMenu_ManageLocationOpensModal
-      (clicking "Manage Location" opens LocationManagementModal),
-      testOverflowMenu_ViewAuditIsDisabled (View Audit is disabled), remove tests
-      for separate Move and View Storage menu items
+      Update test suite to validate consolidated menu:
+      testOverflowMenu_RendersThreeItems (menu renders with Manage Location,
+      Dispose, View Audit), testOverflowMenu_ManageLocationOpensModal (clicking
+      "Manage Location" opens LocationManagementModal),
+      testOverflowMenu_ViewAuditIsDisabled (View Audit is disabled), remove
+      tests for separate Move and View Storage menu items
 
-- [X] T202 [P] Delete unit test file
-      `frontend/src/components/storage/SampleStorage/ViewStorageModal.test.jsx` (no
-      longer needed - functionality consolidated into LocationManagementModal)
+- [x] T202 [P] Delete unit test file
+      `frontend/src/components/storage/SampleStorage/ViewStorageModal.test.jsx`
+      (no longer needed - functionality consolidated into
+      LocationManagementModal)
 
-- [X] T203 Run frontend unit tests → Verify updated tests FAIL (implementation not
-      yet updated): `npm test -- LocationManagementModal SampleActionsOverflowMenu`
+- [x] T203 Run frontend unit tests → Verify updated tests FAIL (implementation
+      not yet updated):
+      `npm test -- LocationManagementModal SampleActionsOverflowMenu`
 
 ### Tests First - Update E2E Tests for Consolidated Modal
 
@@ -1429,12 +1463,14 @@ other user story work.
       `frontend/cypress/e2e/storageMovement.cy.js`: Update test suite to use
       consolidated modal: testOverflowMenu_ShowsThreeItems (menu shows Manage
       Location, Dispose, View Audit), testOverflowMenu_ManageLocationOpensModal
-      (clicking Manage Location opens consolidated modal), testLocationManagementModal_AssignmentMode
-      (modal titled "Assign Storage Location" when no location exists, shows
-      "Assign" button), testLocationManagementModal_MovementMode (modal titled "Move
-      Sample" when location exists, shows "Confirm Move" button), testLocationManagementModal_ReasonForMoveConditional
-      (Reason for Move field appears only when moving), remove tests for separate
-      Move and View Storage modals
+      (clicking Manage Location opens consolidated modal),
+      testLocationManagementModal_AssignmentMode (modal titled "Assign Storage
+      Location" when no location exists, shows "Assign" button),
+      testLocationManagementModal_MovementMode (modal titled "Move Sample" when
+      location exists, shows "Confirm Move" button),
+      testLocationManagementModal_ReasonForMoveConditional (Reason for Move
+      field appears only when moving), remove tests for separate Move and View
+      Storage modals
 
 - [ ] T205 [P] Delete Cypress E2E test file
       `frontend/cypress/e2e/storageViewStorage.cy.js` (no longer needed -
@@ -1442,83 +1478,86 @@ other user story work.
 
 - [ ] T206 [P] Update Cypress E2E test
       `frontend/cypress/e2e/storageMovement.cy.js`: Add test for comprehensive
-      sample details: testLocationManagementModal_DisplaysComprehensiveSampleInfo
-      (verifies SampleItem ID/External ID, parent Sample accession number, Type, Status, Date Collected, Patient ID, Test Orders
-      displayed)
+      sample details:
+      testLocationManagementModal_DisplaysComprehensiveSampleInfo (verifies
+      SampleItem ID/External ID, parent Sample accession number, Type, Status,
+      Date Collected, Patient ID, Test Orders displayed)
 
 - [ ] T207 Run Cypress E2E tests → Verify updated tests FAIL (implementation not
-      yet updated): `npm run cy:run -- --spec "cypress/e2e/storageMovement.cy.js"`
+      yet updated):
+      `npm run cy:run -- --spec "cypress/e2e/storageMovement.cy.js"`
 
 ### Implementation - Create Consolidated LocationManagementModal
 
-- [X] T208 [US2B] Create LocationManagementModal component
+- [x] T208 [US2B] Create LocationManagementModal component
       `frontend/src/components/storage/SampleStorage/LocationManagementModal.jsx`:
-      Start with existing MoveSampleModal.jsx as foundation, extend to support both
-      assignment and movement: Add logic to detect if sample has location
+      Start with existing MoveSampleModal.jsx as foundation, extend to support
+      both assignment and movement: Add logic to detect if sample has location
       (determines modal mode), add comprehensive sample details section (Date
-      Collected, Patient ID, Test Orders), make Current Location section conditional
-      (only show if location exists), add Condition Notes field (always visible),
-      make Reason for Move field conditional (only show when location exists AND
-      different location selected), update title and button text based on location
-      existence, update API call to handle both assignment and movement (use
-      appropriate endpoint based on mode)
+      Collected, Patient ID, Test Orders), make Current Location section
+      conditional (only show if location exists), add Condition Notes field
+      (always visible), make Reason for Move field conditional (only show when
+      location exists AND different location selected), update title and button
+      text based on location existence, update API call to handle both
+      assignment and movement (use appropriate endpoint based on mode)
 
-- [X] T209 [US2B] Update SampleActionsOverflowMenu component
+- [x] T209 [US2B] Update SampleActionsOverflowMenu component
       `frontend/src/components/storage/SampleStorage/SampleActionsOverflowMenu.jsx`:
       Replace "Move" and "View Storage" menu items with single "Manage Location"
       menu item, update onClick handler to open LocationManagementModal, update
       internationalization message keys
 
-- [X] T210 [US2B] Update SampleActionsContainer component
+- [x] T210 [US2B] Update SampleActionsContainer component
       `frontend/src/components/storage/SampleStorage/SampleActionsContainer.jsx`:
-      Replace MoveSampleModal and ViewStorageModal imports with LocationManagementModal,
-      update state management to use single modal, update handlers to use
-      consolidated modal, remove separate moveModalOpen and viewStorageModalOpen
-      state variables
+      Replace MoveSampleModal and ViewStorageModal imports with
+      LocationManagementModal, update state management to use single modal,
+      update handlers to use consolidated modal, remove separate moveModalOpen
+      and viewStorageModalOpen state variables
 
-- [X] T211 [US2B] Update StorageDashboard component
-      `frontend/src/components/storage/StorageDashboard.jsx`: Update references from
-      MoveSampleModal/ViewStorageModal to LocationManagementModal, verify
+- [x] T211 [US2B] Update StorageDashboard component
+      `frontend/src/components/storage/StorageDashboard.jsx`: Update references
+      from MoveSampleModal/ViewStorageModal to LocationManagementModal, verify
       SampleActionsContainer integration works correctly
 
 ### Implementation - Update API Integration
 
-- [X] T212 [US2B] Update LocationManagementModal API calls
+- [x] T212 [US2B] Update LocationManagementModal API calls
       `frontend/src/components/storage/SampleStorage/LocationManagementModal.jsx`:
-      Implement logic to call POST /rest/storage/samples/assign for assignment mode
-      (no existing location), implement logic to call POST /rest/storage/samples/move
-      for movement mode (location exists), handle response and error states
-      appropriately (implemented in StorageDashboard.jsx onLocationConfirm handler)
+      Implement logic to call POST /rest/storage/samples/assign for assignment
+      mode (no existing location), implement logic to call POST
+      /rest/storage/samples/move for movement mode (location exists), handle
+      response and error states appropriately (implemented in
+      StorageDashboard.jsx onLocationConfirm handler)
 
 ### Cleanup - Remove Artifacts from Previous Approach
 
-- [X] T213 Delete MoveSampleModal component file
-      `frontend/src/components/storage/SampleStorage/MoveSampleModal.jsx` (functionality
-      consolidated into LocationManagementModal)
+- [x] T213 Delete MoveSampleModal component file
+      `frontend/src/components/storage/SampleStorage/MoveSampleModal.jsx`
+      (functionality consolidated into LocationManagementModal)
 
-- [X] T214 Delete ViewStorageModal component file
-      `frontend/src/components/storage/SampleStorage/ViewStorageModal.jsx` (functionality
-      consolidated into LocationManagementModal)
+- [x] T214 Delete ViewStorageModal component file
+      `frontend/src/components/storage/SampleStorage/ViewStorageModal.jsx`
+      (functionality consolidated into LocationManagementModal)
 
-- [X] T215 Delete MoveSampleModal CSS file
-      `frontend/src/components/storage/SampleStorage/MoveSampleModal.css` (if exists,
-      styles should be moved to LocationManagementModal.css)
+- [x] T215 Delete MoveSampleModal CSS file
+      `frontend/src/components/storage/SampleStorage/MoveSampleModal.css` (if
+      exists, styles should be moved to LocationManagementModal.css)
 
-- [X] T216 [P] Search codebase for references to MoveSampleModal: Use grep to find
-      all imports and references to MoveSampleModal, verify all references updated
-      or removed (all references updated to LocationManagementModal)
+- [x] T216 [P] Search codebase for references to MoveSampleModal: Use grep to
+      find all imports and references to MoveSampleModal, verify all references
+      updated or removed (all references updated to LocationManagementModal)
 
-- [X] T217 [P] Search codebase for references to ViewStorageModal: Use grep to find
-      all imports and references to ViewStorageModal, verify all references updated
-      or removed (all references updated to LocationManagementModal)
+- [x] T217 [P] Search codebase for references to ViewStorageModal: Use grep to
+      find all imports and references to ViewStorageModal, verify all references
+      updated or removed (all references updated to LocationManagementModal)
 
-- [ ] T218 [P] Search codebase for "Move" menu item text: Verify no hardcoded "Move"
-      menu item text remains (should be "Manage Location"), check internationalization
-      files
+- [ ] T218 [P] Search codebase for "Move" menu item text: Verify no hardcoded
+      "Move" menu item text remains (should be "Manage Location"), check
+      internationalization files
 
 - [ ] T219 [P] Search codebase for "View Storage" menu item text: Verify no
-      hardcoded "View Storage" menu item text remains (should be "Manage Location"),
-      check internationalization files
+      hardcoded "View Storage" menu item text remains (should be "Manage
+      Location"), check internationalization files
 
 - [ ] T220 [P] Update internationalization message keys in
       `frontend/src/languages/en.json`, `fr.json`, `sw.json`: Remove
@@ -1540,40 +1579,75 @@ other user story work.
       LocationManagementModal in both assignment and movement modes, verify no
       console errors or warnings
 
-- [ ] T225 [P] Code review consolidation: Review LocationManagementModal component,
-      verify all functionality from MoveSampleModal and ViewStorageModal is present,
-      verify no duplicate code, verify proper conditional rendering
+- [ ] T225 [P] Code review consolidation: Review LocationManagementModal
+      component, verify all functionality from MoveSampleModal and
+      ViewStorageModal is present, verify no duplicate code, verify proper
+      conditional rendering
 
 - [ ] T226 [P] Verify test coverage: Run test coverage report, verify
-      LocationManagementModal has adequate test coverage (>70% per constitution),
-      verify no uncovered code paths
+      LocationManagementModal has adequate test coverage (>70% per
+      constitution), verify no uncovered code paths
 
-**Checkpoint**: Modal consolidation complete. LocationManagementModal handles both
-assignment and movement workflows. All tests updated and passing. No artifacts from
-previous approach remain. Overflow menu shows "Manage Location" instead of
-separate "Move" and "View Storage" items.
+**Checkpoint**: Modal consolidation complete. LocationManagementModal handles
+both assignment and movement workflows. All tests updated and passing. No
+artifacts from previous approach remain. Overflow menu shows "Manage Location"
+instead of separate "Move" and "View Storage" items.
 
 ---
 
 ## Phase 8: Location CRUD Operations Implementation [COMPLETE]
 
-**Purpose**: Implement full CRUD operations for location tabs (Rooms, Devices, Shelves, Racks) with overflow menu actions (Edit, Delete) per FR-037f through FR-037v. Each location entity can be edited via modal dialog and deleted with validation constraints.
+**Purpose**: Implement full CRUD operations for location tabs (Rooms, Devices,
+Shelves, Racks) with overflow menu actions (Edit, Delete) per FR-037f through
+FR-037v. Each location entity can be edited via modal dialog and deleted with
+validation constraints.
 
-**Goal**: Users can edit location fields (except Code and Parent which are read-only) and delete locations with constraint validation (child locations, active samples).
+**Goal**: Users can edit location fields (except Code and Parent which are
+read-only) and delete locations with constraint validation (child locations,
+active samples).
 
-**Independent Test**: Edit a room's name and description, verify changes saved. Attempt to delete a room with child devices, verify error message displayed. Delete a room with no constraints, verify deletion successful.
+**Independent Test**: Edit a room's name and description, verify changes saved.
+Attempt to delete a room with child devices, verify error message displayed.
+Delete a room with no constraints, verify deletion successful.
 
-**Dependencies**: Requires Phase 2 (Foundational) AND Phase 5 early infrastructure (T032-T039: DAOs, StorageLocationService, StorageLocationRestController). Can start as soon as service layer and controller infrastructure exists - does NOT need full Phase 5 completion (sample assignment, frontend widgets, dashboard).
+**Dependencies**: Requires Phase 2 (Foundational) AND Phase 5 early
+infrastructure (T032-T039: DAOs, StorageLocationService,
+StorageLocationRestController). Can start as soon as service layer and
+controller infrastructure exists - does NOT need full Phase 5 completion (sample
+assignment, frontend widgets, dashboard).
 
 ### Tests First - Backend Integration Tests (Write BEFORE implementation)
 
 - [x] T099 [P] Write integration test
       `src/test/java/org/openelisglobal/storage/controller/StorageLocationRestControllerTest.java`
-      for Edit Location operations: testUpdateRoom_UpdatesEditableFields (update room name, description, status), testUpdateRoom_CodeReadOnly (attempt to update code, verify rejected or ignored), testUpdateDevice_UpdatesEditableFields (update device name, type, temperature, capacity), testUpdateDevice_ParentReadOnly (attempt to change parent room, verify rejected), testUpdateShelf_UpdatesEditableFields (update shelf label, capacity, status), testUpdateRack_UpdatesEditableFields (update rack label, dimensions, status), testUpdateLocation_CodeUniquenessValidation (attempt duplicate code, verify error), testUpdateLocation_InvalidData_Returns400 (invalid field values return 400)
+      for Edit Location operations: testUpdateRoom_UpdatesEditableFields (update
+      room name, description, status), testUpdateRoom_CodeReadOnly (attempt to
+      update code, verify rejected or ignored),
+      testUpdateDevice_UpdatesEditableFields (update device name, type,
+      temperature, capacity), testUpdateDevice_ParentReadOnly (attempt to change
+      parent room, verify rejected), testUpdateShelf_UpdatesEditableFields
+      (update shelf label, capacity, status),
+      testUpdateRack_UpdatesEditableFields (update rack label, dimensions,
+      status), testUpdateLocation_CodeUniquenessValidation (attempt duplicate
+      code, verify error), testUpdateLocation_InvalidData_Returns400 (invalid
+      field values return 400)
 
 - [x] T100 [P] Write integration test
       `src/test/java/org/openelisglobal/storage/controller/StorageLocationRestControllerTest.java`
-      for Delete Location operations: testDeleteRoom_WithChildDevices_ReturnsError (cannot delete room with devices), testDeleteRoom_WithActiveSamples_ReturnsError (cannot delete room with active samples), testDeleteRoom_NoConstraints_DeletesSuccessfully (delete room with no children/samples), testDeleteDevice_WithChildShelves_ReturnsError (cannot delete device with shelves), testDeleteDevice_WithActiveSamples_ReturnsError (cannot delete device with active samples), testDeleteShelf_WithChildRacks_ReturnsError (cannot delete shelf with racks), testDeleteRack_WithActiveSamples_ReturnsError (cannot delete rack with active samples), testDeleteLocation_ReturnsConstraintMessage (error message includes specific reason), testDeleteLocation_ConfirmationRequired (successful deletion requires confirmation, handled in frontend)
+      for Delete Location operations:
+      testDeleteRoom_WithChildDevices_ReturnsError (cannot delete room with
+      devices), testDeleteRoom_WithActiveSamples_ReturnsError (cannot delete
+      room with active samples),
+      testDeleteRoom_NoConstraints_DeletesSuccessfully (delete room with no
+      children/samples), testDeleteDevice_WithChildShelves_ReturnsError (cannot
+      delete device with shelves),
+      testDeleteDevice_WithActiveSamples_ReturnsError (cannot delete device with
+      active samples), testDeleteShelf_WithChildRacks_ReturnsError (cannot
+      delete shelf with racks), testDeleteRack_WithActiveSamples_ReturnsError
+      (cannot delete rack with active samples),
+      testDeleteLocation_ReturnsConstraintMessage (error message includes
+      specific reason), testDeleteLocation_ConfirmationRequired (successful
+      deletion requires confirmation, handled in frontend)
 
 - [x] T101 Run backend integration tests → Verify all FAIL:
       `mvn test -Dtest="StorageLocationRestControllerTest"`
@@ -1582,11 +1656,25 @@ separate "Move" and "View Storage" items.
 
 - [x] T102 [P] Write unit test
       `src/test/java/org/openelisglobal/storage/service/StorageLocationServiceImplTest.java`
-      for constraint validation: testValidateDeleteConstraints_RoomWithDevices_ReturnsFalse (room with devices cannot be deleted), testValidateDeleteConstraints_RoomWithActiveSamples_ReturnsFalse (room with samples cannot be deleted), testValidateDeleteConstraints_DeviceWithShelves_ReturnsFalse (device with shelves cannot be deleted), testValidateDeleteConstraints_LocationNoConstraints_ReturnsTrue (location with no constraints can be deleted), testGetDeleteConstraintMessage_RoomWithDevices_ReturnsMessage (error message for room with devices), testGetDeleteConstraintMessage_DeviceWithSamples_ReturnsMessage (error message for device with samples)
+      for constraint validation:
+      testValidateDeleteConstraints_RoomWithDevices_ReturnsFalse (room with
+      devices cannot be deleted),
+      testValidateDeleteConstraints_RoomWithActiveSamples_ReturnsFalse (room
+      with samples cannot be deleted),
+      testValidateDeleteConstraints_DeviceWithShelves_ReturnsFalse (device with
+      shelves cannot be deleted),
+      testValidateDeleteConstraints_LocationNoConstraints_ReturnsTrue (location
+      with no constraints can be deleted),
+      testGetDeleteConstraintMessage_RoomWithDevices_ReturnsMessage (error
+      message for room with devices),
+      testGetDeleteConstraintMessage_DeviceWithSamples_ReturnsMessage (error
+      message for device with samples)
 
 - [x] T103 [P] Write unit test
       `src/test/java/org/openelisglobal/storage/service/StorageLocationServiceImplTest.java`
-      for update validation: testUpdateLocation_CodeUniquenessCheck (verify code uniqueness validation), testUpdateLocation_ReadOnlyFieldsIgnored (code and Parent fields not updated even if provided)
+      for update validation: testUpdateLocation_CodeUniquenessCheck (verify code
+      uniqueness validation), testUpdateLocation_ReadOnlyFieldsIgnored (code and
+      Parent fields not updated even if provided)
 
 - [x] T104 Run backend service unit tests → Verify all FAIL:
       `mvn test -Dtest="StorageLocationServiceImplTest"`
@@ -1595,79 +1683,163 @@ separate "Move" and "View Storage" items.
 
 - [x] T105 [P] Write unit test
       `frontend/src/components/storage/__tests__/LocationActionsOverflowMenu.test.jsx`
-      for overflow menu: testOverflowMenu_RendersEditAndDelete (menu renders with Edit and Delete items), testOverflowMenu_EditOpensModal (clicking Edit opens EditLocationModal), testOverflowMenu_DeleteOpensModal (clicking Delete opens DeleteLocationModal), testOverflowMenu_KeyboardAccessible (menu accessible via keyboard navigation)
+      for overflow menu: testOverflowMenu_RendersEditAndDelete (menu renders
+      with Edit and Delete items), testOverflowMenu_EditOpensModal (clicking
+      Edit opens EditLocationModal), testOverflowMenu_DeleteOpensModal (clicking
+      Delete opens DeleteLocationModal), testOverflowMenu_KeyboardAccessible
+      (menu accessible via keyboard navigation)
 
 - [x] T106 [P] Write unit test
-      `frontend/src/components/storage/__tests__/EditLocationModal.test.jsx`
-      for edit modal: testEditModal_RendersForRoom (modal renders with Room fields), testEditModal_RendersForDevice (modal renders with Device fields), testEditModal_CodeFieldReadOnly (code field is disabled/read-only), testEditModal_ParentFieldReadOnly (parent field is disabled/read-only), testEditModal_EditableFieldsEnabled (name, description, status fields are editable), testEditModal_ValidationErrors (displays validation errors for duplicate code), testEditModal_SaveCallsAPI (save button calls PUT endpoint), testEditModal_CancelClosesModal (cancel button closes modal without saving)
+      `frontend/src/components/storage/__tests__/EditLocationModal.test.jsx` for
+      edit modal: testEditModal_RendersForRoom (modal renders with Room fields),
+      testEditModal_RendersForDevice (modal renders with Device fields),
+      testEditModal_CodeFieldReadOnly (code field is disabled/read-only),
+      testEditModal_ParentFieldReadOnly (parent field is disabled/read-only),
+      testEditModal_EditableFieldsEnabled (name, description, status fields are
+      editable), testEditModal_ValidationErrors (displays validation errors for
+      duplicate code), testEditModal_SaveCallsAPI (save button calls PUT
+      endpoint), testEditModal_CancelClosesModal (cancel button closes modal
+      without saving)
 
 - [x] T107 [P] Write unit test
       `frontend/src/components/storage/__tests__/DeleteLocationModal.test.jsx`
-      for delete modal: testDeleteModal_WithConstraints_ShowsError (shows error message if constraints exist), testDeleteModal_NoConstraints_ShowsConfirmation (shows confirmation dialog if no constraints), testDeleteModal_ConfirmationRequired (confirm button disabled until user confirms), testDeleteModal_DeleteCallsAPI (delete button calls DELETE endpoint), testDeleteModal_CancelClosesModal (cancel button closes modal without deleting)
+      for delete modal: testDeleteModal_WithConstraints_ShowsError (shows error
+      message if constraints exist),
+      testDeleteModal_NoConstraints_ShowsConfirmation (shows confirmation dialog
+      if no constraints), testDeleteModal_ConfirmationRequired (confirm button
+      disabled until user confirms), testDeleteModal_DeleteCallsAPI (delete
+      button calls DELETE endpoint), testDeleteModal_CancelClosesModal (cancel
+      button closes modal without deleting)
 
 - [x] T108 Run frontend unit tests → Verify all FAIL:
       `npm test -- LocationActionsOverflowMenu.test.jsx EditLocationModal.test.jsx DeleteLocationModal.test.jsx`
 
 ### Implementation - Backend Service Layer
 
-- [x] T109 Add validateDeleteConstraints() method to StorageLocationService interface
-      `src/main/java/org/openelisglobal/storage/service/StorageLocationService.java`: Method signature `boolean validateDeleteConstraints(Object locationEntity)` - Check for child locations and active samples
+- [x] T109 Add validateDeleteConstraints() method to StorageLocationService
+      interface
+      `src/main/java/org/openelisglobal/storage/service/StorageLocationService.java`:
+      Method signature
+      `boolean validateDeleteConstraints(Object locationEntity)` - Check for
+      child locations and active samples
 
 - [x] T110 Add canDeleteLocation() method to StorageLocationService interface
-      `src/main/java/org/openelisglobal/storage/service/StorageLocationService.java`: Method signature `boolean canDeleteLocation(Object locationEntity)` - Returns boolean with reason if false
+      `src/main/java/org/openelisglobal/storage/service/StorageLocationService.java`:
+      Method signature `boolean canDeleteLocation(Object locationEntity)` -
+      Returns boolean with reason if false
 
-- [x] T111 Add getDeleteConstraintMessage() method to StorageLocationService interface
-      `src/main/java/org/openelisglobal/storage/service/StorageLocationService.java`: Method signature `String getDeleteConstraintMessage(Object locationEntity)` - Returns user-friendly error message
+- [x] T111 Add getDeleteConstraintMessage() method to StorageLocationService
+      interface
+      `src/main/java/org/openelisglobal/storage/service/StorageLocationService.java`:
+      Method signature
+      `String getDeleteConstraintMessage(Object locationEntity)` - Returns
+      user-friendly error message
 
-- [x] T112 Implement validateDeleteConstraints() method in StorageLocationServiceImpl
-      `src/main/java/org/openelisglobal/storage/service/StorageLocationServiceImpl.java`: Check for child locations (room has devices, device has shelves, shelf has racks), check for active samples in location or child locations, return false if constraints exist
+- [x] T112 Implement validateDeleteConstraints() method in
+      StorageLocationServiceImpl
+      `src/main/java/org/openelisglobal/storage/service/StorageLocationServiceImpl.java`:
+      Check for child locations (room has devices, device has shelves, shelf has
+      racks), check for active samples in location or child locations, return
+      false if constraints exist
 
 - [x] T113 Implement canDeleteRoom() method in StorageLocationServiceImpl
-      `src/main/java/org/openelisglobal/storage/service/StorageLocationServiceImpl.java`: Check deviceDAO.countByRoomId(room.getId()) > 0, check sampleStorageService.hasActiveSamplesInLocation(room.getId(), "room"), return false if constraints exist
+      `src/main/java/org/openelisglobal/storage/service/StorageLocationServiceImpl.java`:
+      Check deviceDAO.countByRoomId(room.getId()) > 0, check
+      sampleStorageService.hasActiveSamplesInLocation(room.getId(), "room"),
+      return false if constraints exist
 
 - [x] T114 Implement canDeleteDevice() method in StorageLocationServiceImpl
-      `src/main/java/org/openelisglobal/storage/service/StorageLocationServiceImpl.java`: Check shelfDAO.countByDeviceId(device.getId()) > 0, check sampleStorageService.hasActiveSamplesInLocation(device.getId(), "device"), return false if constraints exist
+      `src/main/java/org/openelisglobal/storage/service/StorageLocationServiceImpl.java`:
+      Check shelfDAO.countByDeviceId(device.getId()) > 0, check
+      sampleStorageService.hasActiveSamplesInLocation(device.getId(), "device"),
+      return false if constraints exist
 
 - [x] T115 Implement canDeleteShelf() method in StorageLocationServiceImpl
-      `src/main/java/org/openelisglobal/storage/service/StorageLocationServiceImpl.java`: Check rackDAO.countByShelfId(shelf.getId()) > 0, check sampleStorageService.hasActiveSamplesInLocation(shelf.getId(), "shelf"), return false if constraints exist
+      `src/main/java/org/openelisglobal/storage/service/StorageLocationServiceImpl.java`:
+      Check rackDAO.countByShelfId(shelf.getId()) > 0, check
+      sampleStorageService.hasActiveSamplesInLocation(shelf.getId(), "shelf"),
+      return false if constraints exist
 
 - [x] T116 Implement canDeleteRack() method in StorageLocationServiceImpl
-      `src/main/java/org/openelisglobal/storage/service/StorageLocationServiceImpl.java`: Check sampleStorageService.hasActiveSamplesInLocation(rack.getId(), "rack"), return false if constraints exist
+      `src/main/java/org/openelisglobal/storage/service/StorageLocationServiceImpl.java`:
+      Check sampleStorageService.hasActiveSamplesInLocation(rack.getId(),
+      "rack"), return false if constraints exist
 
-- [x] T117 Implement getDeleteConstraintMessage() method in StorageLocationServiceImpl
-      `src/main/java/org/openelisglobal/storage/service/StorageLocationServiceImpl.java`: Return user-friendly error message (e.g., "Cannot delete Room 'Main Laboratory' because it contains 8 devices" or "Cannot delete Device 'Freezer Unit 1' because 287 active samples are stored there")
+- [x] T117 Implement getDeleteConstraintMessage() method in
+      StorageLocationServiceImpl
+      `src/main/java/org/openelisglobal/storage/service/StorageLocationServiceImpl.java`:
+      Return user-friendly error message (e.g., "Cannot delete Room 'Main
+      Laboratory' because it contains 8 devices" or "Cannot delete Device
+      'Freezer Unit 1' because 287 active samples are stored there")
 
-- [x] T118 Update update() methods in StorageLocationServiceImpl to ignore Code and Parent fields
-      `src/main/java/org/openelisglobal/storage/service/StorageLocationServiceImpl.java`: Update updateRoom(), updateDevice(), updateShelf(), updateRack() methods to ignore code and parent fields if provided in request, only update editable fields (name, description, status, type, temperature, capacity, dimensions)
+- [x] T118 Update update() methods in StorageLocationServiceImpl to ignore Code
+      and Parent fields
+      `src/main/java/org/openelisglobal/storage/service/StorageLocationServiceImpl.java`:
+      Update updateRoom(), updateDevice(), updateShelf(), updateRack() methods
+      to ignore code and parent fields if provided in request, only update
+      editable fields (name, description, status, type, temperature, capacity,
+      dimensions)
 
 - [x] T119 Run backend service unit tests → Verify all PASS:
       `mvn test -Dtest="StorageLocationServiceImplTest"`
 
 ### Implementation - Backend REST Controllers
 
-- [x] T120 Update PUT /rest/storage/rooms/{id} endpoint in StorageLocationRestController
-      `src/main/java/org/openelisglobal/storage/controller/StorageLocationRestController.java`: Ensure endpoint validates editable fields only (name, description, active), ignores code field if provided, returns 400 for validation errors (duplicate code, invalid data), returns 404 if room not found
+- [x] T120 Update PUT /rest/storage/rooms/{id} endpoint in
+      StorageLocationRestController
+      `src/main/java/org/openelisglobal/storage/controller/StorageLocationRestController.java`:
+      Ensure endpoint validates editable fields only (name, description,
+      active), ignores code field if provided, returns 400 for validation errors
+      (duplicate code, invalid data), returns 404 if room not found
 
-- [x] T121 [P] Update PUT /rest/storage/devices/{id} endpoint in StorageLocationRestController
-      `src/main/java/org/openelisglobal/storage/controller/StorageLocationRestController.java`: Ensure endpoint validates editable fields only (name, type, temperature, capacity, active), ignores code and parentRoom fields if provided, returns 400 for validation errors, returns 404 if device not found
+- [x] T121 [P] Update PUT /rest/storage/devices/{id} endpoint in
+      StorageLocationRestController
+      `src/main/java/org/openelisglobal/storage/controller/StorageLocationRestController.java`:
+      Ensure endpoint validates editable fields only (name, type, temperature,
+      capacity, active), ignores code and parentRoom fields if provided, returns
+      400 for validation errors, returns 404 if device not found
 
-- [x] T122 [P] Update PUT /rest/storage/shelves/{id} endpoint in StorageLocationRestController
-      `src/main/java/org/openelisglobal/storage/controller/StorageLocationRestController.java`: Ensure endpoint validates editable fields only (label, capacity, active), ignores parentDevice field if provided, returns 400 for validation errors, returns 404 if shelf not found
+- [x] T122 [P] Update PUT /rest/storage/shelves/{id} endpoint in
+      StorageLocationRestController
+      `src/main/java/org/openelisglobal/storage/controller/StorageLocationRestController.java`:
+      Ensure endpoint validates editable fields only (label, capacity, active),
+      ignores parentDevice field if provided, returns 400 for validation errors,
+      returns 404 if shelf not found
 
-- [x] T123 [P] Update PUT /rest/storage/racks/{id} endpoint in StorageLocationRestController
-      `src/main/java/org/openelisglobal/storage/controller/StorageLocationRestController.java`: Ensure endpoint validates editable fields only (label, dimensions rows/columns, positionSchemaHint, active), ignores parentShelf field if provided, returns 400 for validation errors, returns 404 if rack not found
+- [x] T123 [P] Update PUT /rest/storage/racks/{id} endpoint in
+      StorageLocationRestController
+      `src/main/java/org/openelisglobal/storage/controller/StorageLocationRestController.java`:
+      Ensure endpoint validates editable fields only (label, dimensions
+      rows/columns, positionSchemaHint, active), ignores parentShelf field if
+      provided, returns 400 for validation errors, returns 404 if rack not found
 
-- [x] T124 Add DELETE /rest/storage/rooms/{id} endpoint in StorageLocationRestController
-      `src/main/java/org/openelisglobal/storage/controller/StorageLocationRestController.java`: Validate constraints using canDeleteRoom(), return 409 Conflict with constraint message if constraints exist, return 200 if deletion successful, return 404 if room not found
+- [x] T124 Add DELETE /rest/storage/rooms/{id} endpoint in
+      StorageLocationRestController
+      `src/main/java/org/openelisglobal/storage/controller/StorageLocationRestController.java`:
+      Validate constraints using canDeleteRoom(), return 409 Conflict with
+      constraint message if constraints exist, return 200 if deletion
+      successful, return 404 if room not found
 
-- [x] T125 [P] Add DELETE /rest/storage/devices/{id} endpoint in StorageLocationRestController
-      `src/main/java/org/openelisglobal/storage/controller/StorageLocationRestController.java`: Validate constraints using canDeleteDevice(), return 409 Conflict with constraint message if constraints exist, return 200 if deletion successful, return 404 if device not found
+- [x] T125 [P] Add DELETE /rest/storage/devices/{id} endpoint in
+      StorageLocationRestController
+      `src/main/java/org/openelisglobal/storage/controller/StorageLocationRestController.java`:
+      Validate constraints using canDeleteDevice(), return 409 Conflict with
+      constraint message if constraints exist, return 200 if deletion
+      successful, return 404 if device not found
 
-- [x] T126 [P] Add DELETE /rest/storage/shelves/{id} endpoint in StorageLocationRestController
-      `src/main/java/org/openelisglobal/storage/controller/StorageLocationRestController.java`: Validate constraints using canDeleteShelf(), return 409 Conflict with constraint message if constraints exist, return 200 if deletion successful, return 404 if shelf not found
+- [x] T126 [P] Add DELETE /rest/storage/shelves/{id} endpoint in
+      StorageLocationRestController
+      `src/main/java/org/openelisglobal/storage/controller/StorageLocationRestController.java`:
+      Validate constraints using canDeleteShelf(), return 409 Conflict with
+      constraint message if constraints exist, return 200 if deletion
+      successful, return 404 if shelf not found
 
-- [x] T127 [P] Add DELETE /rest/storage/racks/{id} endpoint in StorageLocationRestController
-      `src/main/java/org/openelisglobal/storage/controller/StorageLocationRestController.java`: Validate constraints using canDeleteRack(), return 409 Conflict with constraint message if constraints exist, return 200 if deletion successful, return 404 if rack not found
+- [x] T127 [P] Add DELETE /rest/storage/racks/{id} endpoint in
+      StorageLocationRestController
+      `src/main/java/org/openelisglobal/storage/controller/StorageLocationRestController.java`:
+      Validate constraints using canDeleteRack(), return 409 Conflict with
+      constraint message if constraints exist, return 200 if deletion
+      successful, return 404 if rack not found
 
 - [x] T128 Run backend integration tests → Verify all PASS:
       `mvn test -Dtest="StorageLocationRestControllerTest"`
@@ -1675,16 +1847,41 @@ separate "Move" and "View Storage" items.
 ### Implementation - Frontend Components
 
 - [x] T129 Create LocationActionsOverflowMenu component
-      `frontend/src/components/storage/LocationManagement/LocationActionsOverflowMenu.jsx`: Similar structure to SampleActionsOverflowMenu.jsx, uses Carbon Design System OverflowMenu component, displays two menu items (Edit, Delete), props: location (entity object), onEdit, onDelete callbacks, accessible via keyboard navigation and screen readers
+      `frontend/src/components/storage/LocationManagement/LocationActionsOverflowMenu.jsx`:
+      Similar structure to SampleActionsOverflowMenu.jsx, uses Carbon Design
+      System OverflowMenu component, displays two menu items (Edit, Delete),
+      props: location (entity object), onEdit, onDelete callbacks, accessible
+      via keyboard navigation and screen readers
 
 - [ ] T130 Create EditLocationModal component
-      `frontend/src/components/storage/LocationManagement/EditLocationModal.jsx`: Generic component that adapts to entity type (Room/Device/Shelf/Rack), displays editable fields based on entity type (Room: name, description, status; Device: name, type, temperature, capacity, status; Shelf: label, capacity, status; Rack: label, dimensions, status), code and Parent fields disabled/read-only, validates code uniqueness, uses Carbon Design System Modal component, calls PUT /rest/storage/{entityType}/{id} endpoint on save, displays Cancel and "Save Changes" buttons in footer
+      `frontend/src/components/storage/LocationManagement/EditLocationModal.jsx`:
+      Generic component that adapts to entity type (Room/Device/Shelf/Rack),
+      displays editable fields based on entity type (Room: name, description,
+      status; Device: name, type, temperature, capacity, status; Shelf: label,
+      capacity, status; Rack: label, dimensions, status), code and Parent fields
+      disabled/read-only, validates code uniqueness, uses Carbon Design System
+      Modal component, calls PUT /rest/storage/{entityType}/{id} endpoint on
+      save, displays Cancel and "Save Changes" buttons in footer
 
 - [x] T131 Create DeleteLocationModal component
-      `frontend/src/components/storage/LocationManagement/DeleteLocationModal.jsx`: Checks constraints via API call before showing confirmation, displays error message if constraints exist (409 Conflict response), shows confirmation dialog with warning if no constraints (e.g., "Are you sure you want to delete [Location Name]? This action cannot be undone."), uses Carbon Design System Modal component with destructive action styling for confirm button, calls DELETE /rest/storage/{entityType}/{id} endpoint on confirm, displays Cancel and "Confirm Delete" buttons in footer
+      `frontend/src/components/storage/LocationManagement/DeleteLocationModal.jsx`:
+      Checks constraints via API call before showing confirmation, displays
+      error message if constraints exist (409 Conflict response), shows
+      confirmation dialog with warning if no constraints (e.g., "Are you sure
+      you want to delete [Location Name]? This action cannot be undone."), uses
+      Carbon Design System Modal component with destructive action styling for
+      confirm button, calls DELETE /rest/storage/{entityType}/{id} endpoint on
+      confirm, displays Cancel and "Confirm Delete" buttons in footer
 
-- [x] T132 Update StorageDashboard component to integrate LocationActionsOverflowMenu
-      `frontend/src/components/storage/StorageDashboard.jsx`: Replace placeholder action buttons (⋮) in Rooms, Devices, Shelves, Racks table rows with LocationActionsOverflowMenu component, add state management for Edit and Delete modals (editModalOpen, deleteModalOpen, selectedLocation, selectedLocationType), handle modal open/close callbacks (onEdit, onDelete), handle API calls for PUT and DELETE operations, refresh table data after Edit/Delete operations, display success/error notifications
+- [x] T132 Update StorageDashboard component to integrate
+      LocationActionsOverflowMenu
+      `frontend/src/components/storage/StorageDashboard.jsx`: Replace
+      placeholder action buttons (⋮) in Rooms, Devices, Shelves, Racks table
+      rows with LocationActionsOverflowMenu component, add state management for
+      Edit and Delete modals (editModalOpen, deleteModalOpen, selectedLocation,
+      selectedLocationType), handle modal open/close callbacks (onEdit,
+      onDelete), handle API calls for PUT and DELETE operations, refresh table
+      data after Edit/Delete operations, display success/error notifications
 
 - [x] T133 Run frontend unit tests → Verify all PASS:
       `npm test -- LocationActionsOverflowMenu.test.jsx EditLocationModal.test.jsx DeleteLocationModal.test.jsx`
@@ -1692,159 +1889,474 @@ separate "Move" and "View Storage" items.
 ### Tests First - Frontend E2E Tests (Write BEFORE final verification)
 
 - [ ] T134 [P] Write Cypress E2E test
-      `frontend/cypress/e2e/storageLocationCRUD.cy.js` for Edit Location operations: testEditRoom_UpdatesNameAndDescription (edit room name and description), testEditDevice_UpdatesTypeAndCapacity (edit device type and capacity), testEditLocation_CodeReadOnly (verify code field cannot be edited), testEditLocation_ValidationErrors (verify duplicate code validation)
+      `frontend/cypress/e2e/storageLocationCRUD.cy.js` for Edit Location
+      operations: testEditRoom_UpdatesNameAndDescription (edit room name and
+      description), testEditDevice_UpdatesTypeAndCapacity (edit device type and
+      capacity), testEditLocation_CodeReadOnly (verify code field cannot be
+      edited), testEditLocation_ValidationErrors (verify duplicate code
+      validation)
 
 - [ ] T135 [P] Write Cypress E2E test
-      `frontend/cypress/e2e/storageLocationCRUD.cy.js` for Delete Location operations: testDeleteRoom_WithDevices_ShowsError (attempt to delete room with devices), testDeleteDevice_WithSamples_ShowsError (attempt to delete device with samples), testDeleteLocation_NoConstraints_Deletes (delete location with no constraints), testDeleteLocation_ConfirmationRequired (verify confirmation dialog appears)
+      `frontend/cypress/e2e/storageLocationCRUD.cy.js` for Delete Location
+      operations: testDeleteRoom_WithDevices_ShowsError (attempt to delete room
+      with devices), testDeleteDevice_WithSamples_ShowsError (attempt to delete
+      device with samples), testDeleteLocation_NoConstraints_Deletes (delete
+      location with no constraints), testDeleteLocation_ConfirmationRequired
+      (verify confirmation dialog appears)
 
 - [ ] T136 Run Cypress E2E tests → Verify Location CRUD scenarios work:
       `npm run cy:run -- --spec "cypress/e2e/storageLocationCRUD.cy.js"`
 
-**Checkpoint**: Location CRUD Operations complete. Users can edit location fields (except Code and Parent which are read-only) via modal dialog, delete locations with constraint validation (child locations, active samples), overflow menu appears on all location table rows, table refreshes after Edit/Delete operations.
+**Checkpoint**: Location CRUD Operations complete. Users can edit location
+fields (except Code and Parent which are read-only) via modal dialog, delete
+locations with constraint validation (child locations, active samples), overflow
+menu appears on all location table rows, table refreshes after Edit/Delete
+operations.
 
 ---
 
 ## Phase 9: Expandable Row Functionality Implementation [COMPLETE]
 
-**Purpose**: Add expandable row functionality to location tables (Rooms, Devices, Shelves, Racks) in StorageDashboard component. Expanded rows display additional entity fields not visible in table columns, formatted as key-value pairs in read-only format. Only one row can be expanded at a time. Expansion triggered by clicking chevron icon in dedicated first column (Carbon DataTable standard pattern).
+**Purpose**: Add expandable row functionality to location tables (Rooms,
+Devices, Shelves, Racks) in StorageDashboard component. Expanded rows display
+additional entity fields not visible in table columns, formatted as key-value
+pairs in read-only format. Only one row can be expanded at a time. Expansion
+triggered by clicking chevron icon in dedicated first column (Carbon DataTable
+standard pattern).
 
-**Goal**: Users can expand location table rows to view additional entity details (Description, Created Date, Created By, Last Modified Date, Last Modified By, and entity-specific fields) without leaving the table view.
+**Goal**: Users can expand location table rows to view additional entity details
+(Description, Created Date, Created By, Last Modified Date, Last Modified By,
+and entity-specific fields) without leaving the table view.
 
-**Independent Test**: Click chevron icon on a room row, verify expanded content displays Description, Created Date, Created By, Last Modified Date, Last Modified By. Click chevron on another room row, verify previous row collapses and new row expands. Verify expanded content is read-only (no edit capability).
+**Independent Test**: Click chevron icon on a room row, verify expanded content
+displays Description, Created Date, Created By, Last Modified Date, Last
+Modified By. Click chevron on another room row, verify previous row collapses
+and new row expands. Verify expanded content is read-only (no edit capability).
 
-**Dependencies**: Requires Phase 8 (Location CRUD) - StorageDashboard component must exist with location tables. All required fields already available in existing API responses (no backend changes needed).
+**Dependencies**: Requires Phase 8 (Location CRUD) - StorageDashboard component
+must exist with location tables. All required fields already available in
+existing API responses (no backend changes needed).
 
 **Spec Reference**: FR-059a through FR-059f  
-**Research**: [research.md Section 8](./research.md#8-carbon-datatable-expandable-rows)
+**Research**:
+[research.md Section 8](./research.md#8-carbon-datatable-expandable-rows)
 
 ### Tests First - Frontend Unit Tests (Write BEFORE implementation)
 
-- [x] T161 [P] Write unit test `frontend/src/components/storage/StorageDashboard/StorageDashboard.test.jsx` for expanded state management: testHandleRowExpand_TogglesExpandedState (clicking same row collapses, clicking different row expands new and collapses previous), testHandleRowExpand_OnlyOneRowExpanded (only one row can be expanded at a time), testTabSwitch_ResetsExpandedState (switching tabs resets expanded state to null)
+- [x] T161 [P] Write unit test
+      `frontend/src/components/storage/StorageDashboard/StorageDashboard.test.jsx`
+      for expanded state management: testHandleRowExpand_TogglesExpandedState
+      (clicking same row collapses, clicking different row expands new and
+      collapses previous), testHandleRowExpand_OnlyOneRowExpanded (only one row
+      can be expanded at a time), testTabSwitch_ResetsExpandedState (switching
+      tabs resets expanded state to null)
 
-- [x] T162 [P] Write unit test `frontend/src/components/storage/StorageDashboard/StorageDashboard.test.jsx` for expanded content rendering: testRenderExpandedContent_Room (renders Description, Created Date, Created By, Last Modified Date, Last Modified By for room), testRenderExpandedContent_Device (renders Temperature Setting, Capacity Limit, Description, Created Date, Created By, Last Modified Date, Last Modified By for device), testRenderExpandedContent_Shelf (renders Capacity Limit, Description, Created Date, Created By, Last Modified Date, Last Modified By for shelf), testRenderExpandedContent_Rack (renders Position Schema Hint, Description, Created Date, Created By, Last Modified Date, Last Modified By for rack)
+- [x] T162 [P] Write unit test
+      `frontend/src/components/storage/StorageDashboard/StorageDashboard.test.jsx`
+      for expanded content rendering: testRenderExpandedContent_Room (renders
+      Description, Created Date, Created By, Last Modified Date, Last Modified
+      By for room), testRenderExpandedContent_Device (renders Temperature
+      Setting, Capacity Limit, Description, Created Date, Created By, Last
+      Modified Date, Last Modified By for device),
+      testRenderExpandedContent_Shelf (renders Capacity Limit, Description,
+      Created Date, Created By, Last Modified Date, Last Modified By for shelf),
+      testRenderExpandedContent_Rack (renders Position Schema Hint, Description,
+      Created Date, Created By, Last Modified Date, Last Modified By for rack)
 
-- [x] T163 [P] Write unit test `frontend/src/components/storage/StorageDashboard/StorageDashboard.test.jsx` for missing field handling: testRenderExpandedContent_MissingFields_ShowsNA (displays "N/A" for missing optional fields like description), testRenderExpandedContent_DateFormatting (formats dates using intl.formatDate()), testRenderExpandedContent_ReadOnly (expanded content contains no input fields, only read-only display)
+- [x] T163 [P] Write unit test
+      `frontend/src/components/storage/StorageDashboard/StorageDashboard.test.jsx`
+      for missing field handling:
+      testRenderExpandedContent_MissingFields_ShowsNA (displays "N/A" for
+      missing optional fields like description),
+      testRenderExpandedContent_DateFormatting (formats dates using
+      intl.formatDate()), testRenderExpandedContent_ReadOnly (expanded content
+      contains no input fields, only read-only display)
 
-- [x] T164 Run frontend unit tests → Verify all FAIL: `npm test -- StorageDashboard.test.jsx`
+- [x] T164 Run frontend unit tests → Verify all FAIL:
+      `npm test -- StorageDashboard.test.jsx`
 
 ### Tests First - Frontend E2E Tests (Write BEFORE final verification)
 
-- [x] T165 [P] Write Cypress E2E test `frontend/cypress/e2e/storageLocationExpandableRows.cy.js` for expand/collapse interaction: testExpandRow_ClickChevronIcon (click chevron icon expands row), testExpandRow_ShowsExpandedContent (expanded content visible and displays correct fields), testExpandRow_SingleRowExpansion (expanding new row collapses previous), testExpandRow_CollapseSameRow (clicking same chevron collapses row), testExpandRow_KeyboardNavigation (Enter/Space key expands/collapses row)
+- [x] T165 [P] Write Cypress E2E test
+      `frontend/cypress/e2e/storageLocationExpandableRows.cy.js` for
+      expand/collapse interaction: testExpandRow_ClickChevronIcon (click chevron
+      icon expands row), testExpandRow_ShowsExpandedContent (expanded content
+      visible and displays correct fields), testExpandRow_SingleRowExpansion
+      (expanding new row collapses previous), testExpandRow_CollapseSameRow
+      (clicking same chevron collapses row), testExpandRow_KeyboardNavigation
+      (Enter/Space key expands/collapses row)
 
-- [x] T166 [P] Write Cypress E2E test `frontend/cypress/e2e/storageLocationExpandableRows.cy.js` for expanded content verification: testExpandedContent_RoomFields (verifies Description, Created Date, Created By, Last Modified Date, Last Modified By displayed for room), testExpandedContent_DeviceFields (verifies Temperature Setting, Capacity Limit, Description, Created Date, Created By, Last Modified Date, Last Modified By displayed for device), testExpandedContent_ShelfFields (verifies Capacity Limit, Description, Created Date, Created By, Last Modified Date, Last Modified By displayed for shelf), testExpandedContent_RackFields (verifies Position Schema Hint, Description, Created Date, Created By, Last Modified Date, Last Modified By displayed for rack), testExpandedContent_ReadOnly (verifies no input fields in expanded content, only read-only display)
+- [x] T166 [P] Write Cypress E2E test
+      `frontend/cypress/e2e/storageLocationExpandableRows.cy.js` for expanded
+      content verification: testExpandedContent_RoomFields (verifies
+      Description, Created Date, Created By, Last Modified Date, Last Modified
+      By displayed for room), testExpandedContent_DeviceFields (verifies
+      Temperature Setting, Capacity Limit, Description, Created Date, Created
+      By, Last Modified Date, Last Modified By displayed for device),
+      testExpandedContent_ShelfFields (verifies Capacity Limit, Description,
+      Created Date, Created By, Last Modified Date, Last Modified By displayed
+      for shelf), testExpandedContent_RackFields (verifies Position Schema Hint,
+      Description, Created Date, Created By, Last Modified Date, Last Modified
+      By displayed for rack), testExpandedContent_ReadOnly (verifies no input
+      fields in expanded content, only read-only display)
 
-- [x] T167 [P] Write Cypress E2E test `frontend/cypress/e2e/storageLocationExpandableRows.cy.js` for accessibility: testExpandedContent_ARIA (verifies aria-expanded attribute on TableExpandRow), testExpandedContent_KeyboardNavigation (Enter/Space key works for expand/collapse), testExpandedContent_ScreenReader (verifies semantic HTML structure with role="region" and aria-label)
+- [x] T167 [P] Write Cypress E2E test
+      `frontend/cypress/e2e/storageLocationExpandableRows.cy.js` for
+      accessibility: testExpandedContent_ARIA (verifies aria-expanded attribute
+      on TableExpandRow), testExpandedContent_KeyboardNavigation (Enter/Space
+      key works for expand/collapse), testExpandedContent_ScreenReader (verifies
+      semantic HTML structure with role="region" and aria-label)
 
-- [ ] T168 Run Cypress E2E tests → Verify expandable row scenarios work: `npm run cy:run -- --spec "cypress/e2e/storageLocationExpandableRows.cy.js"`
+- [ ] T168 Run Cypress E2E tests → Verify expandable row scenarios work:
+      `npm run cy:run -- --spec "cypress/e2e/storageLocationExpandableRows.cy.js"`
 
 ### Implementation - Frontend Components
 
-- [x] T169 Add expandableRows prop to DataTable components in StorageDashboard.jsx `frontend/src/components/storage/StorageDashboard.jsx`: Add `expandableRows` prop to DataTable components for Rooms, Devices, Shelves, Racks tabs (Samples tab does not need expandable rows)
+- [x] T169 Add expandableRows prop to DataTable components in
+      StorageDashboard.jsx
+      `frontend/src/components/storage/StorageDashboard.jsx`: Add
+      `expandableRows` prop to DataTable components for Rooms, Devices, Shelves,
+      Racks tabs (Samples tab does not need expandable rows)
 
-- [x] T170 Import Carbon expandable row components in StorageDashboard.jsx `frontend/src/components/storage/StorageDashboard.jsx`: Import `TableExpandHeader`, `TableExpandRow`, `TableExpandedRow` from `@carbon/react`
+- [x] T170 Import Carbon expandable row components in StorageDashboard.jsx
+      `frontend/src/components/storage/StorageDashboard.jsx`: Import
+      `TableExpandHeader`, `TableExpandRow`, `TableExpandedRow` from
+      `@carbon/react`
 
-- [x] T171 Add expandedRowId state management in StorageDashboard.jsx `frontend/src/components/storage/StorageDashboard.jsx`: Add `useState` for `expandedRowId` (single state variable per tab or shared across tabs), initialize to `null`
+- [x] T171 Add expandedRowId state management in StorageDashboard.jsx
+      `frontend/src/components/storage/StorageDashboard.jsx`: Add `useState` for
+      `expandedRowId` (single state variable per tab or shared across tabs),
+      initialize to `null`
 
-- [x] T172 Implement handleRowExpand function in StorageDashboard.jsx `frontend/src/components/storage/StorageDashboard.jsx`: Create `handleRowExpand(rowId)` function that toggles expanded state (if same row clicked, collapse; if different row, expand new and collapse previous), logic: `setExpandedRowId(expandedRowId === rowId ? null : rowId)`
+- [x] T172 Implement handleRowExpand function in StorageDashboard.jsx
+      `frontend/src/components/storage/StorageDashboard.jsx`: Create
+      `handleRowExpand(rowId)` function that toggles expanded state (if same row
+      clicked, collapse; if different row, expand new and collapse previous),
+      logic: `setExpandedRowId(expandedRowId === rowId ? null : rowId)`
 
-- [x] T173 Create renderExpandedContent function for Rooms in StorageDashboard.jsx `frontend/src/components/storage/StorageDashboard.jsx`: Create `renderExpandedContentRoom(row)` function that displays Description, Created Date, Created By, Last Modified Date, Last Modified By as key-value pairs using Carbon Grid/Column components, format dates using `intl.formatDate()`, display "N/A" for missing optional fields, use React Intl message keys for labels
+- [x] T173 Create renderExpandedContent function for Rooms in
+      StorageDashboard.jsx
+      `frontend/src/components/storage/StorageDashboard.jsx`: Create
+      `renderExpandedContentRoom(row)` function that displays Description,
+      Created Date, Created By, Last Modified Date, Last Modified By as
+      key-value pairs using Carbon Grid/Column components, format dates using
+      `intl.formatDate()`, display "N/A" for missing optional fields, use React
+      Intl message keys for labels
 
-- [x] T174 [P] Create renderExpandedContent function for Devices in StorageDashboard.jsx `frontend/src/components/storage/StorageDashboard.jsx`: Create `renderExpandedContentDevice(row)` function that displays Temperature Setting, Capacity Limit, Description, Created Date, Created By, Last Modified Date, Last Modified By as key-value pairs, format dates and numbers appropriately, display "N/A" for missing fields
+- [x] T174 [P] Create renderExpandedContent function for Devices in
+      StorageDashboard.jsx
+      `frontend/src/components/storage/StorageDashboard.jsx`: Create
+      `renderExpandedContentDevice(row)` function that displays Temperature
+      Setting, Capacity Limit, Description, Created Date, Created By, Last
+      Modified Date, Last Modified By as key-value pairs, format dates and
+      numbers appropriately, display "N/A" for missing fields
 
-- [x] T175 [P] Create renderExpandedContent function for Shelves in StorageDashboard.jsx `frontend/src/components/storage/StorageDashboard.jsx`: Create `renderExpandedContentShelf(row)` function that displays Capacity Limit, Description, Created Date, Created By, Last Modified Date, Last Modified By as key-value pairs, format appropriately
+- [x] T175 [P] Create renderExpandedContent function for Shelves in
+      StorageDashboard.jsx
+      `frontend/src/components/storage/StorageDashboard.jsx`: Create
+      `renderExpandedContentShelf(row)` function that displays Capacity Limit,
+      Description, Created Date, Created By, Last Modified Date, Last Modified
+      By as key-value pairs, format appropriately
 
-- [x] T176 [P] Create renderExpandedContent function for Racks in StorageDashboard.jsx `frontend/src/components/storage/StorageDashboard.jsx`: Create `renderExpandedContentRack(row)` function that displays Position Schema Hint, Description, Created Date, Created By, Last Modified Date, Last Modified By as key-value pairs, format appropriately
+- [x] T176 [P] Create renderExpandedContent function for Racks in
+      StorageDashboard.jsx
+      `frontend/src/components/storage/StorageDashboard.jsx`: Create
+      `renderExpandedContentRack(row)` function that displays Position Schema
+      Hint, Description, Created Date, Created By, Last Modified Date, Last
+      Modified By as key-value pairs, format appropriately
 
-- [x] T177 Update Rooms table structure in StorageDashboard.jsx `frontend/src/components/storage/StorageDashboard.jsx`: Replace `TableRow` with `TableExpandRow` in header row (add `TableExpandHeader` as first column), replace `TableRow` with `TableExpandRow` for data rows (add `isExpanded={expandedRowId === row.id}` and `onExpand={() => handleRowExpand(row.id)}` props), add `TableExpandedRow` after each `TableExpandRow` with `colSpan={headers.length + 1}` and expanded content from `renderExpandedContentRoom(row)`
+- [x] T177 Update Rooms table structure in StorageDashboard.jsx
+      `frontend/src/components/storage/StorageDashboard.jsx`: Replace `TableRow`
+      with `TableExpandRow` in header row (add `TableExpandHeader` as first
+      column), replace `TableRow` with `TableExpandRow` for data rows (add
+      `isExpanded={expandedRowId === row.id}` and
+      `onExpand={() => handleRowExpand(row.id)}` props), add `TableExpandedRow`
+      after each `TableExpandRow` with `colSpan={headers.length + 1}` and
+      expanded content from `renderExpandedContentRoom(row)`
 
-- [x] T178 [P] Update Devices table structure in StorageDashboard.jsx `frontend/src/components/storage/StorageDashboard.jsx`: Apply same pattern as Rooms table - add `TableExpandHeader`, replace `TableRow` with `TableExpandRow`, add `TableExpandedRow` with `renderExpandedContentDevice(row)`
+- [x] T178 [P] Update Devices table structure in StorageDashboard.jsx
+      `frontend/src/components/storage/StorageDashboard.jsx`: Apply same pattern
+      as Rooms table - add `TableExpandHeader`, replace `TableRow` with
+      `TableExpandRow`, add `TableExpandedRow` with
+      `renderExpandedContentDevice(row)`
 
-- [x] T179 [P] Update Shelves table structure in StorageDashboard.jsx `frontend/src/components/storage/StorageDashboard.jsx`: Apply same pattern - add `TableExpandHeader`, replace `TableRow` with `TableExpandRow`, add `TableExpandedRow` with `renderExpandedContentShelf(row)`
+- [x] T179 [P] Update Shelves table structure in StorageDashboard.jsx
+      `frontend/src/components/storage/StorageDashboard.jsx`: Apply same
+      pattern - add `TableExpandHeader`, replace `TableRow` with
+      `TableExpandRow`, add `TableExpandedRow` with
+      `renderExpandedContentShelf(row)`
 
-- [x] T180 [P] Update Racks table structure in StorageDashboard.jsx `frontend/src/components/storage/StorageDashboard.jsx`: Apply same pattern - add `TableExpandHeader`, replace `TableRow` with `TableExpandRow`, add `TableExpandedRow` with `renderExpandedContentRack(row)`
+- [x] T180 [P] Update Racks table structure in StorageDashboard.jsx
+      `frontend/src/components/storage/StorageDashboard.jsx`: Apply same
+      pattern - add `TableExpandHeader`, replace `TableRow` with
+      `TableExpandRow`, add `TableExpandedRow` with
+      `renderExpandedContentRack(row)`
 
-- [x] T181 Add tab switch handler to reset expanded state in StorageDashboard.jsx `frontend/src/components/storage/StorageDashboard.jsx`: Add `useEffect` that resets `expandedRowId` to `null` when active tab changes (monitor tab state change)
+- [x] T181 Add tab switch handler to reset expanded state in
+      StorageDashboard.jsx
+      `frontend/src/components/storage/StorageDashboard.jsx`: Add `useEffect`
+      that resets `expandedRowId` to `null` when active tab changes (monitor tab
+      state change)
 
-- [x] T182 Add React Intl message keys for expanded content labels in `frontend/src/languages/en.json`, `fr.json`, `sw.json`: Add message keys for "Description", "Created Date", "Created By", "Last Modified Date", "Last Modified By", "Temperature Setting", "Capacity Limit", "Position Schema Hint", "Not Available" (N/A) if not already present
+- [x] T182 Add React Intl message keys for expanded content labels in
+      `frontend/src/languages/en.json`, `fr.json`, `sw.json`: Add message keys
+      for "Description", "Created Date", "Created By", "Last Modified Date",
+      "Last Modified By", "Temperature Setting", "Capacity Limit", "Position
+      Schema Hint", "Not Available" (N/A) if not already present
 
-- [x] T183a Add row-click-to-expand functionality in StorageDashboard.jsx `frontend/src/components/storage/StorageDashboard.jsx`: Update onClick handlers for all TableExpandRow components (Rooms, Devices, Shelves, Racks) to expand row when clicking anywhere on the row, except when clicking on the action button (overflow menu). This provides better UX - users can click anywhere on the row to expand, not just the chevron icon.
+- [x] T183a Add row-click-to-expand functionality in StorageDashboard.jsx
+      `frontend/src/components/storage/StorageDashboard.jsx`: Update onClick
+      handlers for all TableExpandRow components (Rooms, Devices, Shelves,
+      Racks) to expand row when clicking anywhere on the row, except when
+      clicking on the action button (overflow menu). This provides better UX -
+      users can click anywhere on the row to expand, not just the chevron icon.
 
-- [x] T183 Run frontend unit tests → Verify all PASS: `npm test -- StorageDashboard.test.jsx` (All 10/10 expandable row tests passing. Fixed by conditionally rendering TableExpandedRow based on expandedRowId state instead of relying on Carbon's internal expansion management)
+- [x] T183 Run frontend unit tests → Verify all PASS:
+      `npm test -- StorageDashboard.test.jsx` (All 10/10 expandable row tests
+      passing. Fixed by conditionally rendering TableExpandedRow based on
+      expandedRowId state instead of relying on Carbon's internal expansion
+      management)
 
-**Checkpoint**: Expandable row functionality complete. Users can expand location table rows (Rooms, Devices, Shelves, Racks) to view additional entity fields as key-value pairs in read-only format. Only one row can be expanded at a time. Expansion triggered by clicking anywhere on the row (including chevron icon) or the chevron icon itself. Clicking the action button (overflow menu) does not trigger expansion. Expanded state resets when switching tabs. 7/10 unit tests passing (3 state management tests have timing issues in test environment but functionality verified working in browser). E2E tests pending.
+**Checkpoint**: Expandable row functionality complete. Users can expand location
+table rows (Rooms, Devices, Shelves, Racks) to view additional entity fields as
+key-value pairs in read-only format. Only one row can be expanded at a time.
+Expansion triggered by clicking anywhere on the row (including chevron icon) or
+the chevron icon itself. Clicking the action button (overflow menu) does not
+trigger expansion. Expanded state resets when switching tabs. 7/10 unit tests
+passing (3 state management tests have timing issues in test environment but
+functionality verified working in browser). E2E tests pending.
 
 ---
 
 ## Phase 9.5: Capacity Calculation Logic Implementation [COMPLETE]
 
-**Purpose**: Implement two-tier capacity calculation system (per FR-062a, FR-062b, FR-062c) for Devices and Shelves. Supports manual `capacity_limit` (static) or calculated capacity from children. When `capacity_limit` is NULL, calculate from child locations (sum if all children have defined capacities). If any child lacks defined capacity, parent capacity cannot be determined and UI displays "N/A" with tooltip. Racks always use calculated capacity (rows × columns). UI must visually distinguish between manual and calculated capacities.
+**Purpose**: Implement two-tier capacity calculation system (per FR-062a,
+FR-062b, FR-062c) for Devices and Shelves. Supports manual `capacity_limit`
+(static) or calculated capacity from children. When `capacity_limit` is NULL,
+calculate from child locations (sum if all children have defined capacities). If
+any child lacks defined capacity, parent capacity cannot be determined and UI
+displays "N/A" with tooltip. Racks always use calculated capacity (rows ×
+columns). UI must visually distinguish between manual and calculated capacities.
 
-**Goal**: Dashboard occupancy display accurately reflects capacity (manual limits or calculated from hierarchy) and clearly indicates when capacity cannot be determined. Users understand whether capacity is user-defined or system-calculated.
+**Goal**: Dashboard occupancy display accurately reflects capacity (manual
+limits or calculated from hierarchy) and clearly indicates when capacity cannot
+be determined. Users understand whether capacity is user-defined or
+system-calculated.
 
-**Independent Test**: Create device with `capacity_limit=500`, verify occupancy shows "287/500 (57%)" with "Manual Limit" badge. Create device without `capacity_limit` but with shelves that have defined capacities, verify occupancy shows calculated capacity with "Calculated" badge. Create device without `capacity_limit` and with some shelves missing capacities, verify occupancy shows "N/A" with tooltip explaining why.
+**Independent Test**: Create device with `capacity_limit=500`, verify occupancy
+shows "287/500 (57%)" with "Manual Limit" badge. Create device without
+`capacity_limit` but with shelves that have defined capacities, verify occupancy
+shows calculated capacity with "Calculated" badge. Create device without
+`capacity_limit` and with some shelves missing capacities, verify occupancy
+shows "N/A" with tooltip explaining why.
 
-**Dependencies**: Requires Phase 5 (Dashboard) - StorageDashboard component must exist with occupancy display. Requires Phase 8 (Location CRUD) - Location tables must exist. Can be implemented in parallel with Phase 10 (Barcode Workflow).
+**Dependencies**: Requires Phase 5 (Dashboard) - StorageDashboard component must
+exist with occupancy display. Requires Phase 8 (Location CRUD) - Location tables
+must exist. Can be implemented in parallel with Phase 10 (Barcode Workflow).
 
 **Spec Reference**: FR-062a, FR-062b, FR-062c, FR-061, FR-063  
-**Research**: [research.md Section 9](./research.md#9-capacity-calculation-logic)
+**Research**:
+[research.md Section 9](./research.md#9-capacity-calculation-logic)
 
 ### Tests First - Backend Unit Tests (Write BEFORE implementation)
 
-- [x] T184 [P] Write unit test `src/test/java/org/openelisglobal/storage/service/StorageLocationServiceImplTest.java` for capacity calculation: testCalculateDeviceCapacity_WithCapacityLimit_ReturnsManualLimit (device with capacity_limit set returns that value), testCalculateDeviceCapacity_WithoutCapacityLimit_AllShelvesHaveCapacities_ReturnsSum (device without capacity_limit, all shelves have defined capacities, returns sum), testCalculateDeviceCapacity_WithoutCapacityLimit_SomeShelvesMissingCapacity_ReturnsNull (device without capacity_limit, some shelves lack defined capacity, returns null), testCalculateDeviceCapacity_NoChildren_ReturnsNull (device with no shelves returns null), testCalculateShelfCapacity_WithCapacityLimit_ReturnsManualLimit (shelf with capacity_limit set returns that value), testCalculateShelfCapacity_WithoutCapacityLimit_AllRacksHaveCapacities_ReturnsSum (shelf without capacity_limit, all racks have defined capacities (rows × columns), returns sum), testCalculateShelfCapacity_WithoutCapacityLimit_NoRacks_ReturnsNull (shelf with no racks returns null), testCalculateRackCapacity_AlwaysRowsTimesColumns (rack capacity always calculated as rows × columns, never uses capacity_limit)
+- [x] T184 [P] Write unit test
+      `src/test/java/org/openelisglobal/storage/service/StorageLocationServiceImplTest.java`
+      for capacity calculation:
+      testCalculateDeviceCapacity_WithCapacityLimit_ReturnsManualLimit (device
+      with capacity_limit set returns that value),
+      testCalculateDeviceCapacity_WithoutCapacityLimit_AllShelvesHaveCapacities_ReturnsSum
+      (device without capacity_limit, all shelves have defined capacities,
+      returns sum),
+      testCalculateDeviceCapacity_WithoutCapacityLimit_SomeShelvesMissingCapacity_ReturnsNull
+      (device without capacity_limit, some shelves lack defined capacity,
+      returns null), testCalculateDeviceCapacity_NoChildren_ReturnsNull (device
+      with no shelves returns null),
+      testCalculateShelfCapacity_WithCapacityLimit_ReturnsManualLimit (shelf
+      with capacity_limit set returns that value),
+      testCalculateShelfCapacity_WithoutCapacityLimit_AllRacksHaveCapacities_ReturnsSum
+      (shelf without capacity_limit, all racks have defined capacities (rows ×
+      columns), returns sum),
+      testCalculateShelfCapacity_WithoutCapacityLimit_NoRacks_ReturnsNull (shelf
+      with no racks returns null),
+      testCalculateRackCapacity_AlwaysRowsTimesColumns (rack capacity always
+      calculated as rows × columns, never uses capacity_limit)
 
-- [x] T185 [P] Write unit test `src/test/java/org/openelisglobal/storage/service/StorageLocationServiceImplTest.java` for API response updates: testGetDevicesForAPI_IncludesTotalCapacityAndCapacityType (when capacity_limit set, includes capacityLimit and capacityType="manual"), testGetDevicesForAPI_CalculatedCapacity_IncludesTotalCapacityAndCapacityType (when capacity_limit null but calculated capacity available, includes totalCapacity and capacityType="calculated"), testGetDevicesForAPI_UndeterminedCapacity_IncludesNullCapacityType (when capacity cannot be determined, includes capacityType=null), testGetShelvesForAPI_IncludesTotalCapacityAndCapacityType (same tests for shelves)
+- [x] T185 [P] Write unit test
+      `src/test/java/org/openelisglobal/storage/service/StorageLocationServiceImplTest.java`
+      for API response updates:
+      testGetDevicesForAPI_IncludesTotalCapacityAndCapacityType (when
+      capacity_limit set, includes capacityLimit and capacityType="manual"),
+      testGetDevicesForAPI_CalculatedCapacity_IncludesTotalCapacityAndCapacityType
+      (when capacity_limit null but calculated capacity available, includes
+      totalCapacity and capacityType="calculated"),
+      testGetDevicesForAPI_UndeterminedCapacity_IncludesNullCapacityType (when
+      capacity cannot be determined, includes capacityType=null),
+      testGetShelvesForAPI_IncludesTotalCapacityAndCapacityType (same tests for
+      shelves)
 
-- [x] T186 Run backend unit tests → Verify all FAIL: `mvn test -Dtest="StorageLocationServiceImplTest"` ✓ All 30 tests passing after implementation
+- [x] T186 Run backend unit tests → Verify all FAIL:
+      `mvn test -Dtest="StorageLocationServiceImplTest"` ✓ All 30 tests passing
+      after implementation
 
 ### Tests First - Backend Integration Tests (Write BEFORE implementation)
 
-- [ ] T187 [P] Write integration test `src/test/java/org/openelisglobal/storage/controller/StorageLocationRestControllerIntegrationTest.java` for capacity calculation API: testGetDevices_ReturnsCapacityLimitWhenSet (device with capacity_limit=500 returns capacityLimit=500, capacityType="manual"), testGetDevices_ReturnsCalculatedCapacityWhenLimitNull (device without capacity_limit but with shelves having defined capacities returns totalCapacity=sum, capacityType="calculated"), testGetDevices_ReturnsNullCapacityTypeWhenUndetermined (device without capacity_limit and some shelves missing capacities returns capacityType=null), testGetShelves_ReturnsCapacityLimitWhenSet, testGetShelves_ReturnsCalculatedCapacityWhenLimitNull, testGetShelves_ReturnsNullCapacityTypeWhenUndetermined
+- [ ] T187 [P] Write integration test
+      `src/test/java/org/openelisglobal/storage/controller/StorageLocationRestControllerIntegrationTest.java`
+      for capacity calculation API: testGetDevices_ReturnsCapacityLimitWhenSet
+      (device with capacity_limit=500 returns capacityLimit=500,
+      capacityType="manual"),
+      testGetDevices_ReturnsCalculatedCapacityWhenLimitNull (device without
+      capacity_limit but with shelves having defined capacities returns
+      totalCapacity=sum, capacityType="calculated"),
+      testGetDevices_ReturnsNullCapacityTypeWhenUndetermined (device without
+      capacity_limit and some shelves missing capacities returns
+      capacityType=null), testGetShelves_ReturnsCapacityLimitWhenSet,
+      testGetShelves_ReturnsCalculatedCapacityWhenLimitNull,
+      testGetShelves_ReturnsNullCapacityTypeWhenUndetermined
 
-- [ ] T188 Run backend integration tests → Verify all FAIL: `mvn test -Dtest="StorageLocationRestControllerIntegrationTest"`
+- [ ] T188 Run backend integration tests → Verify all FAIL:
+      `mvn test -Dtest="StorageLocationRestControllerIntegrationTest"`
 
 ### Tests First - Frontend Unit Tests (Write BEFORE implementation)
 
-- [x] T189 [P] Write unit test `frontend/src/components/storage/StorageDashboard/StorageDashboard.test.jsx` for capacity display: testOccupancyDisplay_ManualCapacity_ShowsFractionAndPercentage (device with capacityLimit shows "287/500 (57%)" with "Manual Limit" badge), testOccupancyDisplay_CalculatedCapacity_ShowsFractionAndPercentage (device with totalCapacity shows "287/1,234 (23%)" with "Calculated" badge), testOccupancyDisplay_UndeterminedCapacity_ShowsNA (device with capacityType=null shows "N/A" with tooltip), testOccupancyDisplay_UndeterminedCapacity_HidesProgressBar (when capacity cannot be determined, progress bar is hidden), testOccupancyDisplay_ManualCapacity_ShowsProgressBar (when capacity is defined, progress bar is visible), testOccupancyDisplay_CalculatedCapacity_ShowsProgressBar (when capacity is calculated, progress bar is visible)
+- [x] T189 [P] Write unit test
+      `frontend/src/components/storage/StorageDashboard/StorageDashboard.test.jsx`
+      for capacity display:
+      testOccupancyDisplay_ManualCapacity_ShowsFractionAndPercentage (device
+      with capacityLimit shows "287/500 (57%)" with "Manual Limit" badge),
+      testOccupancyDisplay_CalculatedCapacity_ShowsFractionAndPercentage (device
+      with totalCapacity shows "287/1,234 (23%)" with "Calculated" badge),
+      testOccupancyDisplay_UndeterminedCapacity_ShowsNA (device with
+      capacityType=null shows "N/A" with tooltip),
+      testOccupancyDisplay_UndeterminedCapacity_HidesProgressBar (when capacity
+      cannot be determined, progress bar is hidden),
+      testOccupancyDisplay_ManualCapacity_ShowsProgressBar (when capacity is
+      defined, progress bar is visible),
+      testOccupancyDisplay_CalculatedCapacity_ShowsProgressBar (when capacity is
+      calculated, progress bar is visible)
 
-- [x] T190 Run frontend unit tests → Verify all FAIL: `npm test -- StorageDashboard.test.jsx` ✓ All 6 capacity tests passing after implementation
+- [x] T190 Run frontend unit tests → Verify all FAIL:
+      `npm test -- StorageDashboard.test.jsx` ✓ All 6 capacity tests passing
+      after implementation
 
 ### Implementation - Backend Service Layer
 
-- [x] T191 [P4] Implement calculateDeviceCapacity() method in StorageLocationServiceImpl `src/main/java/org/openelisglobal/storage/service/StorageLocationServiceImpl.java`: Create method `public Integer calculateDeviceCapacity(StorageDevice device)` that implements two-tier logic: (1) If `device.getCapacityLimit() != null && device.getCapacityLimit() > 0`, return `device.getCapacityLimit()`, (2) Otherwise, get all shelves for device, for each shelf call `calculateShelfCapacity(shelf)`, if any shelf returns null, return null (capacity cannot be determined), otherwise sum all shelf capacities and return total
+- [x] T191 [P4] Implement calculateDeviceCapacity() method in
+      StorageLocationServiceImpl
+      `src/main/java/org/openelisglobal/storage/service/StorageLocationServiceImpl.java`:
+      Create method
+      `public Integer calculateDeviceCapacity(StorageDevice device)` that
+      implements two-tier logic: (1) If
+      `device.getCapacityLimit() != null && device.getCapacityLimit() > 0`,
+      return `device.getCapacityLimit()`, (2) Otherwise, get all shelves for
+      device, for each shelf call `calculateShelfCapacity(shelf)`, if any shelf
+      returns null, return null (capacity cannot be determined), otherwise sum
+      all shelf capacities and return total
 
-- [x] T192 [P4] Implement calculateShelfCapacity() method in StorageLocationServiceImpl `src/main/java/org/openelisglobal/storage/service/StorageLocationServiceImpl.java`: Create method `public Integer calculateShelfCapacity(StorageShelf shelf)` that implements two-tier logic: (1) If `shelf.getCapacityLimit() != null && shelf.getCapacityLimit() > 0`, return `shelf.getCapacityLimit()`, (2) Otherwise, get all racks for shelf, for each rack calculate `rack.getRows() * rack.getColumns()`, sum all rack capacities and return total (racks always have defined capacity)
+- [x] T192 [P4] Implement calculateShelfCapacity() method in
+      StorageLocationServiceImpl
+      `src/main/java/org/openelisglobal/storage/service/StorageLocationServiceImpl.java`:
+      Create method `public Integer calculateShelfCapacity(StorageShelf shelf)`
+      that implements two-tier logic: (1) If
+      `shelf.getCapacityLimit() != null && shelf.getCapacityLimit() > 0`, return
+      `shelf.getCapacityLimit()`, (2) Otherwise, get all racks for shelf, for
+      each rack calculate `rack.getRows() * rack.getColumns()`, sum all rack
+      capacities and return total (racks always have defined capacity)
 
-- [x] T193 [P4] Update getDevicesForAPI() method in StorageLocationServiceImpl `src/main/java/org/openelisglobal/storage/service/StorageLocationServiceImpl.java`: After setting `capacityLimit` in response map, add capacity calculation logic: (1) If `device.getCapacityLimit() != null`, set `capacityType="manual"`, (2) Otherwise, call `calculateDeviceCapacity(device)`, if result is not null, set `totalCapacity=result` and `capacityType="calculated"`, if result is null, set `capacityType=null` (capacity cannot be determined)
+- [x] T193 [P4] Update getDevicesForAPI() method in StorageLocationServiceImpl
+      `src/main/java/org/openelisglobal/storage/service/StorageLocationServiceImpl.java`:
+      After setting `capacityLimit` in response map, add capacity calculation
+      logic: (1) If `device.getCapacityLimit() != null`, set
+      `capacityType="manual"`, (2) Otherwise, call
+      `calculateDeviceCapacity(device)`, if result is not null, set
+      `totalCapacity=result` and `capacityType="calculated"`, if result is null,
+      set `capacityType=null` (capacity cannot be determined)
 
-- [x] T194 [P4] Update getShelvesForAPI() method in StorageLocationServiceImpl `src/main/java/org/openelisglobal/storage/service/StorageLocationServiceImpl.java`: Apply same logic as getDevicesForAPI() - add capacity calculation, set `totalCapacity` and `capacityType` based on two-tier logic
+- [x] T194 [P4] Update getShelvesForAPI() method in StorageLocationServiceImpl
+      `src/main/java/org/openelisglobal/storage/service/StorageLocationServiceImpl.java`:
+      Apply same logic as getDevicesForAPI() - add capacity calculation, set
+      `totalCapacity` and `capacityType` based on two-tier logic
 
-- [x] T195 Run backend unit tests → Verify all PASS: `mvn test -Dtest="StorageLocationServiceImplTest"` ✓ All 30 tests passing
+- [x] T195 Run backend unit tests → Verify all PASS:
+      `mvn test -Dtest="StorageLocationServiceImplTest"` ✓ All 30 tests passing
 
-- [ ] T196 Run backend integration tests → Verify all PASS: `mvn test -Dtest="StorageLocationRestControllerIntegrationTest"`
+- [ ] T196 Run backend integration tests → Verify all PASS:
+      `mvn test -Dtest="StorageLocationRestControllerIntegrationTest"`
 
 ### Implementation - Frontend Display Updates
 
-- [x] T197 [P4] Update formatDevicesData() function in StorageDashboard.jsx `frontend/src/components/storage/StorageDashboard.jsx`: Modify occupancy calculation to use `device.capacityLimit || device.totalCapacity || 0` for total capacity, determine `capacityType` from API response (`device.capacityType`), if `capacityType === null` or total is 0, display "N/A" with tooltip instead of fraction/percentage, hide progress bar when capacity cannot be determined, add visual distinction (badge or icon) for "Manual Limit" vs "Calculated" capacity types
+- [x] T197 [P4] Update formatDevicesData() function in StorageDashboard.jsx
+      `frontend/src/components/storage/StorageDashboard.jsx`: Modify occupancy
+      calculation to use `device.capacityLimit || device.totalCapacity || 0` for
+      total capacity, determine `capacityType` from API response
+      (`device.capacityType`), if `capacityType === null` or total is 0, display
+      "N/A" with tooltip instead of fraction/percentage, hide progress bar when
+      capacity cannot be determined, add visual distinction (badge or icon) for
+      "Manual Limit" vs "Calculated" capacity types
 
-- [x] T198 [P4] Update formatShelvesData() function in StorageDashboard.jsx `frontend/src/components/storage/StorageDashboard.jsx`: Apply same logic as formatDevicesData() - use `shelf.capacityLimit || shelf.totalCapacity || 0`, handle null capacity with "N/A" display, add visual distinction for capacity types
+- [x] T198 [P4] Update formatShelvesData() function in StorageDashboard.jsx
+      `frontend/src/components/storage/StorageDashboard.jsx`: Apply same logic
+      as formatDevicesData() - use
+      `shelf.capacityLimit || shelf.totalCapacity || 0`, handle null capacity
+      with "N/A" display, add visual distinction for capacity types
 
-- [x] T199 [P4] Update formatRacksData() function in StorageDashboard.jsx `frontend/src/components/storage/StorageDashboard.jsx`: Verify racks always use calculated capacity `(rack.rows || 0) * (rack.columns || 0)` (no changes needed, but add comment documenting that racks always use calculated capacity per FR-017)
+- [x] T199 [P4] Update formatRacksData() function in StorageDashboard.jsx
+      `frontend/src/components/storage/StorageDashboard.jsx`: Verify racks
+      always use calculated capacity `(rack.rows || 0) * (rack.columns || 0)`
+      (no changes needed, but add comment documenting that racks always use
+      calculated capacity per FR-017)
 
-- [x] T200 Add capacity type badge component in StorageDashboard.jsx `frontend/src/components/storage/StorageDashboard.jsx`: Create helper function or inline component to display capacity type badge (Carbon Tag or icon) showing "Manual Limit" or "Calculated" next to occupancy display, use Carbon Design System components for consistency
+- [x] T200 Add capacity type badge component in StorageDashboard.jsx
+      `frontend/src/components/storage/StorageDashboard.jsx`: Create helper
+      function or inline component to display capacity type badge (Carbon Tag or
+      icon) showing "Manual Limit" or "Calculated" next to occupancy display,
+      use Carbon Design System components for consistency
 
-- [x] T201 Add "N/A" tooltip component in StorageDashboard.jsx `frontend/src/components/storage/StorageDashboard.jsx`: When capacity cannot be determined, display "N/A" or "Unlimited" text with Carbon Tooltip explaining why (e.g., "Capacity cannot be calculated: some child locations lack defined capacities"), use React Intl for tooltip message
+- [x] T201 Add "N/A" tooltip component in StorageDashboard.jsx
+      `frontend/src/components/storage/StorageDashboard.jsx`: When capacity
+      cannot be determined, display "N/A" or "Unlimited" text with Carbon
+      Tooltip explaining why (e.g., "Capacity cannot be calculated: some child
+      locations lack defined capacities"), use React Intl for tooltip message
 
-- [x] T202 Add React Intl message keys for capacity display in `frontend/src/languages/en.json`, `fr.json`, `sw.json`: Add message keys for "Manual Limit", "Calculated", "Capacity cannot be calculated: some child locations lack defined capacities", "Unlimited" (if using "Unlimited" instead of "N/A")
+- [x] T202 Add React Intl message keys for capacity display in
+      `frontend/src/languages/en.json`, `fr.json`, `sw.json`: Add message keys
+      for "Manual Limit", "Calculated", "Capacity cannot be calculated: some
+      child locations lack defined capacities", "Unlimited" (if using
+      "Unlimited" instead of "N/A")
 
-- [x] T203 Run frontend unit tests → Verify all PASS: `npm test -- StorageDashboard.test.jsx` ✓ All 6 capacity tests passing
+- [x] T203 Run frontend unit tests → Verify all PASS:
+      `npm test -- StorageDashboard.test.jsx` ✓ All 6 capacity tests passing
 
 ### Tests First - Frontend E2E Tests (Write BEFORE final verification)
 
-- [ ] T204 [P] Write Cypress E2E test `frontend/cypress/e2e/storageLocationCapacityCalculation.cy.js` for capacity display: testCapacityDisplay_ManualLimit_ShowsBadge (device with capacityLimit shows "Manual Limit" badge), testCapacityDisplay_Calculated_ShowsBadge (device with calculated capacity shows "Calculated" badge), testCapacityDisplay_Undetermined_ShowsNA (device with undetermined capacity shows "N/A" with tooltip), testCapacityDisplay_Undetermined_HidesProgressBar (when capacity cannot be determined, progress bar is hidden), testCapacityDisplay_ManualLimit_ShowsProgressBar (when capacity is manual, progress bar is visible), testCapacityCalculation_Hierarchical_AllChildrenHaveCapacities (device without capacityLimit but all shelves have capacities, shows calculated sum), testCapacityCalculation_Hierarchical_SomeChildrenMissingCapacity (device without capacityLimit and some shelves missing capacities, shows "N/A")
+- [ ] T204 [P] Write Cypress E2E test
+      `frontend/cypress/e2e/storageLocationCapacityCalculation.cy.js` for
+      capacity display: testCapacityDisplay_ManualLimit_ShowsBadge (device with
+      capacityLimit shows "Manual Limit" badge),
+      testCapacityDisplay_Calculated_ShowsBadge (device with calculated capacity
+      shows "Calculated" badge), testCapacityDisplay_Undetermined_ShowsNA
+      (device with undetermined capacity shows "N/A" with tooltip),
+      testCapacityDisplay_Undetermined_HidesProgressBar (when capacity cannot be
+      determined, progress bar is hidden),
+      testCapacityDisplay_ManualLimit_ShowsProgressBar (when capacity is manual,
+      progress bar is visible),
+      testCapacityCalculation_Hierarchical_AllChildrenHaveCapacities (device
+      without capacityLimit but all shelves have capacities, shows calculated
+      sum), testCapacityCalculation_Hierarchical_SomeChildrenMissingCapacity
+      (device without capacityLimit and some shelves missing capacities, shows
+      "N/A")
 
-- [ ] T205 Run Cypress E2E tests → Verify capacity calculation scenarios work: `npm run cy:run -- --spec "cypress/e2e/storageLocationCapacityCalculation.cy.js"`
+- [ ] T205 Run Cypress E2E tests → Verify capacity calculation scenarios work:
+      `npm run cy:run -- --spec "cypress/e2e/storageLocationCapacityCalculation.cy.js"`
 
-**Checkpoint**: Capacity calculation logic complete. Devices and Shelves support two-tier capacity system (manual `capacity_limit` or calculated from children). When capacity cannot be determined, UI displays "N/A" with explanatory tooltip. Visual distinction (badge/tooltip/icon) clearly indicates whether capacity is manual or calculated. Racks always use calculated capacity (rows × columns). All capacity warnings (80%, 90%, 100%) apply to both manual and calculated capacities, but are not displayed when capacity cannot be determined.
+**Checkpoint**: Capacity calculation logic complete. Devices and Shelves support
+two-tier capacity system (manual `capacity_limit` or calculated from children).
+When capacity cannot be determined, UI displays "N/A" with explanatory tooltip.
+Visual distinction (badge/tooltip/icon) clearly indicates whether capacity is
+manual or calculated. Racks always use calculated capacity (rows × columns). All
+capacity warnings (80%, 90%, 100%) apply to both manual and calculated
+capacities, but are not displayed when capacity cannot be determined.
 
 ---
 
@@ -1878,68 +2390,82 @@ stories
 **Purpose**: Refactor existing Cypress E2E tests to align with Constitution V.5
 best practices and efficiently cover core functionality (happy paths).
 
-**Reference**: Constitution Section V.5, plan.md Test Refactoring Patterns section
+**Reference**: Constitution Section V.5, plan.md Test Refactoring Patterns
+section
 
-- [x] T152 [P] Update `frontend/cypress.config.js` to align with Constitution V.5:
-      Set `video: false` (disabled by default), ensure `screenshotOnRunFailure: true`
-      (enabled), verify browser console logging is captured (Cypress does this
-      automatically), add note about individual test execution requirement
+- [x] T152 [P] Update `frontend/cypress.config.js` to align with Constitution
+      V.5: Set `video: false` (disabled by default), ensure
+      `screenshotOnRunFailure: true` (enabled), verify browser console logging
+      is captured (Cypress does this automatically), add note about individual
+      test execution requirement
 
 - [x] T153 [P] Refactor `frontend/cypress/e2e/storageAssignment.cy.js` per
       Constitution V.5: Move all `cy.intercept()` calls to before actions that
-      trigger them (intercept timing), replace `.then()` callbacks with `.should()`
-      assertions (retry-ability), add element readiness checks before all
-      interactions (wait for visibility), replace arbitrary `cy.wait(1000)` with
-      proper waits (`cy.wait('@alias')` or `.should()`), ensure test covers happy
-      path: cascading dropdowns assignment workflow
+      trigger them (intercept timing), replace `.then()` callbacks with
+      `.should()` assertions (retry-ability), add element readiness checks
+      before all interactions (wait for visibility), replace arbitrary
+      `cy.wait(1000)` with proper waits (`cy.wait('@alias')` or `.should()`),
+      ensure test covers happy path: cascading dropdowns assignment workflow
 
-- [x] T154 [P] Refactor `frontend/cypress/e2e/storageSearch.cy.js` per Constitution
-      V.5: Apply intercept timing (setup intercepts before actions), apply
-      retry-ability (use `.should()` assertions), add element readiness checks,
-      replace arbitrary waits, ensure test covers happy path: search by SampleItem ID or parent Sample accession number
-      and filter by location
+- [x] T154 [P] Refactor `frontend/cypress/e2e/storageSearch.cy.js` per
+      Constitution V.5: Apply intercept timing (setup intercepts before
+      actions), apply retry-ability (use `.should()` assertions), add element
+      readiness checks, replace arbitrary waits, ensure test covers happy path:
+      search by SampleItem ID or parent Sample accession number and filter by
+      location
 
-- [x] T155 [P] Refactor `frontend/cypress/e2e/storageMovement.cy.js` per Constitution
-      V.5: Apply intercept timing, apply retry-ability, add element readiness
-      checks, replace arbitrary waits, ensure test covers happy path: single sample
-      movement between locations
+- [x] T155 [P] Refactor `frontend/cypress/e2e/storageMovement.cy.js` per
+      Constitution V.5: Apply intercept timing, apply retry-ability, add element
+      readiness checks, replace arbitrary waits, ensure test covers happy path:
+      single sample movement between locations
 
-- [x] T156 [P] Refactor `frontend/cypress/e2e/storageLocationCRUD.cy.js` (if exists)
-      per Constitution V.5: Apply intercept timing, apply retry-ability, add
-      element readiness checks, replace arbitrary waits, ensure tests cover happy
-      paths: edit location name/description, delete location with no constraints
-      **Note**: File refactored with Constitution V.5 compliance header, added response status validation to cy.wait() calls, fixed modal close assertions (use `.should("not.be.visible")` for Carbon modals that stay in DOM), added element readiness checks. **ALL 6 TESTS PASSING** (verified by running individually with electron browser).
+- [x] T156 [P] Refactor `frontend/cypress/e2e/storageLocationCRUD.cy.js` (if
+      exists) per Constitution V.5: Apply intercept timing, apply retry-ability,
+      add element readiness checks, replace arbitrary waits, ensure tests cover
+      happy paths: edit location name/description, delete location with no
+      constraints **Note**: File refactored with Constitution V.5 compliance
+      header, added response status validation to cy.wait() calls, fixed modal
+      close assertions (use `.should("not.be.visible")` for Carbon modals that
+      stay in DOM), added element readiness checks. **ALL 6 TESTS PASSING**
+      (verified by running individually with electron browser).
 
 - [x] T157 [P] Review and refactor any other storage-related E2E test files per
       Constitution V.5: Check `frontend/cypress/e2e/storage*.cy.js` files, apply
-      all refactoring patterns (intercept timing, retry-ability, element readiness,
-      state verification), remove arbitrary waits
-      **Note**: Constitution V.5 compliance headers added to: storageLocationExpandableRows.cy.js, storageDashboard.cy.js, storageFilters.cy.js. Some arbitrary waits replaced with intercepts and retry-ability assertions. Remaining files with arbitrary waits: storageDisposal.cy.js, storageDashboardMetrics.cy.js, storageViewStorage.cy.js, storageSamplesTable.cy.js (these can be refactored incrementally as needed).
+      all refactoring patterns (intercept timing, retry-ability, element
+      readiness, state verification), remove arbitrary waits **Note**:
+      Constitution V.5 compliance headers added to:
+      storageLocationExpandableRows.cy.js, storageDashboard.cy.js,
+      storageFilters.cy.js. Some arbitrary waits replaced with intercepts and
+      retry-ability assertions. Remaining files with arbitrary waits:
+      storageDisposal.cy.js, storageDashboardMetrics.cy.js,
+      storageViewStorage.cy.js, storageSamplesTable.cy.js (these can be
+      refactored incrementally as needed).
 
 - [x] T158 Run E2E tests individually per Constitution V.5: Run
-      `npm run cy:run -- --spec "cypress/e2e/storageAssignment.cy.js"` and review
-      console logs and screenshots post-run, run
+      `npm run cy:run -- --spec "cypress/e2e/storageAssignment.cy.js"` and
+      review console logs and screenshots post-run, run
       `npm run cy:run -- --spec "cypress/e2e/storageSearch.cy.js"` and review
       console logs and screenshots post-run, run
       `npm run cy:run -- --spec "cypress/e2e/storageMovement.cy.js"` and review
-      console logs and screenshots post-run
-      **Note**: Tests refactored and ready for execution. Individual test execution
-      workflow documented in test file headers.
+      console logs and screenshots post-run **Note**: Tests refactored and ready
+      for execution. Individual test execution workflow documented in test file
+      headers.
 
 - [x] T159 Verify E2E tests cover core happy paths efficiently: Verify
-      `storageAssignment.cy.js` covers cascading dropdowns assignment (P1), verify
-      `storageSearch.cy.js` covers search by SampleItem ID/External ID or parent Sample accession number and filter by location
-      (P2A), verify `storageMovement.cy.js` covers single sample movement (P2B),
-      ensure tests are focused on user workflows (not implementation details),
-      ensure tests can run independently (no dependencies on full suite)
-      **Note**: All three main test files refactored to cover happy paths per user stories.
+      `storageAssignment.cy.js` covers cascading dropdowns assignment (P1),
+      verify `storageSearch.cy.js` covers search by SampleItem ID/External ID or
+      parent Sample accession number and filter by location (P2A), verify
+      `storageMovement.cy.js` covers single sample movement (P2B), ensure tests
+      are focused on user workflows (not implementation details), ensure tests
+      can run independently (no dependencies on full suite) **Note**: All three
+      main test files refactored to cover happy paths per user stories.
 
-- [x] T160 Document E2E test execution workflow: Update test README or add note in
-      test files about running tests individually during development, document
-      post-run review process (console logs and screenshots), document that full
-      suite runs are for CI/CD only
-      **Note**: Constitution V.5 compliance headers added to all refactored test files
-      with execution instructions and post-run review requirements.
+- [x] T160 Document E2E test execution workflow: Update test README or add note
+      in test files about running tests individually during development,
+      document post-run review process (console logs and screenshots), document
+      that full suite runs are for CI/CD only **Note**: Constitution V.5
+      compliance headers added to all refactored test files with execution
+      instructions and post-run review requirements.
 
 **Checkpoint**: All E2E tests refactored to align with Constitution V.5, tests
 run individually during development, console logs and screenshots reviewed
@@ -1949,55 +2475,121 @@ post-run, core happy paths efficiently covered.
 
 ## Phase 10: Barcode Workflow Implementation (Comprehensive) [COMPLETE]
 
-**Purpose**: Implement comprehensive barcode workflow functionality per FR-023 through FR-027f, following TDD approach with 6 iterations.
+**Purpose**: Implement comprehensive barcode workflow functionality per FR-023
+through FR-027f, following TDD approach with 6 iterations.
 
-**Note**: Research on existing OpenELIS barcode printing infrastructure completed (see `research.md` Section 9). Integration strategy documented.
+**Note**: Research on existing OpenELIS barcode printing infrastructure
+completed (see `research.md` Section 9). Integration strategy documented.
 
-**Goal**: Enable barcode scanning for location assignment, unified input field (scan/type-ahead), 5-step validation, debouncing, visual feedback, label management (short code, printing, print history), and error recovery.
+**Goal**: Enable barcode scanning for location assignment, unified input field
+(scan/type-ahead), 5-step validation, debouncing, visual feedback, label
+management (short code, printing, print history), and error recovery.
 
-**Independent Test**: Scan a 4-level barcode (e.g., "MAIN-FRZ01-SHA-RKR1"), verify location fields auto-populate, print label from Label Management modal, verify print history displays.
+**Independent Test**: Scan a 4-level barcode (e.g., "MAIN-FRZ01-SHA-RKR1"),
+verify location fields auto-populate, print label from Label Management modal,
+verify print history displays.
 
 ### Iteration 9.1: Backend Barcode Parsing and Validation
 
-**Objective**: Implement server-side barcode parsing and 5-step validation process.
+**Objective**: Implement server-side barcode parsing and 5-step validation
+process.
 
 #### Tests First (Write BEFORE implementation)
 
-- [X] T227 [P] [US1] Write unit test `src/test/java/org/openelisglobal/storage/service/BarcodeParsingServiceTest.java` with test methods: testParse2LevelBarcode, testParse3LevelBarcode, testParse4LevelBarcode, testParse5LevelBarcode, testParseWithHyphenDelimiter, testRejectInvalidDelimiter, testHandleEmptyBarcode, testHandleNullBarcode
-- [X] T228 [P] [US1] Write unit test `src/test/java/org/openelisglobal/storage/service/BarcodeValidationServiceTest.java` with test methods: testStep1FormatValidation, testStep2LocationExistenceCheck, testStep3HierarchyValidation, testStep4ActivityCheck, testStep5ConflictCheck, testErrorMessagesForEachFailureType, testPartialValidationWithValidComponents, testPreFillValidComponentsInResponse
-- [X] T229 [P] [US1] Write integration test `src/test/java/org/openelisglobal/storage/controller/BarcodeValidationRestControllerTest.java` with test methods: testPostBarcodeValidateEndpoint, testRequestResponseFormatMatchesContract, testDatabasePersistenceAfterValidation, testErrorResponse400, testErrorResponse404
-- [X] T230 Run barcode parsing tests → Verify all FAIL: `mvn test -Dtest="BarcodeParsingServiceTest"`
-- [X] T231 Run barcode validation tests → Verify all FAIL: `mvn test -Dtest="BarcodeValidationServiceTest"`
-- [X] T232 Run barcode controller tests → Verify all FAIL: `mvn test -Dtest="BarcodeValidationRestControllerTest"`
+- [x] T227 [P] [US1] Write unit test
+      `src/test/java/org/openelisglobal/storage/service/BarcodeParsingServiceTest.java`
+      with test methods: testParse2LevelBarcode, testParse3LevelBarcode,
+      testParse4LevelBarcode, testParse5LevelBarcode,
+      testParseWithHyphenDelimiter, testRejectInvalidDelimiter,
+      testHandleEmptyBarcode, testHandleNullBarcode
+- [x] T228 [P] [US1] Write unit test
+      `src/test/java/org/openelisglobal/storage/service/BarcodeValidationServiceTest.java`
+      with test methods: testStep1FormatValidation,
+      testStep2LocationExistenceCheck, testStep3HierarchyValidation,
+      testStep4ActivityCheck, testStep5ConflictCheck,
+      testErrorMessagesForEachFailureType,
+      testPartialValidationWithValidComponents,
+      testPreFillValidComponentsInResponse
+- [x] T229 [P] [US1] Write integration test
+      `src/test/java/org/openelisglobal/storage/controller/BarcodeValidationRestControllerTest.java`
+      with test methods: testPostBarcodeValidateEndpoint,
+      testRequestResponseFormatMatchesContract,
+      testDatabasePersistenceAfterValidation, testErrorResponse400,
+      testErrorResponse404
+- [x] T230 Run barcode parsing tests → Verify all FAIL:
+      `mvn test -Dtest="BarcodeParsingServiceTest"`
+- [x] T231 Run barcode validation tests → Verify all FAIL:
+      `mvn test -Dtest="BarcodeValidationServiceTest"`
+- [x] T232 Run barcode controller tests → Verify all FAIL:
+      `mvn test -Dtest="BarcodeValidationRestControllerTest"`
 
 #### Implementation (Make Tests Pass)
 
-- [X] T233 [US1] Create `src/main/java/org/openelisglobal/storage/service/BarcodeParsingService.java` with methods: parseBarcode(String barcode) returns ParsedBarcode, validateFormat(String barcode) returns boolean, extractComponents(String barcode) returns List<String>
-- [X] T234 [US1] Create `src/main/java/org/openelisglobal/storage/service/BarcodeValidationService.java` implementing 5-step validation: format validation, location existence check, hierarchy validation, activity check, conflict check, with error messages and pre-fill valid components
-- [X] T235 [US1] Create `src/main/java/org/openelisglobal/storage/controller/BarcodeValidationRestController.java` with endpoint `POST /rest/storage/barcode/validate` accepting BarcodeValidationRequest, returning BarcodeValidationResponse
-- [X] T236 [US1] Update API contract `specs/001-sample-storage/contracts/storage-api.json` with barcode validation endpoint schema
+- [x] T233 [US1] Create
+      `src/main/java/org/openelisglobal/storage/service/BarcodeParsingService.java`
+      with methods: parseBarcode(String barcode) returns ParsedBarcode,
+      validateFormat(String barcode) returns boolean, extractComponents(String
+      barcode) returns List<String>
+- [x] T234 [US1] Create
+      `src/main/java/org/openelisglobal/storage/service/BarcodeValidationService.java`
+      implementing 5-step validation: format validation, location existence
+      check, hierarchy validation, activity check, conflict check, with error
+      messages and pre-fill valid components
+- [x] T235 [US1] Create
+      `src/main/java/org/openelisglobal/storage/controller/BarcodeValidationRestController.java`
+      with endpoint `POST /rest/storage/barcode/validate` accepting
+      BarcodeValidationRequest, returning BarcodeValidationResponse
+- [x] T236 [US1] Update API contract
+      `specs/001-sample-storage/contracts/storage-api.json` with barcode
+      validation endpoint schema
 
 **Checkpoint**: Backend barcode parsing and validation working, all tests pass
 
 ### Iteration 9.2: Frontend Unified Input Field
 
-**Objective**: Create unified input field component that accepts both barcode scan and type-ahead search.
+**Objective**: Create unified input field component that accepts both barcode
+scan and type-ahead search.
 
 #### Tests First (Write BEFORE implementation)
 
-- [x] T237 [P] [US1] Write unit test `frontend/src/components/storage/StorageLocationSelector/UnifiedBarcodeInput.test.jsx` with test methods: testAcceptsKeyboardInput, testAcceptsRapidCharacterInput, testFormatBasedDetection, testEnterKeyTriggersValidation, testFieldBlurTriggersValidation, testVisualFeedbackStates, testAutoClearAfterSuccess
-- [x] T238 [P] [US1] Write integration test `frontend/src/components/storage/StorageLocationSelector/UnifiedBarcodeInput.integration.test.jsx` with test methods: testApiCallOnEnter, testApiCallOnBlur, testSuccessResponsePopulatesFields, testErrorResponseDisplaysMessage, testPartialValidationPreFillsComponents
-- [x] T239 Run unified input tests → Verify all FAIL: `cd frontend && npm test UnifiedBarcodeInput`
+- [x] T237 [P] [US1] Write unit test
+      `frontend/src/components/storage/StorageLocationSelector/UnifiedBarcodeInput.test.jsx`
+      with test methods: testAcceptsKeyboardInput,
+      testAcceptsRapidCharacterInput, testFormatBasedDetection,
+      testEnterKeyTriggersValidation, testFieldBlurTriggersValidation,
+      testVisualFeedbackStates, testAutoClearAfterSuccess
+- [x] T238 [P] [US1] Write integration test
+      `frontend/src/components/storage/StorageLocationSelector/UnifiedBarcodeInput.integration.test.jsx`
+      with test methods: testApiCallOnEnter, testApiCallOnBlur,
+      testSuccessResponsePopulatesFields, testErrorResponseDisplaysMessage,
+      testPartialValidationPreFillsComponents
+- [x] T239 Run unified input tests → Verify all FAIL:
+      `cd frontend && npm test UnifiedBarcodeInput`
 
 #### Implementation (Make Tests Pass)
 
-- [x] T240 [US1] Create `frontend/src/components/storage/StorageLocationSelector/UnifiedBarcodeInput.jsx` with props: onScan, onTypeAhead, validationState, supporting both barcode scan and type-ahead search
-- [x] T241 [US1] Create `frontend/src/components/storage/StorageLocationSelector/BarcodeVisualFeedback.jsx` with states: ready (animation/pulse), success (green checkmark), error (red X with message)
-- [x] T242 [US1] Create `frontend/src/components/storage/StorageLocationSelector/BarcodeValidationService.js` with method: validateBarcode(barcode) calls `/rest/storage/barcode/validate` endpoint
-- [x] T243 [US1] Integrate UnifiedBarcodeInput into `frontend/src/components/storage/StorageLocationSelector/LocationSelectorModal.jsx` replacing placeholder barcode input field
-- [x] T244 [P] [US1] Add React Intl message keys to `frontend/src/languages/en.json`, `fr.json`, `sw.json` for barcode-related strings: barcode.ready, barcode.success, barcode.error, barcode.scanOrType, barcode.invalidFormat, etc.
+- [x] T240 [US1] Create
+      `frontend/src/components/storage/StorageLocationSelector/UnifiedBarcodeInput.jsx`
+      with props: onScan, onTypeAhead, validationState, supporting both barcode
+      scan and type-ahead search
+- [x] T241 [US1] Create
+      `frontend/src/components/storage/StorageLocationSelector/BarcodeVisualFeedback.jsx`
+      with states: ready (animation/pulse), success (green checkmark), error
+      (red X with message)
+- [x] T242 [US1] Create
+      `frontend/src/components/storage/StorageLocationSelector/BarcodeValidationService.js`
+      with method: validateBarcode(barcode) calls
+      `/rest/storage/barcode/validate` endpoint
+- [x] T243 [US1] Integrate UnifiedBarcodeInput into
+      `frontend/src/components/storage/StorageLocationSelector/LocationSelectorModal.jsx`
+      replacing placeholder barcode input field
+- [x] T244 [P] [US1] Add React Intl message keys to
+      `frontend/src/languages/en.json`, `fr.json`, `sw.json` for barcode-related
+      strings: barcode.ready, barcode.success, barcode.error,
+      barcode.scanOrType, barcode.invalidFormat, etc.
 
-**Checkpoint**: Unified input field accepts both scan and type-ahead, visual feedback works
+**Checkpoint**: Unified input field accepts both scan and type-ahead, visual
+feedback works
 
 ### Iteration 9.3: Debouncing Logic
 
@@ -2005,63 +2597,142 @@ post-run, core happy paths efficiently covered.
 
 #### Tests First (Write BEFORE implementation)
 
-- [x] T245 [P] [US1] Write unit test `frontend/src/components/storage/StorageLocationSelector/BarcodeDebounceHook.test.js` with test methods: testDuplicateBarcodeWithin500msIgnored, testDifferentBarcodeWithin500msShowsWarning, testBarcodeAfter500msProcessed, testCooldownTimerResets, testMultipleRapidScansHandled
-- [x] T246 Run debounce hook tests → Verify all FAIL: `cd frontend && npm test BarcodeDebounceHook`
+- [x] T245 [P] [US1] Write unit test
+      `frontend/src/components/storage/StorageLocationSelector/BarcodeDebounceHook.test.js`
+      with test methods: testDuplicateBarcodeWithin500msIgnored,
+      testDifferentBarcodeWithin500msShowsWarning,
+      testBarcodeAfter500msProcessed, testCooldownTimerResets,
+      testMultipleRapidScansHandled
+- [x] T246 Run debounce hook tests → Verify all FAIL:
+      `cd frontend && npm test BarcodeDebounceHook`
 
 #### Implementation (Make Tests Pass)
 
-- [x] T247 [US1] Create `frontend/src/components/storage/StorageLocationSelector/BarcodeDebounceHook.js` custom React hook with 500ms cooldown logic, duplicate detection, different barcode warning
-- [x] T248 [US1] Integrate BarcodeDebounceHook into `frontend/src/components/storage/StorageLocationSelector/UnifiedBarcodeInput.jsx`
-- [x] T249 [P] [US1] Add React Intl message key for debounce warning to `frontend/src/languages/en.json`, `fr.json`, `sw.json`: barcode.debounce.warning
+- [x] T247 [US1] Create
+      `frontend/src/components/storage/StorageLocationSelector/BarcodeDebounceHook.js`
+      custom React hook with 500ms cooldown logic, duplicate detection,
+      different barcode warning
+- [x] T248 [US1] Integrate BarcodeDebounceHook into
+      `frontend/src/components/storage/StorageLocationSelector/UnifiedBarcodeInput.jsx`
+- [x] T249 [P] [US1] Add React Intl message key for debounce warning to
+      `frontend/src/languages/en.json`, `fr.json`, `sw.json`:
+      barcode.debounce.warning
 
-**Checkpoint**: Debouncing prevents accidental double-scans, warning displays correctly
+**Checkpoint**: Debouncing prevents accidental double-scans, warning displays
+correctly
 
 ### Iteration 9.4: "Last-Modified Wins" Logic
 
-**Objective**: Implement seamless switching between dropdown and input field modes.
+**Objective**: Implement seamless switching between dropdown and input field
+modes.
 
 #### Tests First (Write BEFORE implementation)
 
-- [x] T250 [P] [US1] Update existing test `frontend/src/components/storage/StorageLocationSelector/LocationSelectorModal.test.jsx` with test methods: testDropdownThenInputOverwrites, testInputThenDropdownOverwrites, testVisualFeedbackShowsActiveMethod, testNoErrorWhenSwitching, testBothMethodsVisibleSimultaneously
-- [x] T251 Run location selector modal tests → Verify new tests FAIL: `cd frontend && npm test LocationSelectorModal`
+- [x] T250 [P] [US1] Update existing test
+      `frontend/src/components/storage/StorageLocationSelector/LocationSelectorModal.test.jsx`
+      with test methods: testDropdownThenInputOverwrites,
+      testInputThenDropdownOverwrites, testVisualFeedbackShowsActiveMethod,
+      testNoErrorWhenSwitching, testBothMethodsVisibleSimultaneously
+- [x] T251 Run location selector modal tests → Verify new tests FAIL:
+      `cd frontend && npm test LocationSelectorModal`
 
 #### Implementation (Make Tests Pass)
 
-- [x] T252 [US1] Update `frontend/src/components/storage/StorageLocationSelector/LocationSelectorModal.jsx` to track lastModifiedMethod state (timestamp-based), implement overwrite logic based on last modification
-- [x] T253 [US1] Add visual feedback (highlight border/icon) in `frontend/src/components/storage/StorageLocationSelector/LocationSelectorModal.jsx` showing which method is currently active (dropdown vs input field)
+- [x] T252 [US1] Update
+      `frontend/src/components/storage/StorageLocationSelector/LocationSelectorModal.jsx`
+      to track lastModifiedMethod state (timestamp-based), implement overwrite
+      logic based on last modification
+- [x] T253 [US1] Add visual feedback (highlight border/icon) in
+      `frontend/src/components/storage/StorageLocationSelector/LocationSelectorModal.jsx`
+      showing which method is currently active (dropdown vs input field)
 
-**Checkpoint**: "Last-modified wins" logic works, visual feedback shows active method
+**Checkpoint**: "Last-modified wins" logic works, visual feedback shows active
+method
 
 ### Iteration 9.5: Label Management (Short Code and Printing)
 
-**Objective**: Implement label management modal with short code input and print functionality.
+**Objective**: Implement label management modal with short code input and print
+functionality.
 
 #### Tests First (Write BEFORE implementation)
 
-- [x] T254 [P] [US1] Write unit test `src/test/java/org/openelisglobal/storage/service/ShortCodeValidationServiceTest.java` with test methods: testShortCodeFormat, testAutoUppercaseConversion, testMustStartWithLetterOrNumber, testUniquenessWithinContext, testWarningWhenChangingShortCode
-- [x] T255 [P] [US1] Write integration test `src/test/java/org/openelisglobal/storage/controller/LabelManagementRestControllerTest.java` with test methods: testPutShortCodeEndpoint, testPostPrintLabelEndpoint, testPrintHistoryTracking, testPdfGenerationWithSystemAdminSettings
-- [x] T256 [P] [US1] Write unit test `frontend/src/components/storage/LocationManagement/LabelManagementModal.test.jsx` with test methods: testShortCodeInputValidation, testAutoUppercaseOnInput, testWarningDialogBeforeChange, testPrintLabelOpensPdf, testPrintHistoryDisplay
-- [x] T257 Run short code validation tests → Verify all FAIL: `mvn test -Dtest="ShortCodeValidationServiceTest"`
-- [x] T258 Run label management controller tests → Verify all FAIL: `mvn test -Dtest="LabelManagementRestControllerTest"`
-- [x] T259 Run label management modal tests → Verify all FAIL: `cd frontend && npm test LabelManagementModal`
+- [x] T254 [P] [US1] Write unit test
+      `src/test/java/org/openelisglobal/storage/service/ShortCodeValidationServiceTest.java`
+      with test methods: testShortCodeFormat, testAutoUppercaseConversion,
+      testMustStartWithLetterOrNumber, testUniquenessWithinContext,
+      testWarningWhenChangingShortCode
+- [x] T255 [P] [US1] Write integration test
+      `src/test/java/org/openelisglobal/storage/controller/LabelManagementRestControllerTest.java`
+      with test methods: testPutShortCodeEndpoint, testPostPrintLabelEndpoint,
+      testPrintHistoryTracking, testPdfGenerationWithSystemAdminSettings
+- [x] T256 [P] [US1] Write unit test
+      `frontend/src/components/storage/LocationManagement/LabelManagementModal.test.jsx`
+      with test methods: testShortCodeInputValidation, testAutoUppercaseOnInput,
+      testWarningDialogBeforeChange, testPrintLabelOpensPdf,
+      testPrintHistoryDisplay
+- [x] T257 Run short code validation tests → Verify all FAIL:
+      `mvn test -Dtest="ShortCodeValidationServiceTest"`
+- [x] T258 Run label management controller tests → Verify all FAIL:
+      `mvn test -Dtest="LabelManagementRestControllerTest"`
+- [x] T259 Run label management modal tests → Verify all FAIL:
+      `cd frontend && npm test LabelManagementModal`
 
 #### Implementation (Make Tests Pass)
 
-- [x] T260 [US1] Create `src/main/java/org/openelisglobal/storage/service/ShortCodeValidationService.java` with methods: validateFormat(String shortCode), validateUniqueness(String shortCode, String context), checkShortCodeChangeWarning(String oldCode, String newCode, String locationId)
-- [x] T261 [US1] Create `src/main/java/org/openelisglobal/storage/service/LabelManagementService.java` integrating with existing BarcodeLabelMaker (see research.md Section 9), methods: generateLabel(StorageDevice/StorageShelf/StorageRack, String shortCode), trackPrintHistory(String locationId, String userId)
-- [x] T262 [US1] Create `src/main/java/org/openelisglobal/storage/barcode/labeltype/StorageLocationLabel.java` extending `org.openelisglobal.barcode.labeltype.Label` class, implementing label generation with hierarchical path or short code
-- [x] T263 [US1] Create `src/main/java/org/openelisglobal/storage/controller/LabelManagementRestController.java` with endpoints: `PUT /rest/storage/{type}/{id}/short-code`, `POST /rest/storage/{type}/{id}/print-label`, `GET /rest/storage/{type}/{id}/print-history`
-- [x] T264 [US1] Create Liquibase changeset `src/main/resources/liquibase/storage/004-create-print-history-table.xml` for storage_location_print_history table with columns: id, location_type, location_id, short_code, printed_by, printed_date, print_count
-- [x] T265 [US1] Add `STORAGE_LOCATION_BARCODE_HEIGHT` and `STORAGE_LOCATION_BARCODE_WIDTH` to `src/main/java/org/openelisglobal/common/util/ConfigurationProperties.java` Property enum
-- [x] T266 [US1] Extend `src/main/java/org/openelisglobal/barcode/form/BarcodeConfigurationForm.java` with storage location label dimension fields (heightStorageLocationLabels, widthStorageLocationLabels)
-- [x] T267 [US1] Create `frontend/src/components/storage/LocationManagement/LabelManagementModal.jsx` with Short Code input field and Print Label button
-- [x] T268 [US1] Create `frontend/src/components/storage/LocationManagement/ShortCodeInput.jsx` with validation (max 10 chars, alphanumeric, auto-uppercase, must start with letter/number)
-- [x] T269 [US1] Create `frontend/src/components/storage/LocationManagement/PrintLabelButton.jsx` that calls print endpoint and opens PDF in new tab
-- [x] T270 [US1] Create `frontend/src/components/storage/LocationManagement/PrintHistoryDisplay.jsx` showing last printed date/time/user with optional "View History" link
-- [x] T271 [US1] Update `frontend/src/components/storage/LocationManagement/LocationActionsOverflowMenu.jsx` to include "Label Management" menu item for Devices, Shelves, and Racks
-- [x] T272 [P] [US1] Add React Intl message keys to `frontend/src/languages/en.json`, `fr.json`, `sw.json` for label management: label.shortCode, label.print, label.printHistory, label.shortCodeWarning, etc.
+- [x] T260 [US1] Create
+      `src/main/java/org/openelisglobal/storage/service/ShortCodeValidationService.java`
+      with methods: validateFormat(String shortCode), validateUniqueness(String
+      shortCode, String context), checkShortCodeChangeWarning(String oldCode,
+      String newCode, String locationId)
+- [x] T261 [US1] Create
+      `src/main/java/org/openelisglobal/storage/service/LabelManagementService.java`
+      integrating with existing BarcodeLabelMaker (see research.md Section 9),
+      methods: generateLabel(StorageDevice/StorageShelf/StorageRack, String
+      shortCode), trackPrintHistory(String locationId, String userId)
+- [x] T262 [US1] Create
+      `src/main/java/org/openelisglobal/storage/barcode/labeltype/StorageLocationLabel.java`
+      extending `org.openelisglobal.barcode.labeltype.Label` class, implementing
+      label generation with hierarchical path or short code
+- [x] T263 [US1] Create
+      `src/main/java/org/openelisglobal/storage/controller/LabelManagementRestController.java`
+      with endpoints: `PUT /rest/storage/{type}/{id}/short-code`,
+      `POST /rest/storage/{type}/{id}/print-label`,
+      `GET /rest/storage/{type}/{id}/print-history`
+- [x] T264 [US1] Create Liquibase changeset
+      `src/main/resources/liquibase/storage/004-create-print-history-table.xml`
+      for storage_location_print_history table with columns: id, location_type,
+      location_id, short_code, printed_by, printed_date, print_count
+- [x] T265 [US1] Add `STORAGE_LOCATION_BARCODE_HEIGHT` and
+      `STORAGE_LOCATION_BARCODE_WIDTH` to
+      `src/main/java/org/openelisglobal/common/util/ConfigurationProperties.java`
+      Property enum
+- [x] T266 [US1] Extend
+      `src/main/java/org/openelisglobal/barcode/form/BarcodeConfigurationForm.java`
+      with storage location label dimension fields (heightStorageLocationLabels,
+      widthStorageLocationLabels)
+- [x] T267 [US1] Create
+      `frontend/src/components/storage/LocationManagement/LabelManagementModal.jsx`
+      with Short Code input field and Print Label button
+- [x] T268 [US1] Create
+      `frontend/src/components/storage/LocationManagement/ShortCodeInput.jsx`
+      with validation (max 10 chars, alphanumeric, auto-uppercase, must start
+      with letter/number)
+- [x] T269 [US1] Create
+      `frontend/src/components/storage/LocationManagement/PrintLabelButton.jsx`
+      that calls print endpoint and opens PDF in new tab
+- [x] T270 [US1] Create
+      `frontend/src/components/storage/LocationManagement/PrintHistoryDisplay.jsx`
+      showing last printed date/time/user with optional "View History" link
+- [x] T271 [US1] Update
+      `frontend/src/components/storage/LocationManagement/LocationActionsOverflowMenu.jsx`
+      to include "Label Management" menu item for Devices, Shelves, and Racks
+- [x] T272 [P] [US1] Add React Intl message keys to
+      `frontend/src/languages/en.json`, `fr.json`, `sw.json` for label
+      management: label.shortCode, label.print, label.printHistory,
+      label.shortCodeWarning, etc.
 
-**Checkpoint**: Label management modal works, short code validation works, print label generates PDF, print history displays
+**Checkpoint**: Label management modal works, short code validation works, print
+label generates PDF, print history displays
 
 ### Iteration 9.6: E2E Tests
 
@@ -2069,13 +2740,23 @@ post-run, core happy paths efficiently covered.
 
 #### Tests First (Write BEFORE implementation)
 
-- [x] T273 [P] [US1] Write Cypress E2E test `frontend/cypress/e2e/barcodeWorkflow.cy.js` with test cases: testScan4LevelBarcodePopulatesFields, testScan2LevelBarcodeMinimum, testScanInvalidBarcodeShowsError, testDebouncingPreventsDuplicateScans, testLastModifiedWinsLogic, testLabelManagementModalOpens, testShortCodeChangeShowsWarning, testPrintLabelGeneratesPdf, testPrintHistoryDisplays (per Constitution V.5: run individually, review console logs, video disabled)
-- [x] T274 Run E2E tests → Verify all FAIL: `cd frontend && npm run cy:run -- --spec "cypress/e2e/barcodeWorkflow.cy.js"`
+- [x] T273 [P] [US1] Write Cypress E2E test
+      `frontend/cypress/e2e/barcodeWorkflow.cy.js` with test cases:
+      testScan4LevelBarcodePopulatesFields, testScan2LevelBarcodeMinimum,
+      testScanInvalidBarcodeShowsError, testDebouncingPreventsDuplicateScans,
+      testLastModifiedWinsLogic, testLabelManagementModalOpens,
+      testShortCodeChangeShowsWarning, testPrintLabelGeneratesPdf,
+      testPrintHistoryDisplays (per Constitution V.5: run individually, review
+      console logs, video disabled)
+- [x] T274 Run E2E tests → Verify all FAIL:
+      `cd frontend && npm run cy:run -- --spec "cypress/e2e/barcodeWorkflow.cy.js"`
 
 #### Implementation (Make Tests Pass)
 
-- [x] T275 [US1] Ensure all barcode functionality integrated and working end-to-end
-- [x] T276 [US1] Review browser console logs after E2E test run (per Constitution V.5)
+- [x] T275 [US1] Ensure all barcode functionality integrated and working
+      end-to-end
+- [x] T276 [US1] Review browser console logs after E2E test run (per
+      Constitution V.5)
 - [x] T277 [US1] Review screenshots from E2E test failures (if any)
 
 **Checkpoint**: All E2E tests pass, complete barcode workflow validated
@@ -2115,12 +2796,13 @@ post-run, core happy paths efficiently covered.
       annotations present). **Permission enforcement testing deferred to
       post-POC**
 - [ ] T151a **Cypress E2E Testing (Constitution V.5)**: Verify E2E tests follow
-      Constitution V.5 requirements: Verify `cypress.config.js` has `video: false`
-      and `screenshotOnRunFailure: true`, verify tests use intercept timing
-      (intercepts set up before actions), verify tests use retry-ability
-      (`.should()` assertions), verify tests check element readiness before
-      interaction, verify tests run individually during development (not full suite),
-      verify post-run review of console logs and screenshots is documented
+      Constitution V.5 requirements: Verify `cypress.config.js` has
+      `video: false` and `screenshotOnRunFailure: true`, verify tests use
+      intercept timing (intercepts set up before actions), verify tests use
+      retry-ability (`.should()` assertions), verify tests check element
+      readiness before interaction, verify tests run individually during
+      development (not full suite), verify post-run review of console logs and
+      screenshots is documented
 
 **Verification Commands**:
 
@@ -2179,8 +2861,8 @@ Phase 2 (Foundational) ← BLOCKS all user stories
 
 ### User Story Dependencies
 
-- **US1 (Assignment)**: Depends on Phase 2 (Foundational) AND Phase 4
-  (Flexible Assignment Architecture) - NO dependencies on other stories
+- **US1 (Assignment)**: Depends on Phase 2 (Foundational) AND Phase 4 (Flexible
+  Assignment Architecture) - NO dependencies on other stories
 - **US2A (Search)**: Depends on Phase 2 (Foundational) - Integrates with US1 but
   independently testable
 - **US2B (Movement)**: Depends on Phase 2 (Foundational), Phase 3 (Position
@@ -2190,22 +2872,23 @@ Phase 2 (Foundational) ← BLOCKS all user stories
 - **Location CRUD (Phase 8)**: Depends on Phase 2 (Foundational) AND Phase 5
   early infrastructure (T032-T039: DAOs, StorageLocationService,
   StorageLocationRestController) - Can start as soon as service layer and
-  controller infrastructure exists, does NOT need full Phase 5 completion (sample
-  assignment, frontend widgets, dashboard)
+  controller infrastructure exists, does NOT need full Phase 5 completion
+  (sample assignment, frontend widgets, dashboard)
 - **Expandable Rows (Phase 9)**: Depends on Phase 8 (Location CRUD) - Requires
-  StorageDashboard component with location tables (Rooms, Devices, Shelves, Racks)
-  already implemented. All required fields already available in existing API
-  responses (no backend changes needed)
-- **Capacity Calculation (Phase 9.5)**: Depends on Phase 5 (Dashboard) and Phase 8
-  (Location CRUD) - Requires StorageDashboard component with occupancy display and
-  location tables. Enhances existing dashboard with two-tier capacity calculation
-  logic. Can be implemented in parallel with Phase 10 (Barcode Workflow)
-- **Barcode Workflow (Phase 10)**: Depends on Phase 5 (US1 - Assignment) - Enhances
-  US1 with barcode scanning, validation, label management. Can start after Phase 5
-  completes, can run in parallel with Phase 6, 7, 8, 9
-- **Polish (Phase 11)**: Depends on all feature phases (5, 6, 7, 8, 9, 9.5, 10) - 
-  Cross-cutting concerns, optimization, refactoring, E2E test improvements. Must
-  complete after all feature work is done.
+  StorageDashboard component with location tables (Rooms, Devices, Shelves,
+  Racks) already implemented. All required fields already available in existing
+  API responses (no backend changes needed)
+- **Capacity Calculation (Phase 9.5)**: Depends on Phase 5 (Dashboard) and Phase
+  8 (Location CRUD) - Requires StorageDashboard component with occupancy display
+  and location tables. Enhances existing dashboard with two-tier capacity
+  calculation logic. Can be implemented in parallel with Phase 10 (Barcode
+  Workflow)
+- **Barcode Workflow (Phase 10)**: Depends on Phase 5 (US1 - Assignment) -
+  Enhances US1 with barcode scanning, validation, label management. Can start
+  after Phase 5 completes, can run in parallel with Phase 6, 7, 8, 9
+- **Polish (Phase 11)**: Depends on all feature phases (5, 6, 7, 8, 9,
+  9.5, 10) - Cross-cutting concerns, optimization, refactoring, E2E test
+  improvements. Must complete after all feature work is done.
 - **Compliance (Phase 12)**: Depends on Phase 11 (Polish) - Final validation and
   verification phase. Must be the absolute final phase before deployment.
 
@@ -2273,16 +2956,20 @@ Phase 2 (Foundational) ← BLOCKS all user stories
 
 - T161-T163 (Frontend unit tests) can run in parallel
 - T165-T167 (E2E tests) can run in parallel
-- T174-T176 (renderExpandedContent functions for Devices/Shelves/Racks) can run in parallel
-- T178-T180 (Table structure updates for Devices/Shelves/Racks) can run in parallel
+- T174-T176 (renderExpandedContent functions for Devices/Shelves/Racks) can run
+  in parallel
+- T178-T180 (Table structure updates for Devices/Shelves/Racks) can run in
+  parallel
 
 **Phase 9.5 (Capacity Calculation)**:
 
 - T184-T185 (Backend unit tests) can run in parallel
 - T187 (Backend integration tests) can run independently
 - T189 (Frontend unit tests) can run independently
-- T191-T194 (Backend service implementation) can run in parallel (different methods)
-- T197-T199 (Frontend display updates) can run in parallel (different format functions)
+- T191-T194 (Backend service implementation) can run in parallel (different
+  methods)
+- T197-T199 (Frontend display updates) can run in parallel (different format
+  functions)
 
 **Phase 10 (Barcode Workflow)**:
 
@@ -2295,12 +2982,14 @@ Phase 2 (Foundational) ← BLOCKS all user stories
 
 - T137-T143 (Polish tasks) can run in parallel
 - T152-T160 (E2E refactoring) can run in parallel
-- **Note**: Phase 11 requires all feature phases (5, 6, 7, 8, 9, 10) to complete first
+- **Note**: Phase 11 requires all feature phases (5, 6, 7, 8, 9, 10) to complete
+  first
 
 **Phase 12 (Compliance)**:
 
 - T144-T151a (Compliance verification) can run in parallel
-- **Note**: Phase 12 is the FINAL phase and requires Phase 11 (Polish) to complete first
+- **Note**: Phase 12 is the FINAL phase and requires Phase 11 (Polish) to
+  complete first
 
 ---
 
@@ -2499,8 +3188,8 @@ Task T269: "Create PrintLabelButton.jsx"
 Task T270: "Create PrintHistoryDisplay.jsx"
 # All different components, no conflicts
 ```
-<｜tool▁calls▁begin｜><｜tool▁call▁begin｜>
-read_file
+
+<｜ tool▁calls▁begin ｜><｜ tool▁call▁begin ｜> read_file
 
 ### Cross-Story Parallelization
 
@@ -2600,9 +3289,11 @@ eliminating "unknown location" problem
    quickly, 80% of value)
 4. Add US2B Movement (T080-T098) → **Full POC** (complete lifecycle: assign →
    search → move, 100% of POC value)
-5. Add Barcode Workflow (T227-T277) → **Enhanced POC** (barcode scanning, label management)
+5. Add Barcode Workflow (T227-T277) → **Enhanced POC** (barcode scanning, label
+   management)
 6. Polish (T137-T160) → **Optimized** (cross-cutting concerns, E2E refactoring)
-7. Compliance (T144-T151a) → **Production-ready** (verified against constitution)
+7. Compliance (T144-T151a) → **Production-ready** (verified against
+   constitution)
 
 **Benefits**:
 
@@ -2637,22 +3328,22 @@ eliminating "unknown location" problem
 
 **Total Tasks**: 274
 
-| Phase                          | Task Count | Parallel Opportunities        | Test Tasks   | Implementation Tasks |
-| ------------------------------ | ---------- | ----------------------------- | ------------ | -------------------- |
-| Phase 1: Setup                 | 7          | 1 (T007)                      | 0            | 7                    |
-| Phase 2: Foundational          | 19         | 14 (Hibernate, entities)      | 3            | 16                   |
-| Phase 3: Position Hierarchy    | 17         | 8 (tests, entity updates)     | 3            | 14                   |
-| Phase 4: Flexible Assignment   | 25         | 12 (tests, service, frontend) | 3            | 22                   |
-| Phase 5: US1 (Assignment)      | 70         | 25 (tests, DAOs, hooks)       | 25           | 45                   |
-| Phase 6: US2A (Search)         | 18         | 6 (tests)                     | 6            | 12                   |
-| Phase 7: US2B (Movement)       | 33         | 10 (tests)                    | 10           | 23                   |
-| Phase 8: Location CRUD        | 38         | 15 (tests, parallel endpoints)| 15           | 23                   |
-| Phase 9: Expandable Rows    | 23         | 12 (tests, render functions)  | 7            | 16                   |
-| Phase 9.5: Capacity Calculation | 22      | 8 (tests, service methods)   | 5            | 17                   |
-| Phase 10: Barcode Workflow    | 51         | 14 (tests, services, components) | 21       | 30                   |
-| Phase 11: Polish                | 7          | 4                             | 0            | 7                    |
-| Phase 12: Compliance            | 8          | 7 (most)                      | 0            | 8                    |
-| **TOTAL**                      | **347**    | **147 (42%)**                 | **98 (28%)** | **249 (72%)**        |
+| Phase                           | Task Count | Parallel Opportunities           | Test Tasks   | Implementation Tasks |
+| ------------------------------- | ---------- | -------------------------------- | ------------ | -------------------- |
+| Phase 1: Setup                  | 7          | 1 (T007)                         | 0            | 7                    |
+| Phase 2: Foundational           | 19         | 14 (Hibernate, entities)         | 3            | 16                   |
+| Phase 3: Position Hierarchy     | 17         | 8 (tests, entity updates)        | 3            | 14                   |
+| Phase 4: Flexible Assignment    | 25         | 12 (tests, service, frontend)    | 3            | 22                   |
+| Phase 5: US1 (Assignment)       | 70         | 25 (tests, DAOs, hooks)          | 25           | 45                   |
+| Phase 6: US2A (Search)          | 18         | 6 (tests)                        | 6            | 12                   |
+| Phase 7: US2B (Movement)        | 33         | 10 (tests)                       | 10           | 23                   |
+| Phase 8: Location CRUD          | 38         | 15 (tests, parallel endpoints)   | 15           | 23                   |
+| Phase 9: Expandable Rows        | 23         | 12 (tests, render functions)     | 7            | 16                   |
+| Phase 9.5: Capacity Calculation | 22         | 8 (tests, service methods)       | 5            | 17                   |
+| Phase 10: Barcode Workflow      | 51         | 14 (tests, services, components) | 21           | 30                   |
+| Phase 11: Polish                | 7          | 4                                | 0            | 7                    |
+| Phase 12: Compliance            | 8          | 7 (most)                         | 0            | 8                    |
+| **TOTAL**                       | **347**    | **147 (42%)**                    | **98 (28%)** | **249 (72%)**        |
 
 **Test-to-Implementation Ratio**: 98 test tasks, 249 implementation tasks (1:2.5
 ratio indicates strong test coverage)
@@ -2670,16 +3361,17 @@ ratio indicates strong test coverage)
   modals (Move, Dispose, View Storage) on top of assignment
 - **Location CRUD**: 38 tasks (14% of total) - Adds Edit and Delete operations
   for location tabs (Rooms, Devices, Shelves, Racks) with constraint validation
-- **Expandable Rows**: 23 tasks (7% of total) - Adds expandable row functionality
-  to location tables (Rooms, Devices, Shelves, Racks) displaying additional
-  entity fields as key-value pairs in read-only format
-- **Capacity Calculation**: 22 tasks (6% of total) - Implements two-tier capacity
-  calculation system (manual `capacity_limit` or calculated from children) for
-  Devices and Shelves, with "N/A" display when capacity cannot be determined and
-  visual distinction between manual and calculated capacities
-- **Barcode Workflow**: 51 tasks (16% of total) - Comprehensive barcode scanning,
-  validation, debouncing, visual feedback, label management (short code, printing,
-  print history), and "last-modified wins" logic for seamless input method switching
+- **Expandable Rows**: 23 tasks (7% of total) - Adds expandable row
+  functionality to location tables (Rooms, Devices, Shelves, Racks) displaying
+  additional entity fields as key-value pairs in read-only format
+- **Capacity Calculation**: 22 tasks (6% of total) - Implements two-tier
+  capacity calculation system (manual `capacity_limit` or calculated from
+  children) for Devices and Shelves, with "N/A" display when capacity cannot be
+  determined and visual distinction between manual and calculated capacities
+- **Barcode Workflow**: 51 tasks (16% of total) - Comprehensive barcode
+  scanning, validation, debouncing, visual feedback, label management (short
+  code, printing, print history), and "last-modified wins" logic for seamless
+  input method switching
 
 ---
 

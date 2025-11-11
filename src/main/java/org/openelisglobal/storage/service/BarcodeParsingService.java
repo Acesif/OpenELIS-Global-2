@@ -3,12 +3,11 @@ package org.openelisglobal.storage.service;
 import java.util.List;
 
 /**
- * Service for parsing storage location barcodes
- * Supports 2-5 level hierarchical barcodes per FR-023
+ * Service for parsing storage location barcodes Supports 2-5 level hierarchical
+ * barcodes per FR-023
  *
- * Barcode format: ROOM-DEVICE[-SHELF[-RACK[-POSITION]]]
- * - Minimum 2 levels (Room + Device)
- * - Maximum 5 levels (Room + Device + Shelf + Rack + Position)
+ * Barcode format: ROOM-DEVICE[-SHELF[-RACK[-POSITION]]] - Minimum 2 levels
+ * (Room + Device) - Maximum 5 levels (Room + Device + Shelf + Rack + Position)
  * - Delimiter: hyphen (-) only
  */
 public interface BarcodeParsingService {

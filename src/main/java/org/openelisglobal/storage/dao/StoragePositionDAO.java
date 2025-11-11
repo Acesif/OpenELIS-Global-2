@@ -24,7 +24,7 @@ public interface StoragePositionDAO extends BaseDAO<StoragePosition, Integer> {
      * Find position by coordinates and parent rack (for barcode validation)
      *
      * @param coordinates Position coordinates
-     * @param parentRack Parent rack entity
+     * @param parentRack  Parent rack entity
      * @return StoragePosition or null if not found
      */
     StoragePosition findByCoordinatesAndParentRack(String coordinates, StorageRack parentRack);

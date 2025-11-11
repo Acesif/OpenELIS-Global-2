@@ -2,8 +2,8 @@ package org.openelisglobal.storage.dao;
 
 import java.util.List;
 import org.openelisglobal.common.dao.BaseDAO;
-import org.openelisglobal.storage.valueholder.StorageShelf;
 import org.openelisglobal.storage.valueholder.StorageDevice;
+import org.openelisglobal.storage.valueholder.StorageShelf;
 
 public interface StorageShelfDAO extends BaseDAO<StorageShelf, Integer> {
     List<StorageShelf> findByParentDeviceId(Integer deviceId);
@@ -19,7 +19,7 @@ public interface StorageShelfDAO extends BaseDAO<StorageShelf, Integer> {
     /**
      * Find shelf by label and parent device (for barcode validation)
      *
-     * @param label Shelf label
+     * @param label        Shelf label
      * @param parentDevice Parent device entity
      * @return StorageShelf or null if not found
      */
@@ -34,8 +34,8 @@ public interface StorageShelfDAO extends BaseDAO<StorageShelf, Integer> {
     int countByDeviceId(Integer deviceId);
 
     /**
-     * Find shelf by short code (for label management)
-     * TODO: Add shortCode field to StorageShelf entity in Phase 5.4
+     * Find shelf by short code (for label management) TODO: Add shortCode field to
+     * StorageShelf entity in Phase 5.4
      *
      * @param shortCode Short code
      * @return StorageShelf or null if not found

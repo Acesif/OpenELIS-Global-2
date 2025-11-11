@@ -46,7 +46,8 @@ public class StorageSearchServiceImpl implements StorageSearchService {
                 matchesSampleItemId = idStr.toLowerCase().contains(normalizedQuery);
             }
             if (!matchesSampleItemId && sampleItemIdObj != null) {
-                String sampleItemIdStr = sampleItemIdObj instanceof Integer ? String.valueOf(sampleItemIdObj) : String.valueOf(sampleItemIdObj);
+                String sampleItemIdStr = sampleItemIdObj instanceof Integer ? String.valueOf(sampleItemIdObj)
+                        : String.valueOf(sampleItemIdObj);
                 matchesSampleItemId = sampleItemIdStr.toLowerCase().contains(normalizedQuery);
             }
 
@@ -120,7 +121,8 @@ public class StorageSearchServiceImpl implements StorageSearchService {
 
         for (Map<String, Object> device : allDevices) {
             // Search by name OR code OR deviceType (OR logic)
-            // Note: "type" field is hierarchy level ("device"), "deviceType" is physical type ("freezer", "refrigerator", etc.)
+            // Note: "type" field is hierarchy level ("device"), "deviceType" is physical
+            // type ("freezer", "refrigerator", etc.)
             String name = (String) device.get("name");
             String code = (String) device.get("code");
             String deviceType = (String) device.get("deviceType");

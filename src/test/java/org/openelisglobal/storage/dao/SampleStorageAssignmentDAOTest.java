@@ -54,8 +54,8 @@ public class SampleStorageAssignmentDAOTest {
     }
 
     /**
-     * Test: findBySampleItemId correctly uses String sampleItemId for
-     * database query (SampleItem.id is String in entity and VARCHAR in database)
+     * Test: findBySampleItemId correctly uses String sampleItemId for database
+     * query (SampleItem.id is String in entity and VARCHAR in database)
      */
     @Test
     public void testFindBySampleItemId_UsesStringId_ReturnsAssignment() {

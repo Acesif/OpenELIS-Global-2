@@ -79,94 +79,102 @@ const LocationManagementModal = ({
     }
   }, [open]);
 
-  const handleLocationChange = useCallback((location) => {
-    if (process.env.NODE_ENV === "development") {
-      console.log(
-        "[LocationManagementModal] handleLocationChange called with:",
-        JSON.stringify(
-          {
-            location: location
-              ? {
-                  room: location.room
-                    ? { id: location.room.id, name: location.room.name }
-                    : null,
-                  device: location.device
-                    ? { id: location.device.id, name: location.device.name }
-                    : null,
-                  shelf: location.shelf
-                    ? { id: location.shelf.id, label: location.shelf.label }
-                    : null,
-                  rack: location.rack
-                    ? { id: location.rack.id, label: location.rack.label }
-                    : null,
-                  type: location.type,
-                  id: location.id,
-                  hierarchicalPath: location.hierarchicalPath,
-                  hierarchical_path: location.hierarchical_path,
-                }
-              : null,
-            locationIsTruthy: !!location,
-          },
-          null,
-          2,
-        ),
-      );
-    }
-
-    // Implement "last-modified wins" logic: only overwrite if dropdown is newer
-    // If barcode was used more recently, don't overwrite
-    const timestamp = Date.now();
-    if (lastModifiedTimestamp === null || timestamp >= lastModifiedTimestamp) {
-      // Track last-modified method and timestamp only if we're overwriting
-      setLastModifiedMethod("dropdown");
-      setLastModifiedTimestamp(timestamp);
-
-      if (location) {
-        selectedLocationRef.current = location;
-
-        let path = "";
-        const hierarchicalPath =
-          location.hierarchical_path || location.hierarchicalPath;
-        if (hierarchicalPath && hierarchicalPath.trim()) {
-          path = hierarchicalPath.trim();
-        } else {
-          const roomName = location.room?.name || location.room?.code || "";
-          const deviceName = location.device?.name || location.device?.code || "";
-          const shelfLabel = location.shelf?.label || location.shelf?.name || "";
-          const rackLabel = location.rack?.label || location.rack?.name || "";
-          const positionCoord =
-            location.position?.coordinate || location.position || "";
-
-          const pathParts = [];
-          if (roomName) pathParts.push(roomName);
-          if (deviceName) pathParts.push(deviceName);
-          if (shelfLabel) pathParts.push(shelfLabel);
-          if (rackLabel) pathParts.push(rackLabel);
-          if (positionCoord) pathParts.push(`Position ${positionCoord}`);
-
-          path = pathParts.join(" > ");
-
-          if (!path && location.name) {
-            path = location.name;
-          }
-        }
-
-        setSelectedLocation(location);
-        setSelectedLocationPath(path);
-        setLocationUpdateTrigger((prev) => prev + 1);
-
-        // Update position coordinate if position is selected
-        if (location && location.position) {
-          setPositionCoordinate(location.position.coordinate || "");
-        }
-      } else {
-        selectedLocationRef.current = null;
-        setSelectedLocation(null);
-        setSelectedLocationPath("");
-        setLocationUpdateTrigger((prev) => prev + 1);
+  const handleLocationChange = useCallback(
+    (location) => {
+      if (process.env.NODE_ENV === "development") {
+        console.log(
+          "[LocationManagementModal] handleLocationChange called with:",
+          JSON.stringify(
+            {
+              location: location
+                ? {
+                    room: location.room
+                      ? { id: location.room.id, name: location.room.name }
+                      : null,
+                    device: location.device
+                      ? { id: location.device.id, name: location.device.name }
+                      : null,
+                    shelf: location.shelf
+                      ? { id: location.shelf.id, label: location.shelf.label }
+                      : null,
+                    rack: location.rack
+                      ? { id: location.rack.id, label: location.rack.label }
+                      : null,
+                    type: location.type,
+                    id: location.id,
+                    hierarchicalPath: location.hierarchicalPath,
+                    hierarchical_path: location.hierarchical_path,
+                  }
+                : null,
+              locationIsTruthy: !!location,
+            },
+            null,
+            2,
+          ),
+        );
       }
-    }
-  }, [lastModifiedTimestamp]);
+
+      // Implement "last-modified wins" logic: only overwrite if dropdown is newer
+      // If barcode was used more recently, don't overwrite
+      const timestamp = Date.now();
+      if (
+        lastModifiedTimestamp === null ||
+        timestamp >= lastModifiedTimestamp
+      ) {
+        // Track last-modified method and timestamp only if we're overwriting
+        setLastModifiedMethod("dropdown");
+        setLastModifiedTimestamp(timestamp);
+
+        if (location) {
+          selectedLocationRef.current = location;
+
+          let path = "";
+          const hierarchicalPath =
+            location.hierarchical_path || location.hierarchicalPath;
+          if (hierarchicalPath && hierarchicalPath.trim()) {
+            path = hierarchicalPath.trim();
+          } else {
+            const roomName = location.room?.name || location.room?.code || "";
+            const deviceName =
+              location.device?.name || location.device?.code || "";
+            const shelfLabel =
+              location.shelf?.label || location.shelf?.name || "";
+            const rackLabel = location.rack?.label || location.rack?.name || "";
+            const positionCoord =
+              location.position?.coordinate || location.position || "";
+
+            const pathParts = [];
+            if (roomName) pathParts.push(roomName);
+            if (deviceName) pathParts.push(deviceName);
+            if (shelfLabel) pathParts.push(shelfLabel);
+            if (rackLabel) pathParts.push(rackLabel);
+            if (positionCoord) pathParts.push(`Position ${positionCoord}`);
+
+            path = pathParts.join(" > ");
+
+            if (!path && location.name) {
+              path = location.name;
+            }
+          }
+
+          setSelectedLocation(location);
+          setSelectedLocationPath(path);
+          setLocationUpdateTrigger((prev) => prev + 1);
+
+          // Update position coordinate if position is selected
+          if (location && location.position) {
+            setPositionCoordinate(location.position.coordinate || "");
+          }
+        } else {
+          selectedLocationRef.current = null;
+          setSelectedLocation(null);
+          setSelectedLocationPath("");
+          setLocationUpdateTrigger((prev) => prev + 1);
+        }
+      }
+    },
+    [lastModifiedTimestamp],
+  );
 
   const handleConfirm = async () => {
     const locationToUse = selectedLocation || selectedLocationRef.current;
@@ -254,7 +262,10 @@ const LocationManagementModal = ({
 
       // Implement "last-modified wins" logic: only overwrite if barcode is newer
       const timestamp = Date.now();
-      if (lastModifiedTimestamp === null || timestamp >= lastModifiedTimestamp) {
+      if (
+        lastModifiedTimestamp === null ||
+        timestamp >= lastModifiedTimestamp
+      ) {
         setLastModifiedMethod("barcode");
         setLastModifiedTimestamp(timestamp);
 
@@ -272,8 +283,10 @@ const LocationManagementModal = ({
         } else {
           const pathParts = [];
           if (locationData.room?.name) pathParts.push(locationData.room.name);
-          if (locationData.device?.name) pathParts.push(locationData.device.name);
-          if (locationData.shelf?.label) pathParts.push(locationData.shelf.label);
+          if (locationData.device?.name)
+            pathParts.push(locationData.device.name);
+          if (locationData.shelf?.label)
+            pathParts.push(locationData.shelf.label);
           if (locationData.rack?.label) pathParts.push(locationData.rack.label);
           if (locationData.position?.coordinate) {
             pathParts.push(`Position ${locationData.position.coordinate}`);
@@ -294,7 +307,8 @@ const LocationManagementModal = ({
           result.error.errorMessage ||
           intl.formatMessage({
             id: "barcode.partialMatch",
-            defaultMessage: "Partial match - some location components not found",
+            defaultMessage:
+              "Partial match - some location components not found",
           });
         setBarcodeErrorMessage(errorMsg);
 
@@ -309,7 +323,10 @@ const LocationManagementModal = ({
 
         // Implement "last-modified wins" logic for partial validation
         const timestamp = Date.now();
-        if (lastModifiedTimestamp === null || timestamp >= lastModifiedTimestamp) {
+        if (
+          lastModifiedTimestamp === null ||
+          timestamp >= lastModifiedTimestamp
+        ) {
           setLastModifiedMethod("barcode");
           setLastModifiedTimestamp(timestamp);
 
@@ -449,7 +466,14 @@ const LocationManagementModal = ({
                   defaultMessage:
                     "Move sample item {sampleItemId} to a new storage location",
                 },
-                { sampleItemId: sample?.sampleItemExternalId || sample?.sampleItemId || sample?.id || sample?.sampleId || "" },
+                {
+                  sampleItemId:
+                    sample?.sampleItemExternalId ||
+                    sample?.sampleItemId ||
+                    sample?.id ||
+                    sample?.sampleId ||
+                    "",
+                },
               )
             : intl.formatMessage(
                 {
@@ -457,7 +481,14 @@ const LocationManagementModal = ({
                   defaultMessage:
                     "Assign storage location for sample item {sampleItemId}",
                 },
-                { sampleItemId: sample?.sampleItemExternalId || sample?.sampleItemId || sample?.id || sample?.sampleId || "" },
+                {
+                  sampleItemId:
+                    sample?.sampleItemExternalId ||
+                    sample?.sampleItemId ||
+                    sample?.id ||
+                    sample?.sampleId ||
+                    "",
+                },
               )
         }
       />
@@ -472,21 +503,33 @@ const LocationManagementModal = ({
               {/* SampleItem ID/External ID (primary identifier) */}
               <div className="info-row">
                 <span className="info-label">
-                  <FormattedMessage id="sample.item.id" defaultMessage="Sample Item ID" />
+                  <FormattedMessage
+                    id="sample.item.id"
+                    defaultMessage="Sample Item ID"
+                  />
                   :
                 </span>
                 <span className="info-value">
-                  {sample.sampleItemExternalId || sample.sampleItemId || sample.id || sample.sampleId || "N/A"}
+                  {sample.sampleItemExternalId ||
+                    sample.sampleItemId ||
+                    sample.id ||
+                    sample.sampleId ||
+                    "N/A"}
                 </span>
               </div>
               {/* Parent Sample accession number (secondary identifier) */}
               {sample.sampleAccessionNumber && (
                 <div className="info-row">
                   <span className="info-label">
-                    <FormattedMessage id="sample.accession.number" defaultMessage="Sample Accession" />
+                    <FormattedMessage
+                      id="sample.accession.number"
+                      defaultMessage="Sample Accession"
+                    />
                     :
                   </span>
-                  <span className="info-value">{sample.sampleAccessionNumber}</span>
+                  <span className="info-value">
+                    {sample.sampleAccessionNumber}
+                  </span>
                 </div>
               )}
               <div className="info-row">
@@ -586,7 +629,9 @@ const LocationManagementModal = ({
             data-testid="new-location-section"
           >
             {/* Barcode Input Section */}
-            <div className={`form-group ${lastModifiedMethod === 'barcode' ? 'active-input-method' : ''}`}>
+            <div
+              className={`form-group ${lastModifiedMethod === "barcode" ? "active-input-method" : ""}`}
+            >
               <label className="form-label">
                 <FormattedMessage
                   id="storage.barcode.scan"
@@ -616,7 +661,7 @@ const LocationManagementModal = ({
                   selectedLocation={selectedLocationForValidation}
                   allowInactive={false}
                   showCreateButton={true}
-                  isActive={lastModifiedMethod === 'dropdown'}
+                  isActive={lastModifiedMethod === "dropdown"}
                 />
               </div>
             </div>

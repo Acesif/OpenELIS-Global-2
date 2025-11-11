@@ -65,25 +65,29 @@ public class SampleStorageRestControllerFlexibleAssignmentTest extends BaseWebCo
 
     private String createSampleItemAndGetId() throws Exception {
         // Create a test sample directly via SQL (SampleItem requires a parent Sample)
-        // Use direct database insertion instead of REST endpoint (which may not be available in test context)
+        // Use direct database insertion instead of REST endpoint (which may not be
+        // available in test context)
         long timestamp = System.currentTimeMillis();
         int sampleId = 60000 + (int) (timestamp % 10000);
         String accessionNumber = "TEST-" + timestamp;
-        
+
         // Insert sample directly
         jdbcTemplate.update(
-            "INSERT INTO sample (id, accession_number, entered_date, received_date, lastupdated) VALUES (?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)",
-            sampleId, accessionNumber);
-        
+                "INSERT INTO sample (id, accession_number, entered_date, received_date, lastupdated) VALUES (?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)",
+                sampleId, accessionNumber);
+
         // Create a SampleItem for the sample
-        // Use numeric ID (sample_item.id is numeric in DB, but Hibernate treats it as String)
+        // Use numeric ID (sample_item.id is numeric in DB, but Hibernate treats it as
+        // String)
         int sampleItemId = 50000 + (int) (timestamp % 10000);
         // Get default status_id and typeosamp_id from database
-        Integer statusId = jdbcTemplate.queryForObject("SELECT id FROM status_of_sample ORDER BY id LIMIT 1", Integer.class);
-        Integer typeOfSampleId = jdbcTemplate.queryForObject("SELECT id FROM type_of_sample ORDER BY id LIMIT 1", Integer.class);
+        Integer statusId = jdbcTemplate.queryForObject("SELECT id FROM status_of_sample ORDER BY id LIMIT 1",
+                Integer.class);
+        Integer typeOfSampleId = jdbcTemplate.queryForObject("SELECT id FROM type_of_sample ORDER BY id LIMIT 1",
+                Integer.class);
         jdbcTemplate.update(
-            "INSERT INTO sample_item (id, samp_id, sort_order, sampitem_id, external_id, typeosamp_id, status_id, lastupdated) VALUES (?, ?, 1, NULL, ?, ?, ?, CURRENT_TIMESTAMP)",
-            sampleItemId, sampleId, "TEST-SAMPLE-" + timestamp + "-TUBE-1", typeOfSampleId, statusId);
+                "INSERT INTO sample_item (id, samp_id, sort_order, sampitem_id, external_id, typeosamp_id, status_id, lastupdated) VALUES (?, ?, 1, NULL, ?, ?, ?, CURRENT_TIMESTAMP)",
+                sampleItemId, sampleId, "TEST-SAMPLE-" + timestamp + "-TUBE-1", typeOfSampleId, statusId);
         return String.valueOf(sampleItemId);
     }
 
@@ -385,8 +389,8 @@ public class SampleStorageRestControllerFlexibleAssignmentTest extends BaseWebCo
         assertNull("New position coordinate should be null", movementRecord.get("new_position_coordinate"));
 
         // Verify assignment was updated
-        Map<String, Object> assignmentRecord = jdbcTemplate
-                .queryForMap("SELECT * FROM sample_storage_assignment WHERE sample_item_id = ?", Integer.parseInt(sampleItemId));
+        Map<String, Object> assignmentRecord = jdbcTemplate.queryForMap(
+                "SELECT * FROM sample_storage_assignment WHERE sample_item_id = ?", Integer.parseInt(sampleItemId));
         assertEquals("Assignment location ID should be updated to rack", Integer.parseInt(rackId),
                 ((Number) assignmentRecord.get("location_id")).intValue());
         assertEquals("Assignment location type should be updated to 'rack'", "rack",
@@ -434,8 +438,8 @@ public class SampleStorageRestControllerFlexibleAssignmentTest extends BaseWebCo
         assertTrue(json.get("newHierarchicalPath").asText().contains("C7"));
 
         // Verify positionCoordinate is saved in database
-        Map<String, Object> assignmentRecord = jdbcTemplate
-                .queryForMap("SELECT * FROM sample_storage_assignment WHERE sample_item_id = ?", Integer.parseInt(sampleItemId));
+        Map<String, Object> assignmentRecord = jdbcTemplate.queryForMap(
+                "SELECT * FROM sample_storage_assignment WHERE sample_item_id = ?", Integer.parseInt(sampleItemId));
         assertEquals("Position coordinate should be saved", "C7", assignmentRecord.get("position_coordinate"));
 
         // Verify positionCoordinate is saved in movement record
@@ -448,7 +452,8 @@ public class SampleStorageRestControllerFlexibleAssignmentTest extends BaseWebCo
     }
 
     /**
-     * Test: Assign sample with positionCoordinate - verifies positionCoordinate is saved
+     * Test: Assign sample with positionCoordinate - verifies positionCoordinate is
+     * saved
      */
     @Test
     public void testAssignSample_WithPositionCoordinate_SavesToDatabase() throws Exception {
@@ -477,13 +482,14 @@ public class SampleStorageRestControllerFlexibleAssignmentTest extends BaseWebCo
         assertNotNull(json.get("assignmentId"));
 
         // Verify positionCoordinate is saved in database
-        Map<String, Object> assignmentRecord = jdbcTemplate
-                .queryForMap("SELECT * FROM sample_storage_assignment WHERE sample_item_id = ?", Integer.parseInt(sampleItemId));
+        Map<String, Object> assignmentRecord = jdbcTemplate.queryForMap(
+                "SELECT * FROM sample_storage_assignment WHERE sample_item_id = ?", Integer.parseInt(sampleItemId));
         assertEquals("Position coordinate should be saved", "A1", assignmentRecord.get("position_coordinate"));
     }
 
     /**
-     * Test: Move sample with positionCoordinate - verifies positionCoordinate is saved in both assignment and movement
+     * Test: Move sample with positionCoordinate - verifies positionCoordinate is
+     * saved in both assignment and movement
      */
     @Test
     public void testMoveSample_WithPositionCoordinate_SavesToDatabase() throws Exception {
@@ -520,8 +526,8 @@ public class SampleStorageRestControllerFlexibleAssignmentTest extends BaseWebCo
                 .andExpect(status().isOk()).andReturn().getResponse().getContentAsString();
 
         // Verify positionCoordinate is updated in assignment
-        Map<String, Object> assignmentRecord = jdbcTemplate
-                .queryForMap("SELECT * FROM sample_storage_assignment WHERE sample_item_id = ?", Integer.parseInt(sampleItemId));
+        Map<String, Object> assignmentRecord = jdbcTemplate.queryForMap(
+                "SELECT * FROM sample_storage_assignment WHERE sample_item_id = ?", Integer.parseInt(sampleItemId));
         assertEquals("Position coordinate should be updated in assignment", "B5",
                 assignmentRecord.get("position_coordinate"));
 

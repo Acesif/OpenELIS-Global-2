@@ -26,8 +26,10 @@ public class SampleStorageAssignmentDAOImpl extends BaseDAOImpl<SampleStorageAss
     @Transactional(readOnly = true)
     public SampleStorageAssignment findBySampleItemId(String sampleItemId) {
         try {
-            // Note: SampleItem.id uses LIMSStringNumberUserType (String in Java, numeric in DB)
-            // When querying through relationships, we must parse String to Integer for the parameter
+            // Note: SampleItem.id uses LIMSStringNumberUserType (String in Java, numeric in
+            // DB)
+            // When querying through relationships, we must parse String to Integer for the
+            // parameter
             // This matches the pattern in SampleItemDAOImpl.getSampleItemsBySampleId()
             String hql = "FROM SampleStorageAssignment ssa WHERE ssa.sampleItem.id = :sampleItemId";
             Query<SampleStorageAssignment> query = entityManager.unwrap(Session.class).createQuery(hql,
@@ -41,24 +43,30 @@ public class SampleStorageAssignmentDAOImpl extends BaseDAOImpl<SampleStorageAss
             return null;
         } catch (Exception e) {
             logger.error("Error finding SampleStorageAssignment by SampleItem ID: " + sampleItemId, e);
-            throw new LIMSRuntimeException("Error finding SampleStorageAssignment by SampleItem ID: " + sampleItemId, e);
+            throw new LIMSRuntimeException("Error finding SampleStorageAssignment by SampleItem ID: " + sampleItemId,
+                    e);
         }
     }
 
     @Override
     @Transactional(readOnly = true)
-    public SampleStorageAssignment findByStoragePosition(org.openelisglobal.storage.valueholder.StoragePosition position) {
+    public SampleStorageAssignment findByStoragePosition(
+            org.openelisglobal.storage.valueholder.StoragePosition position) {
         try {
             if (position == null) {
                 return null;
             }
-            // Note: This method is deprecated - assignments now use location_id + location_type
-            // instead of StoragePosition references. This method is kept for backward compatibility
+            // Note: This method is deprecated - assignments now use location_id +
+            // location_type
+            // instead of StoragePosition references. This method is kept for backward
+            // compatibility
             // but may not work correctly with the new flexible assignment model.
-            // TODO: Consider removing this method or updating it to work with location_id + location_type
+            // TODO: Consider removing this method or updating it to work with location_id +
+            // location_type
             String hql = "FROM SampleStorageAssignment ssa WHERE ssa.locationType = 'rack' AND ssa.locationId = :rackId";
             if (position.getParentRack() != null) {
-                Query<SampleStorageAssignment> query = entityManager.unwrap(Session.class).createQuery(hql, SampleStorageAssignment.class);
+                Query<SampleStorageAssignment> query = entityManager.unwrap(Session.class).createQuery(hql,
+                        SampleStorageAssignment.class);
                 query.setParameter("rackId", position.getParentRack().getId());
                 query.setMaxResults(1);
                 List<SampleStorageAssignment> results = query.list();
@@ -79,8 +87,9 @@ public class SampleStorageAssignmentDAOImpl extends BaseDAOImpl<SampleStorageAss
                 return false;
             }
 
-            // If position has a coordinate and parent rack, check for assignment with matching coordinate
-            if (position.getCoordinate() != null && !position.getCoordinate().isEmpty() 
+            // If position has a coordinate and parent rack, check for assignment with
+            // matching coordinate
+            if (position.getCoordinate() != null && !position.getCoordinate().isEmpty()
                     && position.getParentRack() != null) {
                 // Check for assignment to this rack with this coordinate
                 String hql = "SELECT COUNT(*) FROM SampleStorageAssignment ssa "
@@ -92,7 +101,8 @@ public class SampleStorageAssignmentDAOImpl extends BaseDAOImpl<SampleStorageAss
                 Long count = query.uniqueResult();
                 return count != null && count > 0;
             } else if (position.getParentRack() != null) {
-                // Position without coordinate but with rack - check for any assignment to this rack
+                // Position without coordinate but with rack - check for any assignment to this
+                // rack
                 String hql = "SELECT COUNT(*) FROM SampleStorageAssignment ssa "
                         + "WHERE ssa.locationType = 'rack' AND ssa.locationId = :rackId";
                 Query<Long> query = entityManager.unwrap(Session.class).createQuery(hql, Long.class);

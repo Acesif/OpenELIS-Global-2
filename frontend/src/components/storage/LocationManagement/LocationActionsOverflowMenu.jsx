@@ -13,7 +13,12 @@ import "../SampleStorage/SampleActionsOverflowMenu.css";
  * - onDelete: function - Callback when Delete clicked
  * - onLabelManagement: function - Callback when Label Management clicked
  */
-const LocationActionsOverflowMenu = ({ location, onEdit, onDelete, onLabelManagement }) => {
+const LocationActionsOverflowMenu = ({
+  location,
+  onEdit,
+  onDelete,
+  onLabelManagement,
+}) => {
   const intl = useIntl();
 
   // Use useCallback to ensure stable function references

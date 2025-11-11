@@ -14,8 +14,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
- * Implementation of LabelManagementService
- * Generates PDF labels for storage locations and tracks print history
+ * Implementation of LabelManagementService Generates PDF labels for storage
+ * locations and tracks print history
  */
 @Service
 @Transactional
@@ -45,12 +45,8 @@ public class LabelManagementServiceImpl implements LabelManagementService {
         }
 
         // Create label
-        StorageLocationLabel label = new StorageLocationLabel(
-            device.getName(),
-            device.getCode(),
-            hierarchicalPath,
-            shortCode
-        );
+        StorageLocationLabel label = new StorageLocationLabel(device.getName(), device.getCode(), hierarchicalPath,
+                shortCode);
 
         // Generate PDF using BarcodeLabelMaker
         return generatePDF(label);
@@ -78,12 +74,8 @@ public class LabelManagementServiceImpl implements LabelManagementService {
         }
 
         // Create label
-        StorageLocationLabel label = new StorageLocationLabel(
-            shelf.getLabel(),
-            shelf.getLabel(),
-            hierarchicalPath,
-            shortCode
-        );
+        StorageLocationLabel label = new StorageLocationLabel(shelf.getLabel(), shelf.getLabel(), hierarchicalPath,
+                shortCode);
 
         // Generate PDF using BarcodeLabelMaker
         return generatePDF(label);
@@ -104,8 +96,8 @@ public class LabelManagementServiceImpl implements LabelManagementService {
             if (parentDevice != null) {
                 StorageRoom parentRoom = parentDevice.getParentRoom();
                 if (parentRoom != null && parentRoom.getCode() != null) {
-                    hierarchicalPath = parentRoom.getCode() + "-" + parentDevice.getCode() + 
-                        "-" + parentShelf.getLabel() + "-" + rack.getLabel();
+                    hierarchicalPath = parentRoom.getCode() + "-" + parentDevice.getCode() + "-"
+                            + parentShelf.getLabel() + "-" + rack.getLabel();
                 } else {
                     hierarchicalPath = parentDevice.getCode() + "-" + parentShelf.getLabel() + "-" + rack.getLabel();
                 }
@@ -117,12 +109,8 @@ public class LabelManagementServiceImpl implements LabelManagementService {
         }
 
         // Create label
-        StorageLocationLabel label = new StorageLocationLabel(
-            rack.getLabel(),
-            rack.getLabel(),
-            hierarchicalPath,
-            shortCode
-        );
+        StorageLocationLabel label = new StorageLocationLabel(rack.getLabel(), rack.getLabel(), hierarchicalPath,
+                shortCode);
 
         // Generate PDF using BarcodeLabelMaker
         return generatePDF(label);
@@ -135,16 +123,16 @@ public class LabelManagementServiceImpl implements LabelManagementService {
         try {
             // Link barcode label info (for print tracking)
             label.linkBarcodeLabelInfo();
-            
+
             // Create BarcodeLabelMaker and add label
             BarcodeLabelMaker labelMaker = new BarcodeLabelMaker();
             ArrayList<org.openelisglobal.barcode.labeltype.Label> labels = new ArrayList<>();
             labels.add(label);
             labelMaker = new BarcodeLabelMaker(labels);
-            
+
             // Set number of labels to print (default 1)
             label.setNumLabels(1);
-            
+
             // Generate PDF stream
             return labelMaker.createLabelsAsStream();
         } catch (Exception e) {
@@ -158,10 +146,10 @@ public class LabelManagementServiceImpl implements LabelManagementService {
     public void trackPrintHistory(String locationId, String locationType, String shortCode, String userId) {
         // TODO: Implement when print history table is added in Phase 5.4
         // For now, just log the print event
-        LogEvent.logInfo("LabelManagementServiceImpl", "trackPrintHistory", 
-            String.format("Label printed - Location: %s, Type: %s, ShortCode: %s, User: %s", 
-                locationId, locationType, shortCode, userId));
-        
+        LogEvent.logInfo("LabelManagementServiceImpl", "trackPrintHistory",
+                String.format("Label printed - Location: %s, Type: %s, ShortCode: %s, User: %s", locationId,
+                        locationType, shortCode, userId));
+
         // When database schema is ready:
         // StorageLocationPrintHistory history = new StorageLocationPrintHistory();
         // history.setLocationId(locationId);
@@ -173,4 +161,3 @@ public class LabelManagementServiceImpl implements LabelManagementService {
         // printHistoryDAO.insert(history);
     }
 }
-

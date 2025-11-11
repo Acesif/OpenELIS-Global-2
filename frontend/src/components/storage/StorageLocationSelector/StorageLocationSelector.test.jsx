@@ -166,10 +166,7 @@ describe("StorageLocationSelector", () => {
     };
 
     renderWithIntl(
-      <StorageLocationSelector
-        workflow="orders"
-        sampleInfo={mockSampleInfo}
-      />,
+      <StorageLocationSelector workflow="orders" sampleInfo={mockSampleInfo} />,
     );
 
     // Should show compact location view
@@ -213,10 +210,7 @@ describe("StorageLocationSelector", () => {
     };
 
     renderWithIntl(
-      <StorageLocationSelector
-        workflow="orders"
-        sampleInfo={mockSampleInfo}
-      />,
+      <StorageLocationSelector workflow="orders" sampleInfo={mockSampleInfo} />,
     );
 
     const expandButton = screen.getByTestId("expand-button");

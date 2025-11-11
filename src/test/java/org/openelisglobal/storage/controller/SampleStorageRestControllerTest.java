@@ -148,8 +148,8 @@ public class SampleStorageRestControllerTest extends BaseWebContextSensitiveTest
     }
 
     /**
-     * Placeholder test to prevent initialization error.
-     * All actual tests are in SampleStorageRestControllerFlexibleAssignmentTest.java
+     * Placeholder test to prevent initialization error. All actual tests are in
+     * SampleStorageRestControllerFlexibleAssignmentTest.java
      */
     @org.junit.Test
     public void testPlaceholder() {

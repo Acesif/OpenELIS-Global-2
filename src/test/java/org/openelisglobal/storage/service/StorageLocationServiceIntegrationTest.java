@@ -215,11 +215,13 @@ public class StorageLocationServiceIntegrationTest extends BaseWebContextSensiti
     }
 
     /**
-     * Test that getRoomsForAPI() includes sampleCount field that counts SampleItems (not Samples).
-     * This verifies the fix for the bug where rooms dashboard was counting Samples instead of SampleItems.
+     * Test that getRoomsForAPI() includes sampleCount field that counts SampleItems
+     * (not Samples). This verifies the fix for the bug where rooms dashboard was
+     * counting Samples instead of SampleItems.
      * 
-     * Storage tracking operates at SampleItem level (physical specimens), not Sample level (orders).
-     * The query should count DISTINCT sampleItem.id, not sample.id.
+     * Storage tracking operates at SampleItem level (physical specimens), not
+     * Sample level (orders). The query should count DISTINCT sampleItem.id, not
+     * sample.id.
      */
     @Test
     public void testGetRoomsForAPI_IncludesSampleItemCount() {
@@ -231,17 +233,17 @@ public class StorageLocationServiceIntegrationTest extends BaseWebContextSensiti
 
         if (!rooms.isEmpty()) {
             Map<String, Object> room = rooms.get(0);
-            
+
             // Verify sampleCount field exists (may be 0 if no assignments in test data)
             assertTrue("Room should include sampleCount field", room.containsKey("sampleCount"));
             Object sampleCount = room.get("sampleCount");
             assertNotNull("sampleCount should not be null", sampleCount);
             assertTrue("sampleCount should be an Integer", sampleCount instanceof Integer);
-            
+
             // Verify count is non-negative
             Integer count = (Integer) sampleCount;
             assertTrue("sampleCount should be >= 0", count >= 0);
-            
+
             // Note: Actual count value depends on test data fixtures.
             // This test verifies the field exists and query executes without errors.
             // The query counts DISTINCT sampleItem.id (not sample.id) per the fix.

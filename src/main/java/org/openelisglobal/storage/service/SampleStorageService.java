@@ -15,11 +15,11 @@ public interface SampleStorageService {
     CapacityWarning calculateCapacity(StorageRack rack);
 
     /**
-     * Get all SampleItems with storage assignments and complete hierarchical paths. All
-     * relationships are eagerly fetched within the service transaction.
+     * Get all SampleItems with storage assignments and complete hierarchical paths.
+     * All relationships are eagerly fetched within the service transaction.
      * 
-     * @return List of maps, each containing: id, sampleItemId, sampleAccessionNumber, type, status, location,
-     *         assignedBy, date
+     * @return List of maps, each containing: id, sampleItemId,
+     *         sampleAccessionNumber, type, status, location, assignedBy, date
      */
     List<Map<String, Object>> getAllSamplesWithAssignments();
 
@@ -37,8 +37,8 @@ public interface SampleStorageService {
      * @return Map containing assignmentId, hierarchicalPath, assignedDate, and
      *         shelfCapacityWarning if applicable
      */
-    java.util.Map<String, Object> assignSampleItemWithLocation(String sampleItemId, String locationId, String locationType,
-            String positionCoordinate, String notes);
+    java.util.Map<String, Object> assignSampleItemWithLocation(String sampleItemId, String locationId,
+            String locationType, String positionCoordinate, String notes);
 
     /**
      * Move a SampleItem to a new location using simplified polymorphic relationship
@@ -53,6 +53,6 @@ public interface SampleStorageService {
      * @param reason             Optional reason for movement
      * @return Movement ID
      */
-    String moveSampleItemWithLocation(String sampleItemId, String locationId, String locationType, String positionCoordinate,
-            String reason);
+    String moveSampleItemWithLocation(String sampleItemId, String locationId, String locationType,
+            String positionCoordinate, String reason);
 }

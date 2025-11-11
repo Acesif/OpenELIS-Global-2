@@ -1,10 +1,10 @@
 package org.openelisglobal.storage.controller;
 
+import jakarta.validation.Valid;
 import java.io.ByteArrayOutputStream;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import org.openelisglobal.common.log.LogEvent;
 import org.openelisglobal.common.rest.BaseRestController;
 import org.openelisglobal.storage.dao.StorageDeviceDAO;
 import org.openelisglobal.storage.dao.StorageRackDAO;
@@ -23,11 +23,10 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import jakarta.validation.Valid;
 
 /**
- * REST Controller for Label Management
- * Handles short code updates, label generation, and print history
+ * REST Controller for Label Management Handles short code updates, label
+ * generation, and print history
  */
 @RestController
 @RequestMapping("/rest/storage")
@@ -51,14 +50,11 @@ public class LabelManagementRestController extends BaseRestController {
     private StorageRackDAO storageRackDAO;
 
     /**
-     * Update short code for a storage location
-     * PUT /rest/storage/{type}/{id}/short-code
-     * Body: { "shortCode": "FRZ01" }
+     * Update short code for a storage location PUT
+     * /rest/storage/{type}/{id}/short-code Body: { "shortCode": "FRZ01" }
      */
     @PutMapping("/{type}/{id}/short-code")
-    public ResponseEntity<Map<String, Object>> updateShortCode(
-            @PathVariable String type,
-            @PathVariable String id,
+    public ResponseEntity<Map<String, Object>> updateShortCode(@PathVariable String type, @PathVariable String id,
             @Valid @RequestBody ShortCodeUpdateForm form) {
         try {
             // Validate type
@@ -89,8 +85,8 @@ public class LabelManagementRestController extends BaseRestController {
                 }
 
                 // Validate uniqueness
-                var uniquenessResult = shortCodeValidationService.validateUniqueness(
-                    formatResult.getNormalizedCode(), type, id);
+                var uniquenessResult = shortCodeValidationService.validateUniqueness(formatResult.getNormalizedCode(),
+                        type, id);
                 if (!uniquenessResult.isValid()) {
                     Map<String, Object> error = new HashMap<>();
                     error.put("error", uniquenessResult.getErrorMessage());
@@ -98,8 +94,8 @@ public class LabelManagementRestController extends BaseRestController {
                 }
 
                 // Check for warning on change
-                String warning = shortCodeValidationService.checkShortCodeChangeWarning(
-                    currentShortCode, formatResult.getNormalizedCode(), id);
+                String warning = shortCodeValidationService.checkShortCodeChangeWarning(currentShortCode,
+                        formatResult.getNormalizedCode(), id);
                 if (warning != null) {
                     Map<String, Object> response = new HashMap<>();
                     response.put("warning", warning);
@@ -132,13 +128,11 @@ public class LabelManagementRestController extends BaseRestController {
     }
 
     /**
-     * Generate and return PDF label
-     * POST /rest/storage/{type}/{id}/print-label?shortCode=FRZ01
+     * Generate and return PDF label POST
+     * /rest/storage/{type}/{id}/print-label?shortCode=FRZ01
      */
     @PostMapping("/{type}/{id}/print-label")
-    public ResponseEntity<byte[]> printLabel(
-            @PathVariable String type,
-            @PathVariable String id,
+    public ResponseEntity<byte[]> printLabel(@PathVariable String type, @PathVariable String id,
             @RequestParam(required = false) String shortCode) {
         try {
             // Validate type
@@ -168,7 +162,8 @@ public class LabelManagementRestController extends BaseRestController {
 
             // Track print history
             String currentShortCode = getCurrentShortCode(location);
-            labelManagementService.trackPrintHistory(id, type, currentShortCode != null ? currentShortCode : shortCode, userId);
+            labelManagementService.trackPrintHistory(id, type, currentShortCode != null ? currentShortCode : shortCode,
+                    userId);
 
             // Return PDF
             HttpHeaders headers = new HttpHeaders();
@@ -184,12 +179,10 @@ public class LabelManagementRestController extends BaseRestController {
     }
 
     /**
-     * Get print history for a location
-     * GET /rest/storage/{type}/{id}/print-history
+     * Get print history for a location GET /rest/storage/{type}/{id}/print-history
      */
     @GetMapping("/{type}/{id}/print-history")
-    public ResponseEntity<List<Map<String, Object>>> getPrintHistory(
-            @PathVariable String type,
+    public ResponseEntity<List<Map<String, Object>>> getPrintHistory(@PathVariable String type,
             @PathVariable String id) {
         try {
             // Validate type
@@ -219,14 +212,14 @@ public class LabelManagementRestController extends BaseRestController {
         try {
             Integer locationId = Integer.parseInt(id);
             switch (type) {
-                case "device":
-                    return storageDeviceDAO.get(locationId);
-                case "shelf":
-                    return storageShelfDAO.get(locationId);
-                case "rack":
-                    return storageRackDAO.get(locationId);
-                default:
-                    return null;
+            case "device":
+                return storageDeviceDAO.get(locationId);
+            case "shelf":
+                return storageShelfDAO.get(locationId);
+            case "rack":
+                return storageRackDAO.get(locationId);
+            default:
+                return null;
             }
         } catch (NumberFormatException e) {
             logger.error("Invalid location ID format: " + id, e);
@@ -268,8 +261,8 @@ public class LabelManagementRestController extends BaseRestController {
     }
 
     /**
-     * Get current user ID from security context
-     * TODO: Implement proper security context retrieval
+     * Get current user ID from security context TODO: Implement proper security
+     * context retrieval
      */
     private String getCurrentUserId() {
         // Placeholder: should get from Spring Security context
@@ -277,4 +270,3 @@ public class LabelManagementRestController extends BaseRestController {
         return "1";
     }
 }
-

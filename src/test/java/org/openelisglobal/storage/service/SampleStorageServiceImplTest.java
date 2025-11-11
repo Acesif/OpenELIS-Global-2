@@ -89,8 +89,8 @@ public class SampleStorageServiceImplTest {
     // SampleStorageServiceFlexibleAssignmentTest.java
 
     /**
-     * Placeholder test to prevent initialization error.
-     * All actual tests are in SampleStorageServiceFlexibleAssignmentTest.java
+     * Placeholder test to prevent initialization error. All actual tests are in
+     * SampleStorageServiceFlexibleAssignmentTest.java
      */
     @org.junit.Test
     public void testPlaceholder() {

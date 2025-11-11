@@ -1,7 +1,7 @@
 # Implementation Plan: Sample Storage Management
 
-**Branch**: `001-sample-storage` | **Date**: 2025-10-30 | **Last Updated**: 2025-11-22 | **Spec**:
-[spec.md](./spec.md)  
+**Branch**: `001-sample-storage` | **Date**: 2025-10-30 | **Last Updated**:
+2025-11-22 | **Spec**: [spec.md](./spec.md)  
 **Input**: Feature specification from `/specs/001-sample-storage/spec.md`
 
 ## Summary
@@ -27,19 +27,19 @@ Location Management Modal that handles both assignment (when no location exists)
 and movement (when location exists) with dynamic wording and conditional fields.
 Create Dispose modal matching Figma design. Implement full CRUD operations for
 location tabs (Rooms, Devices, Shelves, Racks) with overflow menu actions (Edit,
-Delete) - Edit modal allows editing all fields except Code and Parent (read-only),
-Delete validates constraints (child locations, active samples) before deletion.
-Map storage entities to FHIR Location resources for external interoperability.
-**Note**: MoveSampleModal is largely implemented and can be used as a starting
-point for the consolidated Location Management Modal.
+Delete) - Edit modal allows editing all fields except Code and Parent
+(read-only), Delete validates constraints (child locations, active samples)
+before deletion. Map storage entities to FHIR Location resources for external
+interoperability. **Note**: MoveSampleModal is largely implemented and can be
+used as a starting point for the consolidated Location Management Modal.
 
 **Amendment (2025-11-07)**: Add expandable row functionality to location tables
 (Rooms, Devices, Shelves, Racks) using Carbon DataTable expandable row pattern.
 Expanded rows display additional entity fields (not visible in table columns) as
 key-value pairs in read-only format. Only one row can be expanded at a time.
 Expansion triggered by clicking chevron icon in dedicated first column. See
-[research.md](./research.md#8-carbon-datatable-expandable-rows) for implementation
-details.
+[research.md](./research.md#8-carbon-datatable-expandable-rows) for
+implementation details.
 
 **Amendment (2025-11-22)**: Add comprehensive barcode workflow implementation
 following TDD approach. Includes unified input field (scan/type-ahead), 5-step
@@ -51,18 +51,22 @@ FR-027f must be implemented. See Phase 10 below for detailed TDD workflow.
 **Amendment**: Update capacity calculation logic to implement two-tier system
 (per FR-062a, FR-062b, FR-062c). Devices and Shelves support manual
 `capacity_limit` (static) or calculated capacity from children. If
-`capacity_limit` is NULL, calculate from child locations (sum if all
-children have defined capacities). If any child lacks defined capacity,
-parent capacity cannot be determined and UI displays "N/A" with tooltip. Racks
-always use calculated capacity (rows × columns). UI must visually distinguish
-between manual and calculated capacities (badge, tooltip, or icon). See
-updated capacity calculator implementation in Phase 9.5 below.
+`capacity_limit` is NULL, calculate from child locations (sum if all children
+have defined capacities). If any child lacks defined capacity, parent capacity
+cannot be determined and UI displays "N/A" with tooltip. Racks always use
+calculated capacity (rows × columns). UI must visually distinguish between
+manual and calculated capacities (badge, tooltip, or icon). See updated capacity
+calculator implementation in Phase 9.5 below.
 
 ## Implementation Phase Structure
 
-This document is an **Implementation Plan** that describes the technical approach and architecture for building the Sample Storage Management feature. The phases below correspond to implementation phases that are broken down into actionable tasks in `tasks.md`.
+This document is an **Implementation Plan** that describes the technical
+approach and architecture for building the Sample Storage Management feature.
+The phases below correspond to implementation phases that are broken down into
+actionable tasks in `tasks.md`.
 
 **Phase Organization**:
+
 - **Phase 1**: Setup & Database Schema
 - **Phase 2**: Foundational - Core Entities & FHIR Transform
 - **Phase 3**: Position Hierarchy Structure Update (2-5 Level Support)
@@ -77,7 +81,6 @@ This document is an **Implementation Plan** that describes the technical approac
 - **Phase 10**: Barcode Workflow Implementation
 - **Phase 11**: Polish & Cross-Cutting Concerns
 - **Phase 12**: Constitution Compliance Verification
-
 
 ## Technical Context
 
@@ -110,12 +113,16 @@ searches/saves), no optimization required
 **Scale/Scope**:
 
 - 5 storage entity types (Room, Device, Shelf, Rack, Position)
-- 6 REST API endpoint groups (hierarchy CRUD with Edit/Delete, assignment, movement, search, barcode validation, label management)
+- 6 REST API endpoint groups (hierarchy CRUD with Edit/Delete, assignment,
+  movement, search, barcode validation, label management)
 - 1 reusable UI widget (Storage Location Selector with two-tier design)
-- 6 modal components (Consolidated Location Management, Dispose, Edit Location, Delete Location confirmation, Label Management)
-- 2 overflow menu components (samples table row actions, location table row actions)
+- 6 modal components (Consolidated Location Management, Dispose, Edit Location,
+  Delete Location confirmation, Label Management)
+- 2 overflow menu components (samples table row actions, location table row
+  actions)
 - 2 integration points (SamplePatientEntry, LogbookResults)
-- Barcode workflow components (unified input field, debouncing, visual feedback, label printing)
+- Barcode workflow components (unified input field, debouncing, visual feedback,
+  label printing)
 
 **Development Approach**: Test-Driven Development (TDD)
 
@@ -319,7 +326,9 @@ written BEFORE implementation code.
      `SampleStorageServiceImplTest.java`, `StorageSearchServiceImplTest.java`
    - Validates: Assignment validation logic (require Room and Device minimum 2
      levels, prevent inactive location, double-occupancy)
-   - Validates: Capacity calculation and warning thresholds (80/90/100%) - includes two-tier capacity logic (manual vs calculated), hierarchical capacity calculation, and "N/A" handling when capacity cannot be determined
+   - Validates: Capacity calculation and warning thresholds (80/90/100%) -
+     includes two-tier capacity logic (manual vs calculated), hierarchical
+     capacity calculation, and "N/A" handling when capacity cannot be determined
    - Validates: Hierarchical path construction
    - Validates: Bulk move auto-assignment logic
    - Validates: Audit trail creation on movements
@@ -355,10 +364,13 @@ Phase 3 learnings)
 
 - Validates: Cascading dropdown state management
 - Validates: Unified barcode input field accepts both scan and type-ahead
-- Validates: Barcode format parsing (2-5 level hierarchical paths with hyphen delimiter)
-- Validates: Debouncing logic (500ms cooldown, duplicate detection, different barcode warning)
+- Validates: Barcode format parsing (2-5 level hierarchical paths with hyphen
+  delimiter)
+- Validates: Debouncing logic (500ms cooldown, duplicate detection, different
+  barcode warning)
 - Validates: Visual feedback (ready state, success green checkmark, error red X)
-- Validates: "Last-modified wins" behavior when both dropdowns and input field are used
+- Validates: "Last-modified wins" behavior when both dropdowns and input field
+  are used
 - Validates: Pre-filling valid components when scan fails partially
 - Validates: Hierarchical path display
 - Validates: Validation requires Room and Device selection (minimum 2 levels),
@@ -368,8 +380,8 @@ Phase 3 learnings)
 - Validates: Menu renders with all three items (Manage Location, Dispose, View
   Audit placeholder)
 - Validates: "View Audit" is disabled
-- Test: `LocationManagementModal.test.jsx` (consolidated from MoveSampleModal and
-  ViewStorageModal)
+- Test: `LocationManagementModal.test.jsx` (consolidated from MoveSampleModal
+  and ViewStorageModal)
 - Validates: Modal renders with correct title/button based on location existence
 - Validates: Comprehensive sample information section (ID, Type, Status, Date
   Collected, Patient ID, Test Orders)
@@ -405,47 +417,68 @@ Phase 3 learnings)
 **Objective**: Initialize storage module structure and database foundation.
 
 **Technical Approach**:
-- Create storage module package structure in `src/main/java/org/openelisglobal/storage/` with subdirectories: valueholder/, dao/, service/, controller/, form/, fhir/
-- Create frontend storage component directory structure in `frontend/src/components/storage/` with subdirectories: StorageLocationSelector/, SampleStorage/, hooks/
+
+- Create storage module package structure in
+  `src/main/java/org/openelisglobal/storage/` with subdirectories: valueholder/,
+  dao/, service/, controller/, form/, fhir/
+- Create frontend storage component directory structure in
+  `frontend/src/components/storage/` with subdirectories:
+  StorageLocationSelector/, SampleStorage/, hooks/
 - Create Liquibase changesets for database schema:
-  - `001-create-storage-hierarchy-tables.xml` - Room, Device, Shelf, Rack, Position tables with fhir_uuid columns
-  - `002-create-assignment-tables.xml` - SampleStorageAssignment and SampleStorageMovement tables
-  - `003-create-indexes.xml` - Performance indexes (parent lookups, FHIR UUID, occupancy queries)
-- Add storage message keys to internationalization files (en.json, fr.json, sw.json)
+  - `001-create-storage-hierarchy-tables.xml` - Room, Device, Shelf, Rack,
+    Position tables with fhir_uuid columns
+  - `002-create-assignment-tables.xml` - SampleStorageAssignment and
+    SampleStorageMovement tables
+  - `003-create-indexes.xml` - Performance indexes (parent lookups, FHIR UUID,
+    occupancy queries)
+- Add storage message keys to internationalization files (en.json, fr.json,
+  sw.json)
 
 **Dependencies**: None (foundational setup)
 
-**Implementation Status**: [COMPLETE] - All setup tasks completed. See `tasks.md` Phase 1 for details.
+**Implementation Status**: [COMPLETE] - All setup tasks completed. See
+`tasks.md` Phase 1 for details.
 
 ---
 
 ## Phase 2: Foundational - Core Entities & FHIR Transform
 
-**Objective**: Create storage entities and FHIR mapping infrastructure required by ALL user stories.
+**Objective**: Create storage entities and FHIR mapping infrastructure required
+by ALL user stories.
 
 **Technical Approach**:
-- Create Hibernate mappings for all 7 entities (Room, Device, Shelf, Rack, Position, SampleStorageAssignment, SampleStorageMovement)
+
+- Create Hibernate mappings for all 7 entities (Room, Device, Shelf, Rack,
+  Position, SampleStorageAssignment, SampleStorageMovement)
 - Create JPA entity classes extending BaseObject with fhir_uuid columns
-- Implement StorageLocationFhirTransform service for FHIR Location resource mapping
-- Add @PostPersist and @PostUpdate hooks to all storage entities for immediate FHIR sync
+- Implement StorageLocationFhirTransform service for FHIR Location resource
+  mapping
+- Add @PostPersist and @PostUpdate hooks to all storage entities for immediate
+  FHIR sync
 - Create ORM validation test to verify all mappings load correctly
 
 **Architecture Decisions**:
+
 - Use JPA annotations directly (NOT XML mappings) per Constitution IV.1
 - All entities include fhir_uuid UUID column for FHIR resource mapping
 - FHIR sync happens automatically via entity lifecycle hooks
 
 **Dependencies**: Phase 1 (Setup) must complete first
 
-**Implementation Status**: [COMPLETE] - All foundational entities and FHIR transform service implemented. See `tasks.md` Phase 2 for details.
+**Implementation Status**: [COMPLETE] - All foundational entities and FHIR
+transform service implemented. See `tasks.md` Phase 2 for details.
 
 ---
 
 ## Phase 3: Position Hierarchy Structure Update (2-5 Level Support)
 
-**Objective**: Update StoragePosition entity structure to support flexible hierarchy (2-5 levels). Positions can have parent_device_id (required), parent_shelf_id (optional), parent_rack_id (optional), coordinate (optional). Minimum requirement is device level (room + device); cannot be just a room.
+**Objective**: Update StoragePosition entity structure to support flexible
+hierarchy (2-5 levels). Positions can have parent_device_id (required),
+parent_shelf_id (optional), parent_rack_id (optional), coordinate (optional).
+Minimum requirement is device level (room + device); cannot be just a room.
 
 **Technical Approach**:
+
 - Update STORAGE_POSITION table via Liquibase changeset:
   - Add parent_device_id column (VARCHAR(36), NOT NULL, FK to storage_device)
   - Add parent_shelf_id column (VARCHAR(36), NULL, FK to storage_shelf)
@@ -458,53 +491,75 @@ Phase 3 learnings)
 - Update FHIR transform to support all hierarchy levels
 
 **Architecture Decisions**:
+
 - Minimum 2 levels (room + device) required per FR-033a
 - Maximum 5 levels (room + device + shelf + rack + position coordinate)
 - Hierarchy integrity enforced via CHECK constraints
 
-**Dependencies**: Phase 2 (Foundational) must complete first. This phase must complete before Phase 7 (US2B - Movement) as movement logic requires position hierarchy validation.
+**Dependencies**: Phase 2 (Foundational) must complete first. This phase must
+complete before Phase 7 (US2B - Movement) as movement logic requires position
+hierarchy validation.
 
-**Implementation Status**: [COMPLETE] - Position hierarchy structure updated to support 2-5 levels. See `tasks.md` Phase 3 for details.
+**Implementation Status**: [COMPLETE] - Position hierarchy structure updated to
+support 2-5 levels. See `tasks.md` Phase 3 for details.
 
 ---
 
 ## Phase 4: Flexible Assignment Architecture (Simplified Polymorphic Location)
 
-**Objective**: Simplify sample assignment to use a single polymorphic location relationship (`location_id` + `location_type`) instead of requiring StoragePosition entities for all assignments. Allows assignment directly to device/shelf/rack levels with optional text-based coordinate.
+**Objective**: Simplify sample assignment to use a single polymorphic location
+relationship (`location_id` + `location_type`) instead of requiring
+StoragePosition entities for all assignments. Allows assignment directly to
+device/shelf/rack levels with optional text-based coordinate.
 
 **Technical Approach**:
+
 - Update SAMPLE_STORAGE_ASSIGNMENT table via Liquibase changeset:
   - Drop storage_position_id column entirely (no backward compatibility)
   - Add location_id column (numeric, NOT NULL, no FK - polymorphic reference)
-  - Add location_type column (VARCHAR(20), NOT NULL, enum: 'device', 'shelf', 'rack')
+  - Add location_type column (VARCHAR(20), NOT NULL, enum: 'device', 'shelf',
+    'rack')
   - Add position_coordinate column (VARCHAR(50), nullable, optional text)
 - Update SampleStorageAssignment entity with new fields
 - Update service methods: assignSampleWithLocation(), moveSampleWithLocation()
 - Update controller endpoints to accept locationId + locationType
-- Update frontend components to extract locationId and locationType from selected hierarchy
+- Update frontend components to extract locationId and locationType from
+  selected hierarchy
 
 **Architecture Decisions**:
-- Position is represented as optional text field (positionCoordinate), not a separate entity reference
-- Polymorphic location reference allows assignment to any hierarchy level (device/shelf/rack)
+
+- Position is represented as optional text field (positionCoordinate), not a
+  separate entity reference
+- Polymorphic location reference allows assignment to any hierarchy level
+  (device/shelf/rack)
 - No occupancy tracking at position level (position is just text coordinate)
 
-**Dependencies**: Phase 2 (Foundational) and Phase 3 (Position Hierarchy) must complete first. This phase must complete before Phase 5 (US1) and Phase 7 (US2B) as it changes the core assignment architecture.
+**Dependencies**: Phase 2 (Foundational) and Phase 3 (Position Hierarchy) must
+complete first. This phase must complete before Phase 5 (US1) and Phase 7 (US2B)
+as it changes the core assignment architecture.
 
-**Implementation Status**: [COMPLETE] - Flexible assignment architecture implemented. See `tasks.md` Phase 4 for details.
+**Implementation Status**: [COMPLETE] - Flexible assignment architecture
+implemented. See `tasks.md` Phase 4 for details.
 
 ---
 
 ## Phase 5: User Story 1 - Basic Storage Assignment (Priority: P1) 🎯 MVP
 
-**Objective**: Reception clerks can assign sample items to storage locations during sample entry using cascading dropdowns, type-ahead search, or barcode scanning.
+**Objective**: Reception clerks can assign sample items to storage locations
+during sample entry using cascading dropdowns, type-ahead search, or barcode
+scanning.
 
 **Technical Approach**:
-- Implement Storage Location CRUD operations (Room, Device, Shelf, Rack, Position)
+
+- Implement Storage Location CRUD operations (Room, Device, Shelf, Rack,
+  Position)
 - Create DAOs, Services, and Controllers for storage hierarchy management
-- Implement SampleItem assignment service with flexible location support (location_id + location_type)
+- Implement SampleItem assignment service with flexible location support
+  (location_id + location_type)
 - Create Storage Location Selector widget with two-tier design:
   - Compact inline view (shows location path + expand button)
-  - Expanded modal view (full assignment form with cascading dropdowns, type-ahead, barcode input)
+  - Expanded modal view (full assignment form with cascading dropdowns,
+    type-ahead, barcode input)
 - Integrate widget into SamplePatientEntry workflow
 - Create Storage Dashboard with:
   - Metric cards (Total SampleItems, Active, Disposed, Storage Locations)
@@ -513,35 +568,51 @@ Phase 3 learnings)
   - Storage Locations metric card with color-coded breakdown
 
 **Architecture Decisions**:
-- Storage tracking operates at SampleItem level (physical specimens), not Sample level (orders)
-- Dashboard displays SampleItem ID/External ID as primary identifier, with parent Sample accession number as secondary context
+
+- Storage tracking operates at SampleItem level (physical specimens), not Sample
+  level (orders)
+- Dashboard displays SampleItem ID/External ID as primary identifier, with
+  parent Sample accession number as secondary context
 - Search matches either SampleItem ID/External ID or Sample accession number
-- Widget supports three input modes: cascading dropdowns, type-ahead autocomplete, barcode scanning
-- Two-tier widget design: compact view for inline display, modal for full assignment workflow
+- Widget supports three input modes: cascading dropdowns, type-ahead
+  autocomplete, barcode scanning
+- Two-tier widget design: compact view for inline display, modal for full
+  assignment workflow
 
-**Dependencies**: Phase 2 (Foundational), Phase 3 (Position Hierarchy), Phase 4 (Flexible Assignment) must complete first
+**Dependencies**: Phase 2 (Foundational), Phase 3 (Position Hierarchy), Phase 4
+(Flexible Assignment) must complete first
 
-**Implementation Status**: [IN PROGRESS] - Core assignment functionality complete. Dashboard features (filters, search, metric card) in progress. See `tasks.md` Phase 5 for details.
+**Implementation Status**: [IN PROGRESS] - Core assignment functionality
+complete. Dashboard features (filters, search, metric card) in progress. See
+`tasks.md` Phase 5 for details.
 
 ---
 
 ## Phase 6: User Story 2A - SampleItem Search and Retrieval (Priority: P2)
 
-**Objective**: Lab technicians can search for sample items by SampleItem ID/External ID or Sample accession number and retrieve storage location to physically find sample items.
+**Objective**: Lab technicians can search for sample items by SampleItem
+ID/External ID or Sample accession number and retrieve storage location to
+physically find sample items.
 
 **Technical Approach**:
-- Implement search service supporting both SampleItem ID/External ID and Sample accession number
+
+- Implement search service supporting both SampleItem ID/External ID and Sample
+  accession number
 - Create search endpoints: GET /rest/storage/sample-items/search?q={term}
 - Create StorageLocationDisplay component showing hierarchical path
 - Integrate QuickFindSearch component into LogbookResults workflow
 - Add location search endpoint: GET /rest/storage/locations/search?q={term}
 
 **Architecture Decisions**:
-- Search uses OR logic: matches either SampleItem ID/External ID or Sample accession number
-- Case-insensitive partial substring matching
-- QuickFindSearch provides type-ahead autocomplete for location names/codes at any hierarchy level
 
-**Dependencies**: Phase 2 (Foundational), Phase 5 (US1 - Assignment) for initial assignment
+- Search uses OR logic: matches either SampleItem ID/External ID or Sample
+  accession number
+- Case-insensitive partial substring matching
+- QuickFindSearch provides type-ahead autocomplete for location names/codes at
+  any hierarchy level
+
+**Dependencies**: Phase 2 (Foundational), Phase 5 (US1 - Assignment) for initial
+assignment
 
 **Implementation Status**: [NOT STARTED] - See `tasks.md` Phase 6 for details.
 
@@ -549,22 +620,30 @@ Phase 3 learnings)
 
 ## Phase 7: User Story 2B - SampleItem Movement (Priority: P2)
 
-**Objective**: Lab technicians can move sample items between storage locations (single and bulk), with audit trail tracking previous/new locations.
+**Objective**: Lab technicians can move sample items between storage locations
+(single and bulk), with audit trail tracking previous/new locations.
 
 **Technical Approach**:
+
 - Implement moveSampleWithLocation() service method
-- Implement bulkMoveSamples() service method with auto-assignment of sequential positions
-- Create SampleMovementForm with fields: sampleItemId, locationId, locationType, positionCoordinate, reason
-- Create movement endpoints: POST /rest/storage/sample-items/move, POST /rest/storage/sample-items/bulk-move
+- Implement bulkMoveSamples() service method with auto-assignment of sequential
+  positions
+- Create SampleMovementForm with fields: sampleItemId, locationId, locationType,
+  positionCoordinate, reason
+- Create movement endpoints: POST /rest/storage/sample-items/move, POST
+  /rest/storage/sample-items/bulk-move
 - Update audit trail (SampleStorageMovement) for all movements
 
 **Architecture Decisions**:
-- Movement uses same flexible assignment architecture (location_id + location_type)
+
+- Movement uses same flexible assignment architecture (location_id +
+  location_type)
 - Previous location freed automatically, new location recorded
 - Individual audit records created for each movement
 - Bulk movement supports manual position override
 
-**Dependencies**: Phase 2 (Foundational), Phase 3 (Position Hierarchy), Phase 4 (Flexible Assignment), Phase 5 (US1) for initial assignment
+**Dependencies**: Phase 2 (Foundational), Phase 3 (Position Hierarchy), Phase 4
+(Flexible Assignment), Phase 5 (US1) for initial assignment
 
 **Implementation Status**: [NOT STARTED] - See `tasks.md` Phase 7 for details.
 
@@ -572,33 +651,46 @@ Phase 3 learnings)
 
 ## Phase 7.5: Modal Consolidation - Immediate Priority
 
-**Objective**: Consolidate MoveSampleModal and ViewStorageModal into a single LocationManagementModal that handles both assignment and movement workflows.
+**Objective**: Consolidate MoveSampleModal and ViewStorageModal into a single
+LocationManagementModal that handles both assignment and movement workflows.
 
 **Technical Approach**:
-- Create LocationManagementModal component consolidating previous separate modals
-- Update SampleActionsOverflowMenu to show "Manage Location" instead of separate "Move" and "View Storage" items
+
+- Create LocationManagementModal component consolidating previous separate
+  modals
+- Update SampleActionsOverflowMenu to show "Manage Location" instead of separate
+  "Move" and "View Storage" items
 - Modal dynamically adapts based on whether sample item has existing location:
   - Assignment mode: "Assign Storage Location" title, "Assign" button
-  - Movement mode: "Move Sample Item" title, "Confirm Move" button, shows "Reason for Move" field
-- Display comprehensive sample item information (SampleItem ID/External ID, Sample ID, Type, Status, Date Collected, Patient ID, Test Orders)
+  - Movement mode: "Move Sample Item" title, "Confirm Move" button, shows
+    "Reason for Move" field
+- Display comprehensive sample item information (SampleItem ID/External ID,
+  Sample ID, Type, Status, Date Collected, Patient ID, Test Orders)
 - Current Location section only appears if location exists
 
 **Architecture Decisions**:
+
 - Single modal reduces UI complexity and maintenance burden
 - Dynamic wording and conditional fields based on assignment vs movement mode
 - Consolidation improves UX consistency
 
-**Dependencies**: Phase 2 (Foundational). Can start immediately after foundational entities and services are in place.
+**Dependencies**: Phase 2 (Foundational). Can start immediately after
+foundational entities and services are in place.
 
-**Implementation Status**: [COMPLETE] - Modal consolidation complete. See `tasks.md` Phase 7.5 for details.
+**Implementation Status**: [COMPLETE] - Modal consolidation complete. See
+`tasks.md` Phase 7.5 for details.
 
 ---
 
 ## Phase 8: Location CRUD Operations Implementation
 
-**Objective**: Implement full CRUD operations for location tabs (Rooms, Devices, Shelves, Racks) with overflow menu actions (Edit, Delete) per FR-037f through FR-037v. Each location entity can be edited via modal dialog and deleted with validation constraints.
+**Objective**: Implement full CRUD operations for location tabs (Rooms, Devices,
+Shelves, Racks) with overflow menu actions (Edit, Delete) per FR-037f through
+FR-037v. Each location entity can be edited via modal dialog and deleted with
+validation constraints.
 
 **Technical Approach**:
+
 - Create LocationActionsOverflowMenu component for location table rows
 - Create EditLocationModal component (generic, adapts to Room/Device/Shelf/Rack)
 - Create DeleteLocationModal component with constraint validation
@@ -607,26 +699,36 @@ Phase 3 learnings)
 - Code and Parent fields are read-only in Edit modal
 
 **Architecture Decisions**:
-- Edit modal allows editing all fields except Code and Parent (read-only to prevent structural changes)
+
+- Edit modal allows editing all fields except Code and Parent (read-only to
+  prevent structural changes)
 - Delete validates constraints (child locations, active samples) before deletion
 - Constraint validation returns user-friendly error messages
 
-**Dependencies**: Phase 2 (Foundational), Phase 5 (US1 - Dashboard) for location tables
+**Dependencies**: Phase 2 (Foundational), Phase 5 (US1 - Dashboard) for location
+tables
 
-**Implementation Status**: [COMPLETE] - Location CRUD operations implemented. See `tasks.md` Phase 8 for details.
+**Implementation Status**: [COMPLETE] - Location CRUD operations implemented.
+See `tasks.md` Phase 8 for details.
 
 ---
 
 ## Phase 9: Expandable Row Functionality Implementation
 
-**Objective**: Add expandable row functionality to location tables (Rooms, Devices, Shelves, Racks) in StorageDashboard component. Expanded rows display additional entity fields not visible in table columns, formatted as key-value pairs in read-only format.
+**Objective**: Add expandable row functionality to location tables (Rooms,
+Devices, Shelves, Racks) in StorageDashboard component. Expanded rows display
+additional entity fields not visible in table columns, formatted as key-value
+pairs in read-only format.
 
 **Technical Approach**:
-- Add expandableRows prop to DataTable components for Rooms, Devices, Shelves, Racks tabs
+
+- Add expandableRows prop to DataTable components for Rooms, Devices, Shelves,
+  Racks tabs
 - Import TableExpandHeader, TableExpandRow, TableExpandedRow from @carbon/react
 - Add state management for expanded row ID (useState for expandedRowId)
 - Implement handleRowExpand function to manage single-row expansion
-- Create renderExpandedContent function for each location type (room, device, shelf, rack)
+- Create renderExpandedContent function for each location type (room, device,
+  shelf, rack)
 - Update table structure to use TableExpandHeader in header row
 - Replace TableRow with TableExpandRow for data rows
 - Add TableExpandedRow after each TableExpandRow with expanded content
@@ -635,18 +737,24 @@ Phase 3 learnings)
 - Display "N/A" for missing optional fields
 
 **Architecture Decisions**:
-- Only one row can be expanded at a time (expanding another automatically collapses the previous)
+
+- Only one row can be expanded at a time (expanding another automatically
+  collapses the previous)
 - Expanded content is read-only (Edit action remains in overflow menu)
-- Expansion triggered by clicking chevron icon in dedicated first column (Carbon DataTable standard pattern)
+- Expansion triggered by clicking chevron icon in dedicated first column (Carbon
+  DataTable standard pattern)
 - Tab switching resets expanded state
 
-**Dependencies**: Phase 5 (Dashboard) and Phase 8 (Location CRUD) must complete first
+**Dependencies**: Phase 5 (Dashboard) and Phase 8 (Location CRUD) must complete
+first
 
-**Implementation Status**: [COMPLETE] - Expandable row functionality implemented for all location tables. See `tasks.md` Phase 9 for details.
+**Implementation Status**: [COMPLETE] - Expandable row functionality implemented
+for all location tables. See `tasks.md` Phase 9 for details.
 
 **Test Order** (TDD workflow):
 
 1. **Unit Tests** (Jest + React Testing Library):
+
    - Test expanded state management (`handleRowExpand` function)
    - Test expanded content rendering for each location type
    - Test single-row expansion behavior (collapsing previous row)
@@ -659,48 +767,68 @@ Phase 3 learnings)
    - Test expanded content visibility and correctness
    - Test single-row expansion (expanding new row collapses previous)
    - Test expanded content is read-only (no edit capability)
-   - Test expanded content for each location type (Rooms, Devices, Shelves, Racks)
+   - Test expanded content for each location type (Rooms, Devices, Shelves,
+     Racks)
    - Test keyboard navigation (Enter/Space to expand)
    - Test accessibility (ARIA attributes, screen reader support)
 
 **Test Files**:
 
-- Unit: `frontend/src/components/storage/StorageDashboard/StorageDashboard.test.jsx`
+- Unit:
+  `frontend/src/components/storage/StorageDashboard/StorageDashboard.test.jsx`
 - E2E: `frontend/cypress/e2e/storageLocationExpandableRows.cy.js`
 
 ### Implementation Tasks
 
 1. **Research & Design** ✅ (Complete - see research-expandable-rows.md)
-2. **Unit Tests**: Write tests for expanded state management and content rendering
-3. **Implementation**: Modify StorageDashboard.jsx to add expandable row functionality
+2. **Unit Tests**: Write tests for expanded state management and content
+   rendering
+3. **Implementation**: Modify StorageDashboard.jsx to add expandable row
+   functionality
 4. **E2E Tests**: Write Cypress tests for expand/collapse interaction
 5. **Accessibility Testing**: Verify ARIA attributes and keyboard navigation
 6. **Integration Testing**: Test with real data from API
 
 ### Files to Modify
 
-- `frontend/src/components/storage/StorageDashboard.jsx` - Add expandable row functionality, update occupancy display to handle "N/A" when capacity cannot be determined, add visual distinction for manual vs calculated capacities (per FR-062c)
-- `frontend/src/components/storage/StorageDashboard/StorageDashboard.test.jsx` - Add unit tests for capacity calculation display, "N/A" handling, and capacity type badges
-- `frontend/cypress/e2e/storageLocationExpandableRows.cy.js` - Add E2E tests (new file), add tests for capacity display (manual vs calculated, "N/A" tooltip)
-- `frontend/src/languages/en.json` - Add message keys for expanded content labels, capacity type labels ("Manual Limit", "Calculated"), and "N/A" tooltip text
-- `src/main/java/org/openelisglobal/storage/service/StorageLocationServiceImpl.java` - Add `calculateDeviceCapacity()` and `calculateShelfCapacity()` methods, update `getDevicesForAPI()` and `getShelvesForAPI()` to include `totalCapacity` and `capacityType`
+- `frontend/src/components/storage/StorageDashboard.jsx` - Add expandable row
+  functionality, update occupancy display to handle "N/A" when capacity cannot
+  be determined, add visual distinction for manual vs calculated capacities (per
+  FR-062c)
+- `frontend/src/components/storage/StorageDashboard/StorageDashboard.test.jsx` -
+  Add unit tests for capacity calculation display, "N/A" handling, and capacity
+  type badges
+- `frontend/cypress/e2e/storageLocationExpandableRows.cy.js` - Add E2E tests
+  (new file), add tests for capacity display (manual vs calculated, "N/A"
+  tooltip)
+- `frontend/src/languages/en.json` - Add message keys for expanded content
+  labels, capacity type labels ("Manual Limit", "Calculated"), and "N/A" tooltip
+  text
+- `src/main/java/org/openelisglobal/storage/service/StorageLocationServiceImpl.java` -
+  Add `calculateDeviceCapacity()` and `calculateShelfCapacity()` methods, update
+  `getDevicesForAPI()` and `getShelvesForAPI()` to include `totalCapacity` and
+  `capacityType`
 
 ### Dependencies
 
-- **Carbon Design System v1.15**: `@carbon/react` with `TableExpandHeader`, `TableExpandRow`, `TableExpandedRow`
+- **Carbon Design System v1.15**: `@carbon/react` with `TableExpandHeader`,
+  `TableExpandRow`, `TableExpandedRow`
 - **React Intl**: For internationalized field labels
 - **Existing StorageDashboard**: Modify current table implementations
 
 ### Constitution Compliance
 
-- ✅ **Carbon Design System First**: Uses Carbon DataTable expandable row pattern exclusively
+- ✅ **Carbon Design System First**: Uses Carbon DataTable expandable row
+  pattern exclusively
 - ✅ **Internationalization**: All field labels use React Intl message keys
-- ✅ **Accessibility**: Carbon components provide ARIA attributes and keyboard navigation
+- ✅ **Accessibility**: Carbon components provide ARIA attributes and keyboard
+  navigation
 - ✅ **Test Coverage**: Unit + E2E tests planned (>70% coverage goal)
 
 ### Success Criteria
 
-- [ ] Expandable rows work for all location types (Rooms, Devices, Shelves, Racks)
+- [ ] Expandable rows work for all location types (Rooms, Devices, Shelves,
+      Racks)
 - [ ] Only one row can be expanded at a time
 - [ ] Expanded content displays all required fields as key-value pairs
 - [ ] Expanded content is read-only (no edit capability)
@@ -709,19 +837,28 @@ Phase 3 learnings)
 - [ ] Accessibility verified (ARIA attributes, keyboard navigation)
 - [ ] Internationalization complete (all labels use React Intl)
 
-**Implementation Status**: [COMPLETE] - Expandable row functionality implemented for all location tables. See `tasks.md` Phase 9 for details.
+**Implementation Status**: [COMPLETE] - Expandable row functionality implemented
+for all location tables. See `tasks.md` Phase 9 for details.
 
 ---
 
 ## Phase 9.5: Capacity Calculation Logic Implementation
 
-**Objective**: Implement two-tier capacity calculation system (per FR-062a, FR-062b, FR-062c) for Devices and Shelves. Supports manual `capacity_limit` (static) or calculated capacity from children. When `capacity_limit` is NULL, calculate from child locations (sum if all children have defined capacities). If any child lacks defined capacity, parent capacity cannot be determined and UI displays "N/A" with tooltip.
+**Objective**: Implement two-tier capacity calculation system (per FR-062a,
+FR-062b, FR-062c) for Devices and Shelves. Supports manual `capacity_limit`
+(static) or calculated capacity from children. When `capacity_limit` is NULL,
+calculate from child locations (sum if all children have defined capacities). If
+any child lacks defined capacity, parent capacity cannot be determined and UI
+displays "N/A" with tooltip.
 
 **Technical Approach**:
+
 - Implement `calculateDeviceCapacity()` method in StorageLocationServiceImpl:
   - If `capacity_limit` is set, return that value (manual capacity)
-  - Otherwise, calculate from child shelves (sum if all shelves have defined capacities)
-  - Return null if any child lacks defined capacity (capacity cannot be determined)
+  - Otherwise, calculate from child shelves (sum if all shelves have defined
+    capacities)
+  - Return null if any child lacks defined capacity (capacity cannot be
+    determined)
 - Implement `calculateShelfCapacity()` method:
   - If `capacity_limit` is set, return that value
   - Otherwise, calculate from child racks (sum of rows × columns for all racks)
@@ -736,23 +873,32 @@ Phase 3 learnings)
   - Hide progress bar when capacity is undetermined
 
 **Architecture Decisions**:
+
 - Racks always use calculated capacity (rows × columns), never `capacity_limit`
-- Capacity warnings (80%, 90%, 100%) apply to both manual and calculated capacities
+- Capacity warnings (80%, 90%, 100%) apply to both manual and calculated
+  capacities
 - Visual distinction (badge/tooltip) clearly indicates capacity type to users
 
-**Dependencies**: Phase 5 (Dashboard) and Phase 8 (Location CRUD) must complete first. Can be implemented in parallel with Phase 10 (Barcode Workflow).
+**Dependencies**: Phase 5 (Dashboard) and Phase 8 (Location CRUD) must complete
+first. Can be implemented in parallel with Phase 10 (Barcode Workflow).
 
-**Implementation Status**: [COMPLETE] - Two-tier capacity calculation system implemented. See `tasks.md` Phase 9.5 for details.
+**Implementation Status**: [COMPLETE] - Two-tier capacity calculation system
+implemented. See `tasks.md` Phase 9.5 for details.
 
 ---
 
 ## Phase 10: Barcode Workflow Implementation
 
-**Note**: Research on existing OpenELIS barcode printing infrastructure completed (see `research.md` Section 9). Integration strategy documented. Some areas still need clarification during implementation (printer configuration, scanner hardware details).
+**Note**: Research on existing OpenELIS barcode printing infrastructure
+completed (see `research.md` Section 9). Integration strategy documented. Some
+areas still need clarification during implementation (printer configuration,
+scanner hardware details).
 
 ### Objective
 
-Implement comprehensive barcode workflow functionality per FR-023 through FR-027f:
+Implement comprehensive barcode workflow functionality per FR-023 through
+FR-027f:
+
 - Unified input field supporting both barcode scanning and type-ahead search
 - 5-step validation process (format, existence, hierarchy, activity, conflicts)
 - Debouncing with 500ms cooldown period
@@ -774,11 +920,13 @@ Following strict test-first development with small, manageable iterations:
 
 #### Iteration 8.1: Backend Barcode Parsing and Validation
 
-**Objective**: Implement server-side barcode parsing and 5-step validation process.
+**Objective**: Implement server-side barcode parsing and 5-step validation
+process.
 
 **Test Order** (TDD workflow):
 
 1. **Backend Unit Tests** (Write First):
+
    - Test: `BarcodeParsingServiceTest.java`
    - Validates: Parse 2-level barcode (Room-Device format)
    - Validates: Parse 3-level barcode (Room-Device-Shelf format)
@@ -789,6 +937,7 @@ Following strict test-first development with small, manageable iterations:
    - Validates: Empty/null barcode handling
 
 2. **Backend Service Tests** (Write Second):
+
    - Test: `BarcodeValidationServiceTest.java`
    - Validates: Step 1 - Format validation (parseable structure)
    - Validates: Step 2 - Location existence check (all codes exist in database)
@@ -815,15 +964,19 @@ Following strict test-first development with small, manageable iterations:
 
 #### Iteration 8.2: Frontend Unified Input Field
 
-**Objective**: Create unified input field component that accepts both barcode scan and type-ahead search.
+**Objective**: Create unified input field component that accepts both barcode
+scan and type-ahead search.
 
 **Test Order** (TDD workflow):
 
 1. **Frontend Unit Tests** (Write First):
+
    - Test: `UnifiedBarcodeInput.test.jsx`
    - Validates: Input field accepts keyboard input (manual typing)
-   - Validates: Input field accepts rapid character input (barcode scan simulation)
-   - Validates: Format-based detection (hyphens = barcode, no hyphens = type-ahead)
+   - Validates: Input field accepts rapid character input (barcode scan
+     simulation)
+   - Validates: Format-based detection (hyphens = barcode, no hyphens =
+     type-ahead)
    - Validates: Enter key triggers validation
    - Validates: Field blur triggers validation
    - Validates: Visual feedback states (ready, success, error)
@@ -865,7 +1018,8 @@ Following strict test-first development with small, manageable iterations:
 
 #### Iteration 8.4: "Last-Modified Wins" Logic
 
-**Objective**: Implement seamless switching between dropdown and input field modes.
+**Objective**: Implement seamless switching between dropdown and input field
+modes.
 
 **Test Order** (TDD workflow):
 
@@ -873,7 +1027,8 @@ Following strict test-first development with small, manageable iterations:
    - Test: `LocationSelectorModal.test.jsx` (update existing)
    - Validates: Dropdown selection then input field scan overwrites dropdowns
    - Validates: Input field scan then dropdown selection overwrites input
-   - Validates: Visual feedback shows which method is active (highlight border/icon)
+   - Validates: Visual feedback shows which method is active (highlight
+     border/icon)
    - Validates: No error when switching between methods
    - Validates: Both methods visible simultaneously
 
@@ -885,24 +1040,29 @@ Following strict test-first development with small, manageable iterations:
 
 #### Iteration 8.5: Label Management (Short Code and Printing)
 
-**Objective**: Implement label management modal with short code input and print functionality.
+**Objective**: Implement label management modal with short code input and print
+functionality.
 
 **Test Order** (TDD workflow):
 
 1. **Backend Unit Tests** (Write First):
+
    - Test: `ShortCodeValidationServiceTest.java`
-   - Validates: Short code format (max 10 chars, alphanumeric, hyphen/underscore allowed)
+   - Validates: Short code format (max 10 chars, alphanumeric, hyphen/underscore
+     allowed)
    - Validates: Auto-uppercase conversion
    - Validates: Must start with letter or number (not hyphen/underscore)
    - Validates: Uniqueness within context (device/shelf/rack)
    - Validates: Warning when changing short code (affects printed labels)
 
 2. **Backend Integration Tests** (Write Second):
+
    - Test: `LabelManagementRestControllerTest.java`
    - Validates: `PUT /rest/storage/{type}/{id}/short-code` endpoint
    - Validates: `POST /rest/storage/{type}/{id}/print-label` endpoint
    - Validates: Print history tracking (who, when, what)
-   - Validates: PDF generation with system admin settings (label size, format, layout)
+   - Validates: PDF generation with system admin settings (label size, format,
+     layout)
 
 3. **Frontend Unit Tests** (Write Third):
    - Test: `LabelManagementModal.test.jsx`
@@ -920,11 +1080,15 @@ Following strict test-first development with small, manageable iterations:
 4. Create `PrintHistoryDisplay.jsx` - Print history list component
 5. Update `LocationActionsOverflowMenu.jsx` to include "Label Management" item
 6. Create backend `ShortCodeValidationService.java`
-7. Create backend `LabelManagementService.java` - Integrate with existing BarcodeLabelMaker (see research.md Section 9)
-8. Create backend `StorageLocationLabel.java` - Extend Label class (see research.md Section 9)
-9. Create backend `LabelManagementRestController.java` - REST endpoint for printing
+7. Create backend `LabelManagementService.java` - Integrate with existing
+   BarcodeLabelMaker (see research.md Section 9)
+8. Create backend `StorageLocationLabel.java` - Extend Label class (see
+   research.md Section 9)
+9. Create backend `LabelManagementRestController.java` - REST endpoint for
+   printing
 10. Add database table for print history (Liquibase changeset)
-11. Add `STORAGE_LOCATION_BARCODE_HEIGHT` and `STORAGE_LOCATION_BARCODE_WIDTH` to ConfigurationProperties (see research.md Section 9)
+11. Add `STORAGE_LOCATION_BARCODE_HEIGHT` and `STORAGE_LOCATION_BARCODE_WIDTH`
+    to ConfigurationProperties (see research.md Section 9)
 
 #### Iteration 8.6: E2E Tests
 
@@ -956,62 +1120,98 @@ Following strict test-first development with small, manageable iterations:
 ### Files to Create/Modify
 
 **Backend**:
-- `src/main/java/org/openelisglobal/storage/service/BarcodeParsingService.java` (new)
-- `src/main/java/org/openelisglobal/storage/service/BarcodeValidationService.java` (new)
-- `src/main/java/org/openelisglobal/storage/service/ShortCodeValidationService.java` (new)
-- `src/main/java/org/openelisglobal/storage/service/LabelManagementService.java` (new)
-- `src/main/java/org/openelisglobal/storage/controller/BarcodeValidationRestController.java` (new)
-- `src/main/java/org/openelisglobal/storage/controller/LabelManagementRestController.java` (new)
-- `src/test/java/org/openelisglobal/storage/service/BarcodeParsingServiceTest.java` (new)
-- `src/test/java/org/openelisglobal/storage/service/BarcodeValidationServiceTest.java` (new)
-- `src/test/java/org/openelisglobal/storage/service/ShortCodeValidationServiceTest.java` (new)
-- `src/test/java/org/openelisglobal/storage/controller/BarcodeValidationRestControllerTest.java` (new)
-- `src/test/java/org/openelisglobal/storage/controller/LabelManagementRestControllerTest.java` (new)
-- `src/main/resources/liquibase/storage/004-create-print-history-table.xml` (new)
+
+- `src/main/java/org/openelisglobal/storage/service/BarcodeParsingService.java`
+  (new)
+- `src/main/java/org/openelisglobal/storage/service/BarcodeValidationService.java`
+  (new)
+- `src/main/java/org/openelisglobal/storage/service/ShortCodeValidationService.java`
+  (new)
+- `src/main/java/org/openelisglobal/storage/service/LabelManagementService.java`
+  (new)
+- `src/main/java/org/openelisglobal/storage/controller/BarcodeValidationRestController.java`
+  (new)
+- `src/main/java/org/openelisglobal/storage/controller/LabelManagementRestController.java`
+  (new)
+- `src/test/java/org/openelisglobal/storage/service/BarcodeParsingServiceTest.java`
+  (new)
+- `src/test/java/org/openelisglobal/storage/service/BarcodeValidationServiceTest.java`
+  (new)
+- `src/test/java/org/openelisglobal/storage/service/ShortCodeValidationServiceTest.java`
+  (new)
+- `src/test/java/org/openelisglobal/storage/controller/BarcodeValidationRestControllerTest.java`
+  (new)
+- `src/test/java/org/openelisglobal/storage/controller/LabelManagementRestControllerTest.java`
+  (new)
+- `src/main/resources/liquibase/storage/004-create-print-history-table.xml`
+  (new)
 
 **Frontend**:
-- `frontend/src/components/storage/StorageLocationSelector/UnifiedBarcodeInput.jsx` (new)
-- `frontend/src/components/storage/StorageLocationSelector/BarcodeValidationService.js` (new)
-- `frontend/src/components/storage/StorageLocationSelector/BarcodeDebounceHook.js` (new)
-- `frontend/src/components/storage/StorageLocationSelector/BarcodeVisualFeedback.jsx` (new)
-- `frontend/src/components/storage/LocationManagement/LabelManagementModal.jsx` (new)
+
+- `frontend/src/components/storage/StorageLocationSelector/UnifiedBarcodeInput.jsx`
+  (new)
+- `frontend/src/components/storage/StorageLocationSelector/BarcodeValidationService.js`
+  (new)
+- `frontend/src/components/storage/StorageLocationSelector/BarcodeDebounceHook.js`
+  (new)
+- `frontend/src/components/storage/StorageLocationSelector/BarcodeVisualFeedback.jsx`
+  (new)
+- `frontend/src/components/storage/LocationManagement/LabelManagementModal.jsx`
+  (new)
 - `frontend/src/components/storage/LocationManagement/ShortCodeInput.jsx` (new)
-- `frontend/src/components/storage/LocationManagement/PrintLabelButton.jsx` (new)
-- `frontend/src/components/storage/LocationManagement/PrintHistoryDisplay.jsx` (new)
-- `frontend/src/components/storage/StorageLocationSelector/UnifiedBarcodeInput.test.jsx` (new)
-- `frontend/src/components/storage/LocationManagement/LabelManagementModal.test.jsx` (new)
-- `frontend/src/components/storage/StorageLocationSelector/LocationSelectorModal.jsx` (modify)
-- `frontend/src/components/storage/LocationManagement/LocationActionsOverflowMenu.jsx` (modify)
+- `frontend/src/components/storage/LocationManagement/PrintLabelButton.jsx`
+  (new)
+- `frontend/src/components/storage/LocationManagement/PrintHistoryDisplay.jsx`
+  (new)
+- `frontend/src/components/storage/StorageLocationSelector/UnifiedBarcodeInput.test.jsx`
+  (new)
+- `frontend/src/components/storage/LocationManagement/LabelManagementModal.test.jsx`
+  (new)
+- `frontend/src/components/storage/StorageLocationSelector/LocationSelectorModal.jsx`
+  (modify)
+- `frontend/src/components/storage/LocationManagement/LocationActionsOverflowMenu.jsx`
+  (modify)
 - `frontend/cypress/e2e/barcodeWorkflow.cy.js` (new)
 
 **API Contracts**:
-- `specs/001-sample-storage/contracts/storage-api.json` (update with barcode endpoints)
+
+- `specs/001-sample-storage/contracts/storage-api.json` (update with barcode
+  endpoints)
 
 **Internationalization**:
+
 - `frontend/src/languages/en.json` (add barcode-related message keys)
 - `frontend/src/languages/fr.json` (add barcode-related message keys)
 - `frontend/src/languages/sw.json` (add barcode-related message keys)
 
 ### Dependencies
 
-- **Carbon Design System v1.15**: `@carbon/react` TextInput, Modal, Button components
+- **Carbon Design System v1.15**: `@carbon/react` TextInput, Modal, Button
+  components
 - **React Intl**: For internationalized error messages and labels
-- **Existing OpenELIS utilities**: `getFromOpenElisServer`, `postToOpenElisServer`
-- **PDF Generation**: Reuse existing iTextPDF via BarcodeLabelMaker (see research.md Section 9)
+- **Existing OpenELIS utilities**: `getFromOpenElisServer`,
+  `postToOpenElisServer`
+- **PDF Generation**: Reuse existing iTextPDF via BarcodeLabelMaker (see
+  research.md Section 9)
 
 ### Constitution Compliance
 
-- ✅ **Carbon Design System First**: Uses Carbon TextInput, Modal, Button exclusively
-- ✅ **Internationalization**: All barcode-related strings use React Intl message keys
-- ✅ **Layered Architecture**: Backend follows 5-layer pattern (Service → Controller)
-- ✅ **Test Coverage**: Unit + integration + E2E tests planned (>70% coverage goal)
+- ✅ **Carbon Design System First**: Uses Carbon TextInput, Modal, Button
+  exclusively
+- ✅ **Internationalization**: All barcode-related strings use React Intl
+  message keys
+- ✅ **Layered Architecture**: Backend follows 5-layer pattern (Service →
+  Controller)
+- ✅ **Test Coverage**: Unit + integration + E2E tests planned (>70% coverage
+  goal)
 - ✅ **Schema Management**: Print history table via Liquibase changeset
 - ✅ **Security & Compliance**: Input validation, audit trail for print history
 
 ### Success Criteria
 
 - [ ] Unified input field accepts both barcode scan and type-ahead search
-- [ ] 5-step validation process works correctly for all barcode formats (2-5 levels)
+- [ ] 5-step validation process works correctly for all barcode formats (2-5
+      levels)
 - [ ] Debouncing prevents accidental double-scans (500ms cooldown)
 - [ ] Visual feedback displays correctly (ready, success, error states)
 - [ ] "Last-modified wins" logic works when switching between methods
@@ -1024,34 +1224,47 @@ Following strict test-first development with small, manageable iterations:
 - [ ] All E2E tests pass
 - [ ] Internationalization complete (en, fr, sw)
 
-**Implementation Status**: [IN PROGRESS] - Backend barcode parsing and validation complete (Iteration 9.1). Frontend unified input field (Iteration 9.2) and debouncing (Iteration 9.3) in progress. See `tasks.md` Phase 10 for details.
+**Implementation Status**: [IN PROGRESS] - Backend barcode parsing and
+validation complete (Iteration 9.1). Frontend unified input field (Iteration
+9.2) and debouncing (Iteration 9.3) in progress. See `tasks.md` Phase 10 for
+details.
 
 ---
 
 ## Phase 11: Polish & Cross-Cutting Concerns
 
-**Objective**: Final integration, optimization, and validation across all user stories.
+**Objective**: Final integration, optimization, and validation across all user
+stories.
 
 **Technical Approach**:
-- Database indexes verification: Run EXPLAIN ANALYZE on common queries (sample search by location, hierarchical path lookups)
-- Internationalization completeness audit: Verify all UI components use React Intl (no hardcoded English strings)
+
+- Database indexes verification: Run EXPLAIN ANALYZE on common queries (sample
+  search by location, hierarchical path lookups)
+- Internationalization completeness audit: Verify all UI components use React
+  Intl (no hardcoded English strings)
 - Code formatting: Backend `mvn spotless:apply`, Frontend `npm run format`
 - Test coverage report: JaCoCo for backend (>70%), Jest for frontend
-- FHIR validation end-to-end: Query FHIR server, verify hierarchy complete, verify immediate sync working
+- FHIR validation end-to-end: Query FHIR server, verify hierarchy complete,
+  verify immediate sync working
 - E2E test refactoring per Constitution V.5:
   - Update `cypress.config.js` (video: false, screenshotOnRunFailure: true)
-  - Refactor tests to use intercept timing, retry-ability, element readiness checks
+  - Refactor tests to use intercept timing, retry-ability, element readiness
+    checks
   - Remove arbitrary waits, use proper Cypress retry-ability
   - Run tests individually during development (not full suite)
   - Document post-run review process (console logs and screenshots)
-- Documentation updates: Add missing details to quickstart.md based on implementation learnings
+- Documentation updates: Add missing details to quickstart.md based on
+  implementation learnings
 
 **Architecture Decisions**:
-- E2E tests follow Constitution V.5 best practices (individual execution, console log review)
+
+- E2E tests follow Constitution V.5 best practices (individual execution,
+  console log review)
 - Full test suite runs only in CI/CD pipeline
 - Code formatting enforced via pre-commit hooks
 
-**Dependencies**: Requires all feature phases (5, 6, 7, 8, 9, 9.5, 10) to complete first.
+**Dependencies**: Requires all feature phases (5, 6, 7, 8, 9, 9.5, 10) to
+complete first.
 
 **Implementation Status**: [NOT STARTED] - See `tasks.md` Phase 11 for details.
 
@@ -1059,20 +1272,31 @@ Following strict test-first development with small, manageable iterations:
 
 ## Phase 12: Constitution Compliance Verification
 
-**Objective**: Verify feature adheres to all applicable constitution principles before deployment.
+**Objective**: Verify feature adheres to all applicable constitution principles
+before deployment.
 
 **Technical Approach**:
-- Configuration-Driven: Verify no country-specific code branches, confirm position coordinates remain free-text
-- Carbon Design System: Audit all UI components, confirm @carbon/react used exclusively (NO Bootstrap/Tailwind)
-- FHIR/IHE Compliance: Validate FHIR Location resources against R4 profiles, verify IHE mCSD hierarchical queries work
-- Layered Architecture: Code review storage module, verify 5-layer pattern followed (NO DAO calls from controllers, NO business logic in DAOs, NO class-level variables in controllers)
+
+- Configuration-Driven: Verify no country-specific code branches, confirm
+  position coordinates remain free-text
+- Carbon Design System: Audit all UI components, confirm @carbon/react used
+  exclusively (NO Bootstrap/Tailwind)
+- FHIR/IHE Compliance: Validate FHIR Location resources against R4 profiles,
+  verify IHE mCSD hierarchical queries work
+- Layered Architecture: Code review storage module, verify 5-layer pattern
+  followed (NO DAO calls from controllers, NO business logic in DAOs, NO
+  class-level variables in controllers)
 - Test Coverage: Run coverage reports, confirm >70% for new storage code
-- Schema Management: Verify ALL database changes used Liquibase changesets (NO direct SQL)
+- Schema Management: Verify ALL database changes used Liquibase changesets (NO
+  direct SQL)
 - Internationalization: Grep for hardcoded strings, verify all use React Intl
-- Security & Compliance: Verify audit trail (sys_user_id + lastupdated), verify input validation
-- Cypress E2E Testing (Constitution V.5): Verify E2E tests follow Constitution V.5 requirements
+- Security & Compliance: Verify audit trail (sys_user_id + lastupdated), verify
+  input validation
+- Cypress E2E Testing (Constitution V.5): Verify E2E tests follow Constitution
+  V.5 requirements
 
 **Verification Commands**:
+
 ```bash
 # Backend: Code formatting + build + tests
 mvn spotless:check && mvn clean install
@@ -1088,7 +1312,8 @@ mvn verify  # JaCoCo report in target/site/jacoco/
 cd frontend && npm test -- --coverage  # Jest coverage
 ```
 
-**Dependencies**: Phase 11 (Polish) must complete first. This is the FINAL phase before deployment.
+**Dependencies**: Phase 11 (Polish) must complete first. This is the FINAL phase
+before deployment.
 
 **Implementation Status**: [NOT STARTED] - See `tasks.md` Phase 12 for details.
 
@@ -1136,12 +1361,17 @@ public String buildHierarchicalPath(StoragePosition position) {
 
 **Capacity Determination Logic (per FR-062a, FR-062b)**:
 
-- **Racks**: Capacity is ALWAYS calculated as `rows × columns` (per FR-017). If rows=0 OR columns=0, capacity=0 (no grid, rack-level assignment only)
+- **Racks**: Capacity is ALWAYS calculated as `rows × columns` (per FR-017). If
+  rows=0 OR columns=0, capacity=0 (no grid, rack-level assignment only)
 - **Devices and Shelves**: Two-tier system:
-  - If `capacity_limit` is set (static/manual limit), use that value as total capacity
+  - If `capacity_limit` is set (static/manual limit), use that value as total
+    capacity
   - If `capacity_limit` is NULL, calculate capacity from child locations:
-    - If ALL child locations have defined capacities (either static `capacity_limit` set OR calculated capacity from their own children), sum those capacities
-    - If ANY child location lacks a defined capacity, parent capacity cannot be determined (return null, UI shows "N/A")
+    - If ALL child locations have defined capacities (either static
+      `capacity_limit` set OR calculated capacity from their own children), sum
+      those capacities
+    - If ANY child location lacks a defined capacity, parent capacity cannot be
+      determined (return null, UI shows "N/A")
 
 ```java
 // In StorageLocationService
@@ -1154,13 +1384,13 @@ public Integer calculateDeviceCapacity(StorageDevice device) {
     if (device.getCapacityLimit() != null && device.getCapacityLimit() > 0) {
         return device.getCapacityLimit();
     }
-    
+
     // Tier 2: Calculate from child shelves
     List<StorageShelf> shelves = storageShelfDAO.findByParentDeviceId(device.getId());
     if (shelves == null || shelves.isEmpty()) {
         return null; // No children, cannot determine capacity
     }
-    
+
     int totalCapacity = 0;
     for (StorageShelf shelf : shelves) {
         Integer shelfCapacity = calculateShelfCapacity(shelf);
@@ -1170,7 +1400,7 @@ public Integer calculateDeviceCapacity(StorageDevice device) {
         }
         totalCapacity += shelfCapacity;
     }
-    
+
     return totalCapacity;
 }
 
@@ -1183,20 +1413,20 @@ public Integer calculateShelfCapacity(StorageShelf shelf) {
     if (shelf.getCapacityLimit() != null && shelf.getCapacityLimit() > 0) {
         return shelf.getCapacityLimit();
     }
-    
+
     // Tier 2: Calculate from child racks (racks always have defined capacity)
     List<StorageRack> racks = storageRackDAO.findByParentShelfId(shelf.getId());
     if (racks == null || racks.isEmpty()) {
         return null; // No children, cannot determine capacity
     }
-    
+
     int totalCapacity = 0;
     for (StorageRack rack : racks) {
         // Racks always have defined capacity (rows × columns)
         int rackCapacity = rack.getRows() * rack.getColumns();
         totalCapacity += rackCapacity;
     }
-    
+
     return totalCapacity;
 }
 
@@ -1243,10 +1473,10 @@ public CapacityWarning calculateCapacity(StorageDevice device) {
     if (totalCapacity == null) {
         return null; // Capacity cannot be determined - UI will show "N/A"
     }
-    
+
     int occupied = storageLocationService.countOccupiedInDevice(device.getId());
     int percentage = (occupied * 100) / totalCapacity;
-    
+
     // Only show warnings if capacity is defined (per FR-036)
     String warningMessage = null;
     if (percentage >= 100) {
@@ -1259,7 +1489,7 @@ public CapacityWarning calculateCapacity(StorageDevice device) {
         warningMessage = String.format("Device %s is %d%% full. Consider using alternative storage.",
             device.getName(), percentage);
     }
-    
+
     return new CapacityWarning(occupied, totalCapacity, percentage, warningMessage);
 }
 
@@ -1268,10 +1498,10 @@ public CapacityWarning calculateCapacity(StorageShelf shelf) {
     if (totalCapacity == null) {
         return null; // Capacity cannot be determined - UI will show "N/A"
     }
-    
+
     int occupied = storageLocationService.countOccupiedInShelf(shelf.getId());
     int percentage = (occupied * 100) / totalCapacity;
-    
+
     String warningMessage = null;
     if (percentage >= 100) {
         warningMessage = String.format("Shelf %s is %d%% full. Consider using alternative storage.",
@@ -1283,7 +1513,7 @@ public CapacityWarning calculateCapacity(StorageShelf shelf) {
         warningMessage = String.format("Shelf %s is %d%% full. Consider using alternative storage.",
             shelf.getLabel(), percentage);
     }
-    
+
     return new CapacityWarning(occupied, totalCapacity, percentage, warningMessage);
 }
 ```
@@ -1448,21 +1678,31 @@ Specimen entity
 
 ### SampleItem Entity Integration
 
-**Storage Granularity**: Storage tracking operates at the **SampleItem level** (physical specimens), not at the Sample level (orders). Each SampleItem can be stored independently, even when multiple SampleItems belong to the same parent Sample.
+**Storage Granularity**: Storage tracking operates at the **SampleItem level**
+(physical specimens), not at the Sample level (orders). Each SampleItem can be
+stored independently, even when multiple SampleItems belong to the same parent
+Sample.
 
-**Existing SampleItem Entity**: `org.openelisglobal.sampleitem.valueholder.SampleItem`
+**Existing SampleItem Entity**:
+`org.openelisglobal.sampleitem.valueholder.SampleItem`
 
 - **No modifications required** - SampleItem entity remains unchanged
-- **Integration via junction table**: SampleStorageAssignment links SampleItem to storage location via polymorphic `location_id` + `location_type` (device/shelf/rack)
+- **Integration via junction table**: SampleStorageAssignment links SampleItem
+  to storage location via polymorphic `location_id` + `location_type`
+  (device/shelf/rack)
 - **Foreign key**: `SampleStorageAssignment.sample_item_id` → `SampleItem.id`
 - **Query pattern**:
   `JOIN sample_storage_assignment ON sample_item.id = sample_storage_assignment.sample_item_id`
-- **Parent Sample context**: Dashboard and assignment workflows display SampleItem ID/External ID as primary identifier, with parent Sample accession number as secondary context for sorting/grouping
+- **Parent Sample context**: Dashboard and assignment workflows display
+  SampleItem ID/External ID as primary identifier, with parent Sample accession
+  number as secondary context for sorting/grouping
 
 **FHIR Integration**:
 
-- Each SampleItem's storage location maps to its corresponding FHIR Specimen resource `container` reference
-- Specimen.container.extension[storage-location] contains Location reference for the SampleItem's current storage location
+- Each SampleItem's storage location maps to its corresponding FHIR Specimen
+  resource `container` reference
+- Specimen.container.extension[storage-location] contains Location reference for
+  the SampleItem's current storage location
 
 **Benefits**:
 
@@ -1471,6 +1711,7 @@ Specimen entity
 - ✅ Supports independent storage of multiple SampleItems from same Sample
 - ✅ Easy to query sample items by location (JOIN on assignment table)
 - ✅ Easy to query location for a sample item (JOIN on assignment table)
-- ✅ Dashboard and search support both SampleItem ID/External ID and Sample accession number
+- ✅ Dashboard and search support both SampleItem ID/External ID and Sample
+  accession number
 
 ### Task 1.4: Generate Quickstart (Test-First Development Guide)

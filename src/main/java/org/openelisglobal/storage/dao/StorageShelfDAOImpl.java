@@ -73,7 +73,8 @@ public class StorageShelfDAOImpl extends BaseDAOImpl<StorageShelf, Integer> impl
 
     @Override
     @Transactional(readOnly = true)
-    public StorageShelf findByLabelAndParentDevice(String label, org.openelisglobal.storage.valueholder.StorageDevice parentDevice) {
+    public StorageShelf findByLabelAndParentDevice(String label,
+            org.openelisglobal.storage.valueholder.StorageDevice parentDevice) {
         try {
             if (parentDevice == null) {
                 return null;

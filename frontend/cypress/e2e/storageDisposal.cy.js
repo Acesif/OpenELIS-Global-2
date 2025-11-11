@@ -29,23 +29,27 @@ describe("Dispose Sample Modal - UI Components (P2B)", function () {
   before(function () {
     // Navigate to Storage Samples tab ONCE for all tests
     cy.visit("/Storage/samples");
-    
+
     // Set up intercepts for API calls
     cy.intercept("GET", "**/rest/storage/metrics**").as("getMetrics");
     cy.intercept("GET", "**/rest/storage/sample-items**").as("getSamples");
     cy.intercept("GET", "**/rest/storage/samples/search**").as("searchSamples");
-    
+
     // Wait for dashboard to load
     cy.get(".storage-dashboard", { timeout: 10000 }).should("be.visible");
-    
+
     // Wait for samples to load
-    cy.wait("@getSamples", { timeout: 10000 }).its("response.statusCode").should("eq", 200);
-    
+    cy.wait("@getSamples", { timeout: 10000 })
+      .its("response.statusCode")
+      .should("eq", 200);
+
     // Verify we're on the Samples tab (URL should be /Storage/samples)
     cy.url().should("include", "/Storage/samples");
-    
+
     // Wait for sample list to be visible (confirms we're on Samples tab)
-    cy.get('[data-testid="sample-list"]', { timeout: 10000 }).should("be.visible");
+    cy.get('[data-testid="sample-list"]', { timeout: 10000 }).should(
+      "be.visible",
+    );
   });
 
   beforeEach(function () {
@@ -53,7 +57,7 @@ describe("Dispose Sample Modal - UI Components (P2B)", function () {
     // Navigation already done in before() - we're already on Storage Samples tab
   });
 
-    it("Should display red warning alert at top of modal", function () {
+  it("Should display red warning alert at top of modal", function () {
     cy.get('[data-testid="sample-list"]', { timeout: 10000 }).should(
       "be.visible",
     );
@@ -76,9 +80,7 @@ describe("Dispose Sample Modal - UI Components (P2B)", function () {
 
       // Wait for overflow menu to appear - Carbon OverflowMenu renders items in a menu
       // Try finding by text first, then by test ID
-      cy.contains("Dispose", { timeout: 5000 })
-        .should("be.visible")
-        .click();
+      cy.contains("Dispose", { timeout: 5000 }).should("be.visible").click();
 
       // Verify modal opens - wait for modal content to exist and be accessible
       // Carbon ComposedModal may take a moment for React state update + CSS transition
@@ -110,9 +112,7 @@ describe("Dispose Sample Modal - UI Components (P2B)", function () {
         });
 
       // Wait for overflow menu to appear - Carbon OverflowMenu renders items in a menu
-      cy.contains("Dispose", { timeout: 5000 })
-        .should("be.visible")
-        .click();
+      cy.contains("Dispose", { timeout: 5000 }).should("be.visible").click();
 
       // Wait for modal content to exist (check for confirmation checkbox)
       cy.get('[id="disposal-confirmation"]', { timeout: 10000 })
@@ -147,9 +147,7 @@ describe("Dispose Sample Modal - UI Components (P2B)", function () {
         });
 
       // Wait for overflow menu to appear - Carbon OverflowMenu renders items in a menu
-      cy.contains("Dispose", { timeout: 5000 })
-        .should("be.visible")
-        .click();
+      cy.contains("Dispose", { timeout: 5000 }).should("be.visible").click();
 
       // Wait for modal content to exist (check for confirmation checkbox)
       // Note: Using force: true for check() because checkbox may not be "visible" due to CSS transitions
@@ -164,9 +162,13 @@ describe("Dispose Sample Modal - UI Components (P2B)", function () {
         .should("have.attr", "disabled");
 
       // Select disposal reason - Carbon Dropdown: click the trigger button
-      cy.get('[data-testid="dispose-modal"] [id="disposal-reason"] button').first().click({ force: true });
-      cy.get('[role="listbox"] [role="option"]').then($options => {
-        cy.wrap(Array.from($options).find(el => el.textContent.includes("Expired"))).click({ force: true });
+      cy.get('[data-testid="dispose-modal"] [id="disposal-reason"] button')
+        .first()
+        .click({ force: true });
+      cy.get('[role="listbox"] [role="option"]').then(($options) => {
+        cy.wrap(
+          Array.from($options).find((el) => el.textContent.includes("Expired")),
+        ).click({ force: true });
       });
       cy.get('[id="disposal-reason"]').should("contain.text", "Expired");
 
@@ -176,11 +178,20 @@ describe("Dispose Sample Modal - UI Components (P2B)", function () {
         .should("have.attr", "disabled");
 
       // Select disposal method - Carbon Dropdown: click the trigger button
-      cy.get('[data-testid="dispose-modal"] [id="disposal-method"] button').first().click({ force: true });
-      cy.get('[role="listbox"] [role="option"]').then($options => {
-        cy.wrap(Array.from($options).find(el => el.textContent.includes("Biohazard Autoclave"))).click({ force: true });
+      cy.get('[data-testid="dispose-modal"] [id="disposal-method"] button')
+        .first()
+        .click({ force: true });
+      cy.get('[role="listbox"] [role="option"]').then(($options) => {
+        cy.wrap(
+          Array.from($options).find((el) =>
+            el.textContent.includes("Biohazard Autoclave"),
+          ),
+        ).click({ force: true });
       });
-      cy.get('[id="disposal-method"]').should("contain.text", "Biohazard Autoclave");
+      cy.get('[id="disposal-method"]').should(
+        "contain.text",
+        "Biohazard Autoclave",
+      );
 
       // Now button should be enabled (if validation is implemented)
       // Note: This test verifies UI structure, actual backend validation may differ
@@ -209,9 +220,7 @@ describe("Dispose Sample Modal - UI Components (P2B)", function () {
         });
 
       // Wait for overflow menu to appear - Carbon OverflowMenu renders items in a menu
-      cy.contains("Dispose", { timeout: 5000 })
-        .should("be.visible")
-        .click();
+      cy.contains("Dispose", { timeout: 5000 }).should("be.visible").click();
 
       // Wait for modal content to exist (check for confirm button)
       cy.contains("Confirm Disposal", { timeout: 10000 })

@@ -17,9 +17,9 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.web.servlet.MvcResult;
 
 /**
- * Integration test for BarcodeValidationRestController
- * Following TDD: Write tests BEFORE implementation
- * Tests barcode validation REST endpoint per FR-024 through FR-027
+ * Integration test for BarcodeValidationRestController Following TDD: Write
+ * tests BEFORE implementation Tests barcode validation REST endpoint per FR-024
+ * through FR-027
  *
  * Following OpenELIS test patterns: extends BaseWebContextSensitiveTest to load
  * full Spring context and hit real database with proper transaction management.
@@ -54,40 +54,40 @@ public class BarcodeValidationRestControllerTest extends BaseWebContextSensitive
     }
 
     /**
-     * Create a complete storage hierarchy for barcode validation testing
-     * Creates: Room -> Device -> Shelf -> Rack -> Position
-     * Uses clean codes without internal hyphens for barcode compatibility
+     * Create a complete storage hierarchy for barcode validation testing Creates:
+     * Room -> Device -> Shelf -> Rack -> Position Uses clean codes without internal
+     * hyphens for barcode compatibility
      */
     private void createTestStorageHierarchy() throws Exception {
         // Create room - use simple code without hyphens
         jdbcTemplate.update(
-            "INSERT INTO storage_room (id, name, code, active, sys_user_id, last_updated, fhir_uuid) " +
-            "VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP, gen_random_uuid())",
-            baseId, "Barcode Test Room", "TESTROOM" + timestamp, true, 1);
+                "INSERT INTO storage_room (id, name, code, active, sys_user_id, last_updated, fhir_uuid) "
+                        + "VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP, gen_random_uuid())",
+                baseId, "Barcode Test Room", "TESTROOM" + timestamp, true, 1);
 
         // Create device - use simple code without hyphens
         jdbcTemplate.update(
-            "INSERT INTO storage_device (id, name, code, type, parent_room_id, active, sys_user_id, last_updated, fhir_uuid) " +
-            "VALUES (?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, gen_random_uuid())",
-            baseId + 1, "Barcode Test Freezer", "TESTDEV" + timestamp, "freezer", baseId, true, 1);
+                "INSERT INTO storage_device (id, name, code, type, parent_room_id, active, sys_user_id, last_updated, fhir_uuid) "
+                        + "VALUES (?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, gen_random_uuid())",
+                baseId + 1, "Barcode Test Freezer", "TESTDEV" + timestamp, "freezer", baseId, true, 1);
 
         // Create shelf - use simple label without hyphens
         jdbcTemplate.update(
-            "INSERT INTO storage_shelf (id, label, parent_device_id, active, sys_user_id, last_updated, fhir_uuid) " +
-            "VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP, gen_random_uuid())",
-            baseId + 2, "SHELF" + timestamp, baseId + 1, true, 1);
+                "INSERT INTO storage_shelf (id, label, parent_device_id, active, sys_user_id, last_updated, fhir_uuid) "
+                        + "VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP, gen_random_uuid())",
+                baseId + 2, "SHELF" + timestamp, baseId + 1, true, 1);
 
         // Create rack - use simple label without hyphens
         jdbcTemplate.update(
-            "INSERT INTO storage_rack (id, label, parent_shelf_id, active, sys_user_id, last_updated, fhir_uuid) " +
-            "VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP, gen_random_uuid())",
-            baseId + 3, "RACK" + timestamp, baseId + 2, true, 1);
+                "INSERT INTO storage_rack (id, label, parent_shelf_id, active, sys_user_id, last_updated, fhir_uuid) "
+                        + "VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP, gen_random_uuid())",
+                baseId + 3, "RACK" + timestamp, baseId + 2, true, 1);
 
         // Create position (Note: coordinate is singular, no active column)
         jdbcTemplate.update(
-            "INSERT INTO storage_position (id, coordinate, parent_rack_id, parent_shelf_id, parent_device_id, sys_user_id, last_updated, fhir_uuid) " +
-            "VALUES (?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, gen_random_uuid())",
-            baseId + 4, "A1", baseId + 3, baseId + 2, baseId + 1, false, 1);
+                "INSERT INTO storage_position (id, coordinate, parent_rack_id, parent_shelf_id, parent_device_id, sys_user_id, last_updated, fhir_uuid) "
+                        + "VALUES (?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, gen_random_uuid())",
+                baseId + 4, "A1", baseId + 3, baseId + 2, baseId + 1, false, 1);
     }
 
     /**
@@ -117,11 +117,9 @@ public class BarcodeValidationRestControllerTest extends BaseWebContextSensitive
         String requestBody = String.format("{\"barcode\": \"%s\"}", validBarcode);
 
         // Act
-        MvcResult result = mockMvc.perform(post("/rest/storage/barcode/validate")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(requestBody))
-                .andExpect(status().isOk())
-                .andReturn();
+        MvcResult result = mockMvc.perform(
+                post("/rest/storage/barcode/validate").contentType(MediaType.APPLICATION_JSON).content(requestBody))
+                .andExpect(status().isOk()).andReturn();
 
         // Assert
         String responseJson = result.getResponse().getContentAsString();
@@ -135,8 +133,8 @@ public class BarcodeValidationRestControllerTest extends BaseWebContextSensitive
     }
 
     /**
-     * Test request/response format matches API contract
-     * Expected: Response includes all required fields
+     * Test request/response format matches API contract Expected: Response includes
+     * all required fields
      */
     @Test
     public void testRequestResponseFormatMatchesContract() throws Exception {
@@ -145,11 +143,9 @@ public class BarcodeValidationRestControllerTest extends BaseWebContextSensitive
         String requestBody = String.format("{\"barcode\": \"%s\"}", validBarcode);
 
         // Act
-        MvcResult result = mockMvc.perform(post("/rest/storage/barcode/validate")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(requestBody))
-                .andExpect(status().isOk())
-                .andReturn();
+        MvcResult result = mockMvc.perform(
+                post("/rest/storage/barcode/validate").contentType(MediaType.APPLICATION_JSON).content(requestBody))
+                .andExpect(status().isOk()).andReturn();
 
         // Assert
         String responseJson = result.getResponse().getContentAsString();
@@ -164,16 +160,16 @@ public class BarcodeValidationRestControllerTest extends BaseWebContextSensitive
         // For valid barcodes, failedStep and errorMessage should be null
         if (response.get("valid").asBoolean()) {
             assertTrue("Response should have 'failedStep' field (null for valid)",
-                response.has("failedStep") || !response.has("failedStep"));
+                    response.has("failedStep") || !response.has("failedStep"));
             assertTrue("Response should have 'errorMessage' field (null for valid)",
-                response.has("errorMessage") || !response.has("errorMessage"));
+                    response.has("errorMessage") || !response.has("errorMessage"));
         }
     }
 
     /**
-     * Test database persistence after validation
-     * Note: Validation endpoint should NOT persist anything, it's read-only
-     * Expected: No database changes after validation
+     * Test database persistence after validation Note: Validation endpoint should
+     * NOT persist anything, it's read-only Expected: No database changes after
+     * validation
      */
     @Test
     public void testDatabasePersistenceAfterValidation() throws Exception {
@@ -182,24 +178,23 @@ public class BarcodeValidationRestControllerTest extends BaseWebContextSensitive
         String requestBody = String.format("{\"barcode\": \"%s\"}", validBarcode);
 
         // Get initial counts
-        int initialRoomCount = jdbcTemplate.queryForObject(
-            "SELECT COUNT(*) FROM storage_room WHERE id >= 1000", Integer.class);
+        int initialRoomCount = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM storage_room WHERE id >= 1000",
+                Integer.class);
 
         // Act
-        mockMvc.perform(post("/rest/storage/barcode/validate")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(requestBody))
+        mockMvc.perform(
+                post("/rest/storage/barcode/validate").contentType(MediaType.APPLICATION_JSON).content(requestBody))
                 .andExpect(status().isOk());
 
         // Assert - No new records created
-        int finalRoomCount = jdbcTemplate.queryForObject(
-            "SELECT COUNT(*) FROM storage_room WHERE id >= 1000", Integer.class);
+        int finalRoomCount = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM storage_room WHERE id >= 1000",
+                Integer.class);
         assertEquals("Validation should not create new records", initialRoomCount, finalRoomCount);
     }
 
     /**
-     * Test error response 400 Bad Request for invalid barcode format
-     * Expected: Returns 400 with error details
+     * Test error response 400 Bad Request for invalid barcode format Expected:
+     * Returns 400 with error details
      */
     @Test
     public void testErrorResponse400() throws Exception {
@@ -208,9 +203,9 @@ public class BarcodeValidationRestControllerTest extends BaseWebContextSensitive
         String requestBody = String.format("{\"barcode\": \"%s\"}", invalidBarcode);
 
         // Act
-        MvcResult result = mockMvc.perform(post("/rest/storage/barcode/validate")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(requestBody))
+        MvcResult result = mockMvc
+                .perform(post("/rest/storage/barcode/validate").contentType(MediaType.APPLICATION_JSON)
+                        .content(requestBody))
                 .andExpect(status().isOk()) // Validation errors return 200 with valid=false
                 .andReturn();
 
@@ -222,13 +217,13 @@ public class BarcodeValidationRestControllerTest extends BaseWebContextSensitive
         assertTrue("Response should have 'errorMessage' field", response.has("errorMessage"));
         assertNotNull("Error message should not be null", response.get("errorMessage").asText());
         assertTrue("Response should have 'failedStep' field", response.has("failedStep"));
-        assertEquals("Failed step should be FORMAT_VALIDATION",
-            "FORMAT_VALIDATION", response.get("failedStep").asText());
+        assertEquals("Failed step should be FORMAT_VALIDATION", "FORMAT_VALIDATION",
+                response.get("failedStep").asText());
     }
 
     /**
-     * Test error response 404 for non-existent location
-     * Expected: Returns 200 with valid=false and appropriate error
+     * Test error response 404 for non-existent location Expected: Returns 200 with
+     * valid=false and appropriate error
      */
     @Test
     public void testErrorResponse404() throws Exception {
@@ -237,9 +232,9 @@ public class BarcodeValidationRestControllerTest extends BaseWebContextSensitive
         String requestBody = String.format("{\"barcode\": \"%s\"}", nonExistentBarcode);
 
         // Act
-        MvcResult result = mockMvc.perform(post("/rest/storage/barcode/validate")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(requestBody))
+        MvcResult result = mockMvc
+                .perform(post("/rest/storage/barcode/validate").contentType(MediaType.APPLICATION_JSON)
+                        .content(requestBody))
                 .andExpect(status().isOk()) // Validation errors return 200 with valid=false
                 .andReturn();
 
@@ -251,26 +246,24 @@ public class BarcodeValidationRestControllerTest extends BaseWebContextSensitive
         assertTrue("Response should have 'errorMessage' field", response.has("errorMessage"));
         assertNotNull("Error message should not be null", response.get("errorMessage").asText());
         assertTrue("Error message should mention 'not found'",
-            response.get("errorMessage").asText().toLowerCase().contains("not found"));
+                response.get("errorMessage").asText().toLowerCase().contains("not found"));
     }
 
     /**
-     * Test validation with complete 5-level barcode
-     * Expected: Returns valid response with all 5 components populated
+     * Test validation with complete 5-level barcode Expected: Returns valid
+     * response with all 5 components populated
      */
     @Test
     public void testValidate5LevelBarcode() throws Exception {
         // Arrange
-        String barcode = String.format("TESTROOM%d-TESTDEV%d-SHELF%d-RACK%d-A1",
-            timestamp, timestamp, timestamp, timestamp);
+        String barcode = String.format("TESTROOM%d-TESTDEV%d-SHELF%d-RACK%d-A1", timestamp, timestamp, timestamp,
+                timestamp);
         String requestBody = String.format("{\"barcode\": \"%s\"}", barcode);
 
         // Act
-        MvcResult result = mockMvc.perform(post("/rest/storage/barcode/validate")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(requestBody))
-                .andExpect(status().isOk())
-                .andReturn();
+        MvcResult result = mockMvc.perform(
+                post("/rest/storage/barcode/validate").contentType(MediaType.APPLICATION_JSON).content(requestBody))
+                .andExpect(status().isOk()).andReturn();
 
         // Assert
         String responseJson = result.getResponse().getContentAsString();
@@ -286,8 +279,8 @@ public class BarcodeValidationRestControllerTest extends BaseWebContextSensitive
     }
 
     /**
-     * Test validation with inactive location
-     * Expected: Returns invalid response with ACTIVITY_CHECK failed step
+     * Test validation with inactive location Expected: Returns invalid response
+     * with ACTIVITY_CHECK failed step
      */
     @Test
     public void testValidateInactiveLocation() throws Exception {
@@ -298,29 +291,26 @@ public class BarcodeValidationRestControllerTest extends BaseWebContextSensitive
         String requestBody = String.format("{\"barcode\": \"%s\"}", barcode);
 
         // Act
-        MvcResult result = mockMvc.perform(post("/rest/storage/barcode/validate")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(requestBody))
-                .andExpect(status().isOk())
-                .andReturn();
+        MvcResult result = mockMvc.perform(
+                post("/rest/storage/barcode/validate").contentType(MediaType.APPLICATION_JSON).content(requestBody))
+                .andExpect(status().isOk()).andReturn();
 
         // Assert
         String responseJson = result.getResponse().getContentAsString();
         JsonNode response = objectMapper.readTree(responseJson);
 
         assertFalse("Validation should fail for inactive device", response.get("valid").asBoolean());
-        assertEquals("Failed step should be ACTIVITY_CHECK",
-            "ACTIVITY_CHECK", response.get("failedStep").asText());
+        assertEquals("Failed step should be ACTIVITY_CHECK", "ACTIVITY_CHECK", response.get("failedStep").asText());
         assertTrue("Error message should mention 'inactive'",
-            response.get("errorMessage").asText().toLowerCase().contains("inactive"));
+                response.get("errorMessage").asText().toLowerCase().contains("inactive"));
 
         // Restore active state for cleanup
         jdbcTemplate.update("UPDATE storage_device SET active = true WHERE id = ?", baseId + 1);
     }
 
     /**
-     * Test validation with partial barcode (valid components only)
-     * Expected: Returns invalid overall but includes valid components for pre-filling
+     * Test validation with partial barcode (valid components only) Expected:
+     * Returns invalid overall but includes valid components for pre-filling
      */
     @Test
     public void testValidatePartialBarcode() throws Exception {
@@ -329,11 +319,9 @@ public class BarcodeValidationRestControllerTest extends BaseWebContextSensitive
         String requestBody = String.format("{\"barcode\": \"%s\"}", barcode);
 
         // Act
-        MvcResult result = mockMvc.perform(post("/rest/storage/barcode/validate")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(requestBody))
-                .andExpect(status().isOk())
-                .andReturn();
+        MvcResult result = mockMvc.perform(
+                post("/rest/storage/barcode/validate").contentType(MediaType.APPLICATION_JSON).content(requestBody))
+                .andExpect(status().isOk()).andReturn();
 
         // Assert
         String responseJson = result.getResponse().getContentAsString();

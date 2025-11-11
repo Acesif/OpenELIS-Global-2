@@ -99,7 +99,8 @@ const StorageDashboard = () => {
   // Location CRUD modal state
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
-  const [labelManagementModalOpen, setLabelManagementModalOpen] = useState(false);
+  const [labelManagementModalOpen, setLabelManagementModalOpen] =
+    useState(false);
   const [selectedLocation, setSelectedLocation] = useState(null);
   const [selectedLocationType, setSelectedLocationType] = useState(null);
 
@@ -847,7 +848,8 @@ const StorageDashboard = () => {
                 filtered = filtered.filter((sampleItem) => {
                   const sampleItemStatus = sampleItem.status || "active";
                   return (
-                    sampleItemStatus.toLowerCase() === statusFilter.toLowerCase()
+                    sampleItemStatus.toLowerCase() ===
+                    statusFilter.toLowerCase()
                   );
                 });
               }
@@ -896,8 +898,8 @@ const StorageDashboard = () => {
       });
       getFromOpenElisServer(url, (response) => {
         if (componentMounted.current) {
-            console.log(
-              "Sample Items API response received:",
+          console.log(
+            "Sample Items API response received:",
             response,
             "Type:",
             typeof response,
@@ -911,7 +913,10 @@ const StorageDashboard = () => {
               );
             }
           } else {
-            console.error("Sample Items API returned non-array response:", response);
+            console.error(
+              "Sample Items API returned non-array response:",
+              response,
+            );
             console.error("Expected array but got:", typeof response, response);
             console.error("Response is:", JSON.stringify(response));
             setSamples([]);
@@ -1099,13 +1104,19 @@ const StorageDashboard = () => {
 
   // Sample Items table headers (per spec: SampleItem ID/External ID as primary, Sample accession as secondary)
   const samplesHeaders = [
-    { 
-      key: "sampleItemId", 
-      header: intl.formatMessage({ id: "storage.sampleitem.id" }, { defaultMessage: "SampleItem ID" })
+    {
+      key: "sampleItemId",
+      header: intl.formatMessage(
+        { id: "storage.sampleitem.id" },
+        { defaultMessage: "SampleItem ID" },
+      ),
     },
-    { 
-      key: "sampleAccessionNumber", 
-      header: intl.formatMessage({ id: "sample.accession.number" }, { defaultMessage: "Sample Accession" })
+    {
+      key: "sampleAccessionNumber",
+      header: intl.formatMessage(
+        { id: "sample.accession.number" },
+        { defaultMessage: "Sample Accession" },
+      ),
     },
     { key: "type", header: intl.formatMessage({ id: "sample.type" }) },
     { key: "status", header: intl.formatMessage({ id: "storage.status" }) },
@@ -1975,20 +1986,23 @@ const StorageDashboard = () => {
     }
     return samplesData.map((sampleItem) => {
       // Primary identifier: SampleItem ID or External ID (prefer External ID if available)
-      const sampleItemId = String(sampleItem.sampleItemId || sampleItem.id || "");
+      const sampleItemId = String(
+        sampleItem.sampleItemId || sampleItem.id || "",
+      );
       const sampleItemExternalId = sampleItem.sampleItemExternalId || null;
       const displayId = sampleItemExternalId || sampleItemId;
-      
+
       // Secondary context: Parent Sample accession number
       const sampleAccessionNumber = sampleItem.sampleAccessionNumber || "";
-      
+
       return {
         id: sampleItemId, // Use sampleItemId for row ID
         sampleItemId: displayId, // Display: External ID if available, otherwise ID
         sampleAccessionNumber: sampleAccessionNumber, // Parent Sample accession for context
         type: sampleItem.type || sampleItem.sampleType || "",
         status:
-          sampleItem.status === "disposed" || sampleItem.status === "Disposed" ? (
+          sampleItem.status === "disposed" ||
+          sampleItem.status === "Disposed" ? (
             <Tag type="red">
               <FormattedMessage id="storage.status.disposed" />
             </Tag>
@@ -2010,235 +2024,236 @@ const StorageDashboard = () => {
               sampleAccessionNumber: sampleAccessionNumber,
               type: sampleItem.type || sampleItem.sampleType || "",
               status: sampleItem.status || "Active",
-              location: sampleItem.location || sampleItem.hierarchicalPath || "",
+              location:
+                sampleItem.location || sampleItem.hierarchicalPath || "",
             }}
-          onLocationConfirm={async (locationData) => {
-            // locationData format: { sample: { id, sampleId, type, status }, newLocation: {...}, reason?: "...", conditionNotes?: "...", positionCoordinate?: "..." }
-            // positionCoordinate can come from:
-            // 1. Direct positionCoordinate field in locationData (from LocationManagementModal)
-            // 2. newLocation.positionCoordinate (from location object)
-            // 3. newLocation.position?.coordinate (from nested position object)
-            const {
-              sample,
-              newLocation,
-              reason,
-              conditionNotes,
-              positionCoordinate: directPositionCoordinate,
-            } = locationData;
-            const positionCoordinate =
-              directPositionCoordinate ||
-              newLocation?.positionCoordinate ||
-              newLocation?.position?.coordinate ||
-              null;
+            onLocationConfirm={async (locationData) => {
+              // locationData format: { sample: { id, sampleId, type, status }, newLocation: {...}, reason?: "...", conditionNotes?: "...", positionCoordinate?: "..." }
+              // positionCoordinate can come from:
+              // 1. Direct positionCoordinate field in locationData (from LocationManagementModal)
+              // 2. newLocation.positionCoordinate (from location object)
+              // 3. newLocation.position?.coordinate (from nested position object)
+              const {
+                sample,
+                newLocation,
+                reason,
+                conditionNotes,
+                positionCoordinate: directPositionCoordinate,
+              } = locationData;
+              const positionCoordinate =
+                directPositionCoordinate ||
+                newLocation?.positionCoordinate ||
+                newLocation?.position?.coordinate ||
+                null;
 
-            // Determine if this is assignment (no current location) or movement (location exists)
-            const isAssignment = !sample.location || !sample.location.trim();
+              // Determine if this is assignment (no current location) or movement (location exists)
+              const isAssignment = !sample.location || !sample.location.trim();
 
-            try {
-              // NEW FLEXIBLE ASSIGNMENT ARCHITECTURE:
-              // Extract locationId, locationType (device/shelf/rack), and optional positionCoordinate
-              // No longer need to find/create StoragePosition entities
-              // positionCoordinate is already extracted above from locationData
+              try {
+                // NEW FLEXIBLE ASSIGNMENT ARCHITECTURE:
+                // Extract locationId, locationType (device/shelf/rack), and optional positionCoordinate
+                // No longer need to find/create StoragePosition entities
+                // positionCoordinate is already extracted above from locationData
 
-              let locationId = null;
-              let locationType = null;
-              // Use positionCoordinate extracted from locationData above (line 1147)
-              // If not found in locationData, try to extract from newLocation object
-              let finalPositionCoordinate = positionCoordinate;
+                let locationId = null;
+                let locationType = null;
+                // Use positionCoordinate extracted from locationData above (line 1147)
+                // If not found in locationData, try to extract from newLocation object
+                let finalPositionCoordinate = positionCoordinate;
 
-              // Determine locationId and locationType based on selected hierarchy level
-              // Priority: rack > shelf > device (lowest selected level wins)
-              if (newLocation.rack && newLocation.rack.id) {
-                locationId = newLocation.rack.id;
-                locationType = "rack";
-                // Use positionCoordinate from locationData if available, otherwise try newLocation
-                finalPositionCoordinate =
-                  positionCoordinate ||
-                  newLocation.position?.coordinate ||
-                  newLocation.positionCoordinate ||
-                  null;
-              } else if (newLocation.shelf && newLocation.shelf.id) {
-                locationId = newLocation.shelf.id;
-                locationType = "shelf";
-                finalPositionCoordinate =
-                  positionCoordinate ||
-                  newLocation.position?.coordinate ||
-                  newLocation.positionCoordinate ||
-                  null;
-              } else if (newLocation.device && newLocation.device.id) {
-                locationId = newLocation.device.id;
-                locationType = "device";
-                finalPositionCoordinate =
-                  positionCoordinate ||
-                  newLocation.position?.coordinate ||
-                  newLocation.positionCoordinate ||
-                  null;
-              } else if (newLocation.id && newLocation.type) {
-                // LocationFilterDropdown format - type is already the hierarchy level
-                if (
-                  newLocation.type === "rack" ||
-                  newLocation.type === "shelf" ||
-                  newLocation.type === "device"
-                ) {
-                  locationId = newLocation.id;
-                  locationType = newLocation.type;
+                // Determine locationId and locationType based on selected hierarchy level
+                // Priority: rack > shelf > device (lowest selected level wins)
+                if (newLocation.rack && newLocation.rack.id) {
+                  locationId = newLocation.rack.id;
+                  locationType = "rack";
+                  // Use positionCoordinate from locationData if available, otherwise try newLocation
                   finalPositionCoordinate =
                     positionCoordinate ||
+                    newLocation.position?.coordinate ||
                     newLocation.positionCoordinate ||
                     null;
-                } else if (newLocation.type === "room") {
-                  // Room alone is not sufficient - need at least device
-                  throw new Error(
-                    "Please select at least a device (minimum 2 levels: room + device).",
-                  );
+                } else if (newLocation.shelf && newLocation.shelf.id) {
+                  locationId = newLocation.shelf.id;
+                  locationType = "shelf";
+                  finalPositionCoordinate =
+                    positionCoordinate ||
+                    newLocation.position?.coordinate ||
+                    newLocation.positionCoordinate ||
+                    null;
+                } else if (newLocation.device && newLocation.device.id) {
+                  locationId = newLocation.device.id;
+                  locationType = "device";
+                  finalPositionCoordinate =
+                    positionCoordinate ||
+                    newLocation.position?.coordinate ||
+                    newLocation.positionCoordinate ||
+                    null;
+                } else if (newLocation.id && newLocation.type) {
+                  // LocationFilterDropdown format - type is already the hierarchy level
+                  if (
+                    newLocation.type === "rack" ||
+                    newLocation.type === "shelf" ||
+                    newLocation.type === "device"
+                  ) {
+                    locationId = newLocation.id;
+                    locationType = newLocation.type;
+                    finalPositionCoordinate =
+                      positionCoordinate ||
+                      newLocation.positionCoordinate ||
+                      null;
+                  } else if (newLocation.type === "room") {
+                    // Room alone is not sufficient - need at least device
+                    throw new Error(
+                      "Please select at least a device (minimum 2 levels: room + device).",
+                    );
+                  } else {
+                    throw new Error(
+                      `Invalid location type: ${newLocation.type}. Must be device, shelf, or rack.`,
+                    );
+                  }
                 } else {
+                  // Validate minimum 2 levels (room + device) per FR-033a
+                  const hasRoom =
+                    newLocation.room &&
+                    (newLocation.room.id || newLocation.room.name);
+                  const hasDevice =
+                    newLocation.device &&
+                    (newLocation.device.id || newLocation.device.name);
+
+                  if (!hasRoom || !hasDevice) {
+                    throw new Error(
+                      "Room and Device are required (minimum 2 levels). Please select at least a device.",
+                    );
+                  }
+
+                  // If we have room+device but no specific shelf/rack, use device level
+                  locationId = newLocation.device.id;
+                  locationType = "device";
+                  finalPositionCoordinate =
+                    positionCoordinate ||
+                    newLocation.position?.coordinate ||
+                    newLocation.positionCoordinate ||
+                    null;
+                }
+
+                if (!locationId || !locationType) {
                   throw new Error(
-                    `Invalid location type: ${newLocation.type}. Must be device, shelf, or rack.`,
+                    "Could not determine target location. Please ensure a complete location hierarchy is selected.",
                   );
                 }
-              } else {
-                // Validate minimum 2 levels (room + device) per FR-033a
-                const hasRoom =
-                  newLocation.room &&
-                  (newLocation.room.id || newLocation.room.name);
-                const hasDevice =
-                  newLocation.device &&
-                  (newLocation.device.id || newLocation.device.name);
 
-                if (!hasRoom || !hasDevice) {
-                  throw new Error(
-                    "Room and Device are required (minimum 2 levels). Please select at least a device.",
-                  );
+                // Build location data using new flexible assignment format
+                let locationPayload;
+                if (isAssignment) {
+                  // Assignment mode - use assign endpoint
+                  // SampleAssignmentForm expects: sampleItemId, locationId, locationType, positionCoordinate, notes
+                  locationPayload = {
+                    sampleItemId: sample.sampleItemId || sample.id, // Use sampleItemId (SampleItem-level tracking)
+                    locationId: locationId,
+                    locationType: locationType,
+                    positionCoordinate: finalPositionCoordinate || null,
+                    notes: conditionNotes || null, // Assignment form uses "notes" field
+                  };
+                  const response = await assignSampleItem(locationPayload);
+
+                  // Refresh samples table and metrics after successful assignment
+                  loadSamples();
+                  loadMetrics();
+
+                  // Show success notification
+                  addNotification({
+                    title: intl.formatMessage({ id: "notification.title" }),
+                    message: intl.formatMessage({
+                      id: "storage.assign.success",
+                      defaultMessage: "Storage location assigned successfully",
+                    }),
+                    kind: "success",
+                  });
+                  setNotificationVisible(true);
+
+                  // Show shelf capacity warning if present (informational only)
+                  if (response.shelfCapacityWarning) {
+                    addNotification({
+                      title: intl.formatMessage({ id: "notification.title" }),
+                      message: response.shelfCapacityWarning,
+                      kind: "warning",
+                    });
+                    setNotificationVisible(true);
+                  }
+                } else {
+                  // Movement mode - use move endpoint
+                  // SampleMovementForm expects: sampleItemId, locationId, locationType, positionCoordinate, reason
+                  // Note: conditionNotes is NOT supported in movement form
+                  locationPayload = {
+                    sampleItemId: sample.sampleItemId || sample.id, // Use sampleItemId (SampleItem-level tracking)
+                    locationId: locationId,
+                    locationType: locationType,
+                    positionCoordinate: finalPositionCoordinate || null,
+                    reason: reason || null, // Movement form uses "reason" field
+                  };
+                  const response = await moveSampleItem(locationPayload);
+
+                  // Refresh samples table and metrics after successful move
+                  loadSamples();
+                  loadMetrics();
+
+                  // Show success notification
+                  addNotification({
+                    title: intl.formatMessage({ id: "notification.title" }),
+                    message: intl.formatMessage({
+                      id: "storage.move.success",
+                      defaultMessage: "Sample moved successfully",
+                    }),
+                    kind: "success",
+                  });
+                  setNotificationVisible(true);
+
+                  // Show shelf capacity warning if present (informational only)
+                  if (response.shelfCapacityWarning) {
+                    addNotification({
+                      title: intl.formatMessage({ id: "notification.title" }),
+                      message: response.shelfCapacityWarning,
+                      kind: "warning",
+                    });
+                    setNotificationVisible(true);
+                  }
                 }
-
-                // If we have room+device but no specific shelf/rack, use device level
-                locationId = newLocation.device.id;
-                locationType = "device";
-                finalPositionCoordinate =
-                  positionCoordinate ||
-                  newLocation.position?.coordinate ||
-                  newLocation.positionCoordinate ||
-                  null;
-              }
-
-              if (!locationId || !locationType) {
-                throw new Error(
-                  "Could not determine target location. Please ensure a complete location hierarchy is selected.",
+              } catch (error) {
+                console.error(
+                  `Failed to ${isAssignment ? "assign" : "move"} sample:`,
+                  error,
                 );
-              }
-
-              // Build location data using new flexible assignment format
-              let locationPayload;
-              if (isAssignment) {
-                // Assignment mode - use assign endpoint
-                // SampleAssignmentForm expects: sampleItemId, locationId, locationType, positionCoordinate, notes
-                locationPayload = {
-                  sampleItemId: sample.sampleItemId || sample.id, // Use sampleItemId (SampleItem-level tracking)
-                  locationId: locationId,
-                  locationType: locationType,
-                  positionCoordinate: finalPositionCoordinate || null,
-                  notes: conditionNotes || null, // Assignment form uses "notes" field
-                };
-                const response = await assignSampleItem(locationPayload);
-
-                // Refresh samples table and metrics after successful assignment
-                loadSamples();
-                loadMetrics();
-
-                // Show success notification
                 addNotification({
                   title: intl.formatMessage({ id: "notification.title" }),
-                  message: intl.formatMessage({
-                    id: "storage.assign.success",
-                    defaultMessage: "Storage location assigned successfully",
-                  }),
-                  kind: "success",
+                  message:
+                    intl.formatMessage({
+                      id: isAssignment
+                        ? "storage.assign.error"
+                        : "storage.move.error",
+                      defaultMessage: isAssignment
+                        ? "Failed to assign storage location"
+                        : "Failed to move sample",
+                    }) + (error.message ? `: ${error.message}` : ""),
+                  kind: "error",
                 });
                 setNotificationVisible(true);
-
-                // Show shelf capacity warning if present (informational only)
-                if (response.shelfCapacityWarning) {
-                  addNotification({
-                    title: intl.formatMessage({ id: "notification.title" }),
-                    message: response.shelfCapacityWarning,
-                    kind: "warning",
-                  });
-                  setNotificationVisible(true);
-                }
-              } else {
-                // Movement mode - use move endpoint
-                // SampleMovementForm expects: sampleItemId, locationId, locationType, positionCoordinate, reason
-                // Note: conditionNotes is NOT supported in movement form
-                locationPayload = {
-                  sampleItemId: sample.sampleItemId || sample.id, // Use sampleItemId (SampleItem-level tracking)
-                  locationId: locationId,
-                  locationType: locationType,
-                  positionCoordinate: finalPositionCoordinate || null,
-                  reason: reason || null, // Movement form uses "reason" field
-                };
-                const response = await moveSampleItem(locationPayload);
-
-                // Refresh samples table and metrics after successful move
-                loadSamples();
-                loadMetrics();
-
-                // Show success notification
-                addNotification({
-                  title: intl.formatMessage({ id: "notification.title" }),
-                  message: intl.formatMessage({
-                    id: "storage.move.success",
-                    defaultMessage: "Sample moved successfully",
-                  }),
-                  kind: "success",
-                });
-                setNotificationVisible(true);
-
-                // Show shelf capacity warning if present (informational only)
-                if (response.shelfCapacityWarning) {
-                  addNotification({
-                    title: intl.formatMessage({ id: "notification.title" }),
-                    message: response.shelfCapacityWarning,
-                    kind: "warning",
-                  });
-                  setNotificationVisible(true);
-                }
               }
-            } catch (error) {
-              console.error(
-                `Failed to ${isAssignment ? "assign" : "move"} sample:`,
-                error,
-              );
-              addNotification({
-                title: intl.formatMessage({ id: "notification.title" }),
-                message:
-                  intl.formatMessage({
-                    id: isAssignment
-                      ? "storage.assign.error"
-                      : "storage.move.error",
-                    defaultMessage: isAssignment
-                      ? "Failed to assign storage location"
-                      : "Failed to move sample",
-                  }) + (error.message ? `: ${error.message}` : ""),
-                kind: "error",
+            }}
+            onDisposeConfirm={(sample, reason, method, notes) => {
+              console.log("Dispose sample confirmed", {
+                sample,
+                reason,
+                method,
+                notes,
               });
-              setNotificationVisible(true);
-            }
-          }}
-          onDisposeConfirm={(sample, reason, method, notes) => {
-            console.log("Dispose sample confirmed", {
-              sample,
-              reason,
-              method,
-              notes,
-            });
-            // TODO: Implement API call to dispose sample
-          }}
-          onNotification={addNotification}
-        />
-      ),
-    };
-  });
-};
+              // TODO: Implement API call to dispose sample
+            }}
+            onNotification={addNotification}
+          />
+        ),
+      };
+    });
+  };
 
   const filteredRooms = filterData(rooms, "rooms");
   const filteredDevices = filterData(devices, "devices");
@@ -2727,12 +2742,14 @@ const StorageDashboard = () => {
                                 <React.Fragment key={row.id || row.key}>
                                   <TableExpandRow
                                     data-testid={`room-row-${row.id}`}
-                                    isExpanded={!!expandedRowIds[String(row.id)]}
+                                    isExpanded={
+                                      !!expandedRowIds[String(row.id)]
+                                    }
                                     {...getRowProps({
                                       row,
                                       onClick: (e) => {
                                         const target = e.target;
-                                        
+
                                         // Don't expand if clicking on action button (overflow menu)
                                         if (
                                           target.closest(
@@ -2747,7 +2764,7 @@ const StorageDashboard = () => {
                                         ) {
                                           return; // Let the action button handle its own click
                                         }
-                                        
+
                                         // Expand on click anywhere else in the row (including expand button)
                                         handleRowExpand(row.id);
                                       },
@@ -2965,11 +2982,13 @@ const StorageDashboard = () => {
                                       row.isExpanded
                                         ? intl.formatMessage({
                                             id: "carbon.table.row.collapse",
-                                            defaultMessage: "Collapse current row",
+                                            defaultMessage:
+                                              "Collapse current row",
                                           })
                                         : intl.formatMessage({
                                             id: "carbon.table.row.expand",
-                                            defaultMessage: "Expand current row",
+                                            defaultMessage:
+                                              "Expand current row",
                                           })
                                     }
                                     {...getRowProps({
@@ -3260,11 +3279,13 @@ const StorageDashboard = () => {
                                       row.isExpanded
                                         ? intl.formatMessage({
                                             id: "carbon.table.row.collapse",
-                                            defaultMessage: "Collapse current row",
+                                            defaultMessage:
+                                              "Collapse current row",
                                           })
                                         : intl.formatMessage({
                                             id: "carbon.table.row.expand",
-                                            defaultMessage: "Expand current row",
+                                            defaultMessage:
+                                              "Expand current row",
                                           })
                                     }
                                     {...getRowProps({
@@ -3555,11 +3576,13 @@ const StorageDashboard = () => {
                                       row.isExpanded
                                         ? intl.formatMessage({
                                             id: "carbon.table.row.collapse",
-                                            defaultMessage: "Collapse current row",
+                                            defaultMessage:
+                                              "Collapse current row",
                                           })
                                         : intl.formatMessage({
                                             id: "carbon.table.row.expand",
-                                            defaultMessage: "Expand current row",
+                                            defaultMessage:
+                                              "Expand current row",
                                           })
                                     }
                                     {...getRowProps({

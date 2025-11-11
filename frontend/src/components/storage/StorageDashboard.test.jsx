@@ -392,7 +392,7 @@ describe("StorageDashboard Filter UI", () => {
    * Test: Verify Samples tab displays SampleItem data structure (not Sample)
    * This test ensures the dashboard uses SampleItem fields (sampleItemId, sampleItemExternalId, sampleAccessionNumber)
    * instead of Sample fields (sampleId, accessionNumber)
-   * 
+   *
    * WHY THIS WASN'T CAUGHT BEFORE:
    * - Previous tests only checked UI presence (filters exist, tabs work)
    * - Tests didn't verify the actual data structure or API contract
@@ -447,11 +447,11 @@ describe("StorageDashboard Filter UI", () => {
 
     // Query within the first row to verify SampleItem data structure
     const firstRow = sampleRows[0];
-    
+
     // Verify SampleItem External ID is displayed (preferred identifier)
     const externalIdElements = within(firstRow).getAllByText("E2E-001-TUBE-1");
     expect(externalIdElements.length).toBeGreaterThan(0);
-    
+
     // Verify parent Sample accession number is displayed
     const accessionElements = within(firstRow).getAllByText("E2E-001");
     expect(accessionElements.length).toBeGreaterThan(0);
@@ -773,7 +773,11 @@ describe("StorageDashboard Expandable Rows", () => {
     fireEvent.click(expandButton);
 
     // Verify expanded content appears by test id
-    const expandedElements = await screen.findAllByTestId("expanded-room-1", {}, { timeout: 3000 });
+    const expandedElements = await screen.findAllByTestId(
+      "expanded-room-1",
+      {},
+      { timeout: 3000 },
+    );
     expect(expandedElements.length).toBeGreaterThan(0);
 
     // Find the button again (it should now say "Collapse")
@@ -786,7 +790,8 @@ describe("StorageDashboard Expandable Rows", () => {
 
     // Wait for state update - expanded content should be removed
     await new Promise((resolve) => setTimeout(resolve, 100));
-    const expandedElementsAfterCollapse = screen.queryAllByTestId("expanded-room-1");
+    const expandedElementsAfterCollapse =
+      screen.queryAllByTestId("expanded-room-1");
     expect(expandedElementsAfterCollapse.length).toBe(0);
   });
 
@@ -816,12 +821,20 @@ describe("StorageDashboard Expandable Rows", () => {
 
     // Expand first row
     fireEvent.click(firstExpandButton);
-    const expandedElements1 = await screen.findAllByTestId("expanded-room-1", {}, { timeout: 3000 });
+    const expandedElements1 = await screen.findAllByTestId(
+      "expanded-room-1",
+      {},
+      { timeout: 3000 },
+    );
     expect(expandedElements1.length).toBeGreaterThan(0);
 
     // Expand second row (both should remain expanded)
     fireEvent.click(secondExpandButton);
-    const expandedElements2 = await screen.findAllByTestId("expanded-room-2", {}, { timeout: 3000 });
+    const expandedElements2 = await screen.findAllByTestId(
+      "expanded-room-2",
+      {},
+      { timeout: 3000 },
+    );
     expect(expandedElements2.length).toBeGreaterThan(0);
 
     // Verify both rows are expanded
@@ -860,7 +873,11 @@ describe("StorageDashboard Expandable Rows", () => {
 
     // Expand first row
     fireEvent.click(firstExpandButton);
-    const expandedElements1Initial = await screen.findAllByTestId("expanded-room-1", {}, { timeout: 3000 });
+    const expandedElements1Initial = await screen.findAllByTestId(
+      "expanded-room-1",
+      {},
+      { timeout: 3000 },
+    );
     expect(expandedElements1Initial.length).toBeGreaterThan(0);
 
     // Verify first row's expand button now says "Collapse"
@@ -870,7 +887,11 @@ describe("StorageDashboard Expandable Rows", () => {
 
     // Expand second row (both should remain expanded)
     fireEvent.click(secondExpandButton);
-    const expandedElements2Initial = await screen.findAllByTestId("expanded-room-2", {}, { timeout: 3000 });
+    const expandedElements2Initial = await screen.findAllByTestId(
+      "expanded-room-2",
+      {},
+      { timeout: 3000 },
+    );
     expect(expandedElements2Initial.length).toBeGreaterThan(0);
 
     // Verify both rows are expanded
@@ -888,9 +909,11 @@ describe("StorageDashboard Expandable Rows", () => {
     });
 
     // Collapse first row
-    fireEvent.click(firstRowScope.getByRole("button", {
-      name: /collapse current row/i,
-    }));
+    fireEvent.click(
+      firstRowScope.getByRole("button", {
+        name: /collapse current row/i,
+      }),
+    );
 
     // Verify first row is collapsed but second remains expanded
     await new Promise((resolve) => setTimeout(resolve, 100));
@@ -958,7 +981,11 @@ describe("StorageDashboard Expandable Rows", () => {
     fireEvent.click(expandButton);
 
     // Verify all required fields are displayed by test id
-    const expandedContentElements = await screen.findAllByTestId("expanded-room-1", {}, { timeout: 3000 });
+    const expandedContentElements = await screen.findAllByTestId(
+      "expanded-room-1",
+      {},
+      { timeout: 3000 },
+    );
     const expandedContent = expandedContentElements[0];
     // Verify all field test ids exist (getByTestId throws if not found)
     screen.getByTestId("expanded-room-1-description");
@@ -989,7 +1016,11 @@ describe("StorageDashboard Expandable Rows", () => {
     fireEvent.click(expandButton);
 
     // Verify all required fields are displayed by test id
-    const expandedContentElements = await screen.findAllByTestId("expanded-device-10", {}, { timeout: 3000 });
+    const expandedContentElements = await screen.findAllByTestId(
+      "expanded-device-10",
+      {},
+      { timeout: 3000 },
+    );
     const expandedContent = expandedContentElements[0];
     // Verify actual values
     expect(expandedContent.textContent).toContain("-20.5");
@@ -1016,7 +1047,11 @@ describe("StorageDashboard Expandable Rows", () => {
     fireEvent.click(expandButton);
 
     // Verify all required fields are displayed by test id
-    const expandedContentElements = await screen.findAllByTestId("expanded-shelf-20", {}, { timeout: 3000 });
+    const expandedContentElements = await screen.findAllByTestId(
+      "expanded-shelf-20",
+      {},
+      { timeout: 3000 },
+    );
     const expandedContent = expandedContentElements[0];
     // Verify actual values
     expect(expandedContent.textContent).toContain("50");
@@ -1042,7 +1077,11 @@ describe("StorageDashboard Expandable Rows", () => {
     fireEvent.click(expandButton);
 
     // Verify all required fields are displayed by test id
-    const expandedContentElements = await screen.findAllByTestId("expanded-rack-30", {}, { timeout: 3000 });
+    const expandedContentElements = await screen.findAllByTestId(
+      "expanded-rack-30",
+      {},
+      { timeout: 3000 },
+    );
     const expandedContent = expandedContentElements[0];
     // Verify actual values
     expect(expandedContent.textContent).toContain("A1-Z99");
@@ -1075,7 +1114,11 @@ describe("StorageDashboard Expandable Rows", () => {
     fireEvent.click(expandButton);
 
     // Verify "N/A" is displayed for missing description by test id
-    const expandedContentElements = await screen.findAllByTestId("expanded-room-2", {}, { timeout: 3000 });
+    const expandedContentElements = await screen.findAllByTestId(
+      "expanded-room-2",
+      {},
+      { timeout: 3000 },
+    );
     const expandedContent = expandedContentElements[0];
     expect(expandedContent.textContent).toContain("N/A");
   });
@@ -1099,7 +1142,11 @@ describe("StorageDashboard Expandable Rows", () => {
     fireEvent.click(expandButton);
 
     // Verify date is formatted (should not be raw ISO string) by test id
-    const expandedContentElements = await screen.findAllByTestId("expanded-room-1", {}, { timeout: 3000 });
+    const expandedContentElements = await screen.findAllByTestId(
+      "expanded-room-1",
+      {},
+      { timeout: 3000 },
+    );
     const expandedContent = expandedContentElements[0];
     const dateField = screen.getByTestId("expanded-room-1-created-date");
     // Date should be formatted, not raw ISO string like "2025-01-15T10:30:00Z"
@@ -1126,7 +1173,11 @@ describe("StorageDashboard Expandable Rows", () => {
     fireEvent.click(expandButton);
 
     // Verify expanded content appears by test id
-    const expandedContentElements = await screen.findAllByTestId("expanded-room-1", {}, { timeout: 3000 });
+    const expandedContentElements = await screen.findAllByTestId(
+      "expanded-room-1",
+      {},
+      { timeout: 3000 },
+    );
     const expandedContent = expandedContentElements[0];
 
     // Verify no input fields in expanded content (should be read-only)
@@ -1459,7 +1510,7 @@ describe("StorageDashboard Capacity Display", () => {
       "label-management-menu-item",
     );
     expect(labelManagementItem).toBeTruthy();
-    
+
     // Click the menu item and wait for state to update
     await act(async () => {
       fireEvent.click(labelManagementItem);
@@ -1467,9 +1518,13 @@ describe("StorageDashboard Capacity Display", () => {
 
     // Verify Label Management modal opens - wait for modal to appear
     // The modal has a data-testid, so we can find it directly
-    const modal = await screen.findByTestId("label-management-modal", {}, { timeout: 3000 });
+    const modal = await screen.findByTestId(
+      "label-management-modal",
+      {},
+      { timeout: 3000 },
+    );
     expect(modal).toBeTruthy();
-    
+
     // Also verify the modal title is visible
     const modalTitle = await screen.findByText("Label Management");
     expect(modalTitle).toBeTruthy();
@@ -1520,7 +1575,7 @@ describe("StorageDashboard Capacity Display", () => {
       "label-management-menu-item",
     );
     expect(labelManagementItem).toBeTruthy();
-    
+
     // Click the menu item and wait for state to update
     await act(async () => {
       fireEvent.click(labelManagementItem);
@@ -1528,9 +1583,13 @@ describe("StorageDashboard Capacity Display", () => {
 
     // Verify Label Management modal opens - wait for modal to appear
     // The modal has a data-testid, so we can find it directly
-    const modal = await screen.findByTestId("label-management-modal", {}, { timeout: 3000 });
+    const modal = await screen.findByTestId(
+      "label-management-modal",
+      {},
+      { timeout: 3000 },
+    );
     expect(modal).toBeTruthy();
-    
+
     // Also verify the modal title is visible
     const modalTitle = await screen.findByText("Label Management");
     expect(modalTitle).toBeTruthy();
@@ -1584,7 +1643,7 @@ describe("StorageDashboard Capacity Display", () => {
       "label-management-menu-item",
     );
     expect(labelManagementItem).toBeTruthy();
-    
+
     // Click the menu item and wait for state to update
     await act(async () => {
       fireEvent.click(labelManagementItem);
@@ -1592,9 +1651,13 @@ describe("StorageDashboard Capacity Display", () => {
 
     // Verify Label Management modal opens - wait for modal to appear
     // The modal has a data-testid, so we can find it directly
-    const modal = await screen.findByTestId("label-management-modal", {}, { timeout: 3000 });
+    const modal = await screen.findByTestId(
+      "label-management-modal",
+      {},
+      { timeout: 3000 },
+    );
     expect(modal).toBeTruthy();
-    
+
     // Also verify the modal title is visible
     const modalTitle = await screen.findByText("Label Management");
     expect(modalTitle).toBeTruthy();

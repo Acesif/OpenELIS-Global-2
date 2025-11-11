@@ -5,17 +5,15 @@
  */
 
 import React from "react";
-import {
-  render,
-  screen,
-  fireEvent,
-  waitFor,
-} from "@testing-library/react";
+import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import "@testing-library/jest-dom";
 import { IntlProvider } from "react-intl";
 import { BrowserRouter } from "react-router-dom";
 import LabelManagementModal from "./LabelManagementModal";
-import { getFromOpenElisServer, postToOpenElisServer } from "../../../utils/Utils";
+import {
+  getFromOpenElisServer,
+  postToOpenElisServer,
+} from "../../../utils/Utils";
 import messages from "../../../languages/en.json";
 
 // Mock the API utilities (MUST be before imports that use them)
@@ -73,7 +71,9 @@ describe("LabelManagementModal", () => {
 
     // Act: Type invalid short code (too long)
     const shortCodeInput = screen.getByTestId("short-code-input");
-    fireEvent.change(shortCodeInput, { target: { value: "INVALID-CODE-TOO-LONG" } });
+    fireEvent.change(shortCodeInput, {
+      target: { value: "INVALID-CODE-TOO-LONG" },
+    });
 
     // Assert: Error message displayed
     await waitFor(() => {
@@ -133,7 +133,9 @@ describe("LabelManagementModal", () => {
     await waitFor(() => {
       const warningDialog = screen.getByTestId("short-code-warning-dialog");
       expect(warningDialog).toBeTruthy();
-      expect(screen.getByText(/changing short code will invalidate/i)).toBeTruthy();
+      expect(
+        screen.getByText(/changing short code will invalidate/i),
+      ).toBeTruthy();
     });
   });
 
@@ -259,4 +261,3 @@ describe("LabelManagementModal", () => {
     });
   });
 });
-

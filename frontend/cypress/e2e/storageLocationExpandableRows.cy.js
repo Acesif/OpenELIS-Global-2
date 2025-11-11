@@ -37,7 +37,7 @@ describe("Location Expandable Rows", function () {
     cy.visit("/Storage");
     cy.get(".storage-dashboard", { timeout: 10000 }).should("be.visible");
   });
-  
+
   beforeEach(function () {
     // Only set up intercepts if needed - no navigation
     // Navigation already done in before() - we're already on Storage Dashboard
@@ -68,7 +68,10 @@ describe("Location Expandable Rows", function () {
       // Carbon TableExpandRow creates a chevron button - find it within the row
       cy.get('[data-testid^="room-row-"]')
         .first()
-        .find('button.cds--table-expand__button, button[aria-label*="expand"], button[aria-label*="row"]', { timeout: 5000 })
+        .find(
+          'button.cds--table-expand__button, button[aria-label*="expand"], button[aria-label*="row"]',
+          { timeout: 5000 },
+        )
         .first()
         .should("be.visible")
         .click();
@@ -94,15 +97,21 @@ describe("Location Expandable Rows", function () {
         .then((testId) => {
           const roomId = testId.replace("room-row-", "");
           // Check if row is already expanded - if so, collapse it first
-          cy.get('body').then(($body) => {
-            const expandedExists = $body.find(`[data-testid="expanded-room-${roomId}"]`).length > 0;
+          cy.get("body").then(($body) => {
+            const expandedExists =
+              $body.find(`[data-testid="expanded-room-${roomId}"]`).length > 0;
             if (expandedExists) {
               cy.get('[data-testid^="room-row-"]')
                 .eq(1)
-                .find('button.cds--table-expand__button, button[aria-label*="expand"], button[aria-label*="row"]', { timeout: 5000 })
+                .find(
+                  'button.cds--table-expand__button, button[aria-label*="expand"], button[aria-label*="row"]',
+                  { timeout: 5000 },
+                )
                 .first()
                 .click();
-              cy.get(`[data-testid="expanded-room-${roomId}"]`).should("not.exist");
+              cy.get(`[data-testid="expanded-room-${roomId}"]`).should(
+                "not.exist",
+              );
             }
           });
         });
@@ -110,7 +119,10 @@ describe("Location Expandable Rows", function () {
       // Expand second row - click chevron button
       cy.get('[data-testid^="room-row-"]')
         .eq(1)
-        .find('button.cds--table-expand__button, button[aria-label*="expand"], button[aria-label*="row"]', { timeout: 5000 })
+        .find(
+          'button.cds--table-expand__button, button[aria-label*="expand"], button[aria-label*="row"]',
+          { timeout: 5000 },
+        )
         .first()
         .should("be.visible")
         .click();
@@ -121,7 +133,9 @@ describe("Location Expandable Rows", function () {
         .invoke("attr", "data-testid")
         .then((testId) => {
           const roomId = testId.replace("room-row-", "");
-          cy.get(`[data-testid="expanded-room-${roomId}"]`, { timeout: 10000 }).should("be.visible");
+          cy.get(`[data-testid="expanded-room-${roomId}"]`, {
+            timeout: 10000,
+          }).should("be.visible");
         });
 
       // Verify all required fields are displayed by test id
@@ -137,7 +151,9 @@ describe("Location Expandable Rows", function () {
               cy.get('[data-testid$="-description"]').should("be.visible");
               cy.get('[data-testid$="-created-date"]').should("be.visible");
               cy.get('[data-testid$="-created-by"]').should("be.visible");
-              cy.get('[data-testid$="-last-modified-date"]').should("be.visible");
+              cy.get('[data-testid$="-last-modified-date"]').should(
+                "be.visible",
+              );
               cy.get('[data-testid$="-last-modified-by"]').should("be.visible");
             });
         });
@@ -157,15 +173,22 @@ describe("Location Expandable Rows", function () {
           .invoke("attr", "data-testid")
           .then((testId) => {
             const roomId = testId.replace("room-row-", "");
-            cy.get('body').then(($body) => {
-              const expandedExists = $body.find(`[data-testid="expanded-room-${roomId}"]`).length > 0;
+            cy.get("body").then(($body) => {
+              const expandedExists =
+                $body.find(`[data-testid="expanded-room-${roomId}"]`).length >
+                0;
               if (expandedExists) {
                 cy.get('[data-testid^="room-row-"]')
                   .eq(index)
-                  .find('button.cds--table-expand__button, button[aria-label*="expand"], button[aria-label*="row"]', { timeout: 5000 })
+                  .find(
+                    'button.cds--table-expand__button, button[aria-label*="expand"], button[aria-label*="row"]',
+                    { timeout: 5000 },
+                  )
                   .first()
                   .click();
-                cy.get(`[data-testid="expanded-room-${roomId}"]`).should("not.exist");
+                cy.get(`[data-testid="expanded-room-${roomId}"]`).should(
+                  "not.exist",
+                );
               }
             });
           });
@@ -174,7 +197,10 @@ describe("Location Expandable Rows", function () {
       // Expand first row - click chevron button
       cy.get('[data-testid^="room-row-"]')
         .first()
-        .find('button.cds--table-expand__button, button[aria-label*="expand"], button[aria-label*="row"]', { timeout: 5000 })
+        .find(
+          'button.cds--table-expand__button, button[aria-label*="expand"], button[aria-label*="row"]',
+          { timeout: 5000 },
+        )
         .first()
         .should("be.visible")
         .click();
@@ -193,7 +219,10 @@ describe("Location Expandable Rows", function () {
       // Expand second row - click chevron button (both should remain expanded)
       cy.get('[data-testid^="room-row-"]')
         .eq(1)
-        .find('button.cds--table-expand__button, button[aria-label*="expand"], button[aria-label*="row"]', { timeout: 5000 })
+        .find(
+          'button.cds--table-expand__button, button[aria-label*="expand"], button[aria-label*="row"]',
+          { timeout: 5000 },
+        )
         .first()
         .should("be.visible")
         .click();
@@ -204,8 +233,9 @@ describe("Location Expandable Rows", function () {
         .invoke("attr", "data-testid")
         .then((testId) => {
           const roomId = testId.replace("room-row-", "");
-          cy.get(`[data-testid="expanded-room-${roomId}"]`, { timeout: 5000 })
-            .should("be.visible");
+          cy.get(`[data-testid="expanded-room-${roomId}"]`, {
+            timeout: 5000,
+          }).should("be.visible");
         });
 
       cy.get('[data-testid^="room-row-"]')
@@ -233,15 +263,21 @@ describe("Location Expandable Rows", function () {
         .invoke("attr", "data-testid")
         .then((testId) => {
           const roomId = testId.replace("room-row-", "");
-          cy.get('body').then(($body) => {
-            const expandedExists = $body.find(`[data-testid="expanded-room-${roomId}"]`).length > 0;
+          cy.get("body").then(($body) => {
+            const expandedExists =
+              $body.find(`[data-testid="expanded-room-${roomId}"]`).length > 0;
             if (expandedExists) {
               cy.get('[data-testid^="room-row-"]')
                 .eq(2)
-                .find('button.cds--table-expand__button, button[aria-label*="expand"], button[aria-label*="row"]', { timeout: 5000 })
+                .find(
+                  'button.cds--table-expand__button, button[aria-label*="expand"], button[aria-label*="row"]',
+                  { timeout: 5000 },
+                )
                 .first()
                 .click();
-              cy.get(`[data-testid="expanded-room-${roomId}"]`).should("not.exist");
+              cy.get(`[data-testid="expanded-room-${roomId}"]`).should(
+                "not.exist",
+              );
             }
           });
         });
@@ -249,7 +285,10 @@ describe("Location Expandable Rows", function () {
       // Expand row
       cy.get('[data-testid^="room-row-"]')
         .eq(2)
-        .find('button.cds--table-expand__button, button[aria-label*="expand"], button[aria-label*="row"]', { timeout: 5000 })
+        .find(
+          'button.cds--table-expand__button, button[aria-label*="expand"], button[aria-label*="row"]',
+          { timeout: 5000 },
+        )
         .first()
         .should("be.visible")
         .click();
@@ -268,7 +307,10 @@ describe("Location Expandable Rows", function () {
       // Click same chevron button to collapse
       cy.get('[data-testid^="room-row-"]')
         .eq(2)
-        .find('button.cds--table-expand__button, button[aria-label*="expand"], button[aria-label*="row"]', { timeout: 5000 })
+        .find(
+          'button.cds--table-expand__button, button[aria-label*="expand"], button[aria-label*="row"]',
+          { timeout: 5000 },
+        )
         .first()
         .should("be.visible")
         .click();
@@ -294,7 +336,10 @@ describe("Location Expandable Rows", function () {
       // Verify button can be focused (keyboard accessibility)
       cy.get('[data-testid^="device-row-"]')
         .first()
-        .find('button.cds--table-expand__button, button[aria-label*="expand"], button[aria-label*="row"]', { timeout: 5000 })
+        .find(
+          'button.cds--table-expand__button, button[aria-label*="expand"], button[aria-label*="row"]',
+          { timeout: 5000 },
+        )
         .first()
         .should("be.visible")
         .focus()
@@ -310,7 +355,9 @@ describe("Location Expandable Rows", function () {
         .invoke("attr", "data-testid")
         .then((testId) => {
           const deviceId = testId.replace("device-row-", "");
-          cy.get(`[data-testid="expanded-device-${deviceId}"]`, { timeout: 5000 })
+          cy.get(`[data-testid="expanded-device-${deviceId}"]`, {
+            timeout: 5000,
+          })
             .should("be.visible")
             .and("contain.text", "Description");
         });
@@ -318,7 +365,10 @@ describe("Location Expandable Rows", function () {
       // Focus button again and click to collapse
       cy.get('[data-testid^="device-row-"]')
         .first()
-        .find('button.cds--table-expand__button, button[aria-label*="expand"], button[aria-label*="row"]', { timeout: 5000 })
+        .find(
+          'button.cds--table-expand__button, button[aria-label*="expand"], button[aria-label*="row"]',
+          { timeout: 5000 },
+        )
         .first()
         .should("be.visible")
         .focus()
@@ -331,7 +381,9 @@ describe("Location Expandable Rows", function () {
         .invoke("attr", "data-testid")
         .then((testId) => {
           const deviceId = testId.replace("device-row-", "");
-          cy.get(`[data-testid="expanded-device-${deviceId}"]`).should("not.exist");
+          cy.get(`[data-testid="expanded-device-${deviceId}"]`).should(
+            "not.exist",
+          );
         });
     });
   });
@@ -358,15 +410,21 @@ describe("Location Expandable Rows", function () {
         .invoke("attr", "data-testid")
         .then((testId) => {
           const roomId = testId.replace("room-row-", "");
-          cy.get('body').then(($body) => {
-            const expandedExists = $body.find(`[data-testid="expanded-room-${roomId}"]`).length > 0;
+          cy.get("body").then(($body) => {
+            const expandedExists =
+              $body.find(`[data-testid="expanded-room-${roomId}"]`).length > 0;
             if (expandedExists) {
               cy.get('[data-testid^="room-row-"]')
                 .first()
-                .find('button.cds--table-expand__button, button[aria-label*="expand"], button[aria-label*="row"]', { timeout: 5000 })
+                .find(
+                  'button.cds--table-expand__button, button[aria-label*="expand"], button[aria-label*="row"]',
+                  { timeout: 5000 },
+                )
                 .first()
                 .click();
-              cy.get(`[data-testid="expanded-room-${roomId}"]`).should("not.exist");
+              cy.get(`[data-testid="expanded-room-${roomId}"]`).should(
+                "not.exist",
+              );
             }
           });
         });
@@ -374,13 +432,18 @@ describe("Location Expandable Rows", function () {
       // Expand first row - click chevron button
       cy.get('[data-testid^="room-row-"]')
         .first()
-        .find('button.cds--table-expand__button, button[aria-label*="expand"], button[aria-label*="row"]', { timeout: 5000 })
+        .find(
+          'button.cds--table-expand__button, button[aria-label*="expand"], button[aria-label*="row"]',
+          { timeout: 5000 },
+        )
         .first()
         .should("be.visible")
         .click();
 
       // Wait for expanded content
-      cy.get('[data-testid^="expanded-room-"]', { timeout: 10000 }).should("be.visible");
+      cy.get('[data-testid^="expanded-room-"]', { timeout: 10000 }).should(
+        "be.visible",
+      );
 
       // Verify all required fields are displayed by test id
       // Use first() to ensure single element for .within()
@@ -408,13 +471,18 @@ describe("Location Expandable Rows", function () {
       // Expand first row
       cy.get('[data-testid^="device-row-"]')
         .first()
-        .find('button.cds--table-expand__button, button[aria-label*="expand"], button[aria-label*="row"]', { timeout: 5000 })
+        .find(
+          'button.cds--table-expand__button, button[aria-label*="expand"], button[aria-label*="row"]',
+          { timeout: 5000 },
+        )
         .first()
         .should("be.visible")
         .click();
 
       // Wait for expanded content
-      cy.get('[data-testid^="expanded-device-"]', { timeout: 5000 }).should("be.visible");
+      cy.get('[data-testid^="expanded-device-"]', { timeout: 5000 }).should(
+        "be.visible",
+      );
 
       // Verify all required fields are displayed (using contains for labels)
       cy.get('[data-testid^="expanded-device-"]')
@@ -442,7 +510,10 @@ describe("Location Expandable Rows", function () {
       // Expand first row
       cy.get('[data-testid^="shelf-row-"]')
         .first()
-        .find('button.cds--table-expand__button, button[aria-label*="expand"], button[aria-label*="row"]', { timeout: 5000 })
+        .find(
+          'button.cds--table-expand__button, button[aria-label*="expand"], button[aria-label*="row"]',
+          { timeout: 5000 },
+        )
         .first()
         .should("be.visible")
         .click();
@@ -474,13 +545,18 @@ describe("Location Expandable Rows", function () {
       // Expand first row
       cy.get('[data-testid^="rack-row-"]')
         .first()
-        .find('button.cds--table-expand__button, button[aria-label*="expand"], button[aria-label*="row"]', { timeout: 5000 })
+        .find(
+          'button.cds--table-expand__button, button[aria-label*="expand"], button[aria-label*="row"]',
+          { timeout: 5000 },
+        )
         .first()
         .should("be.visible")
         .click();
 
       // Wait for expanded content
-      cy.get('[data-testid^="expanded-rack-"]', { timeout: 5000 }).should("be.visible");
+      cy.get('[data-testid^="expanded-rack-"]', { timeout: 5000 }).should(
+        "be.visible",
+      );
 
       // Verify all required fields are displayed (using contains for labels)
       cy.get('[data-testid^="expanded-rack-"]')
@@ -508,15 +584,21 @@ describe("Location Expandable Rows", function () {
         .invoke("attr", "data-testid")
         .then((testId) => {
           const roomId = testId.replace("room-row-", "");
-          cy.get('body').then(($body) => {
-            const expandedExists = $body.find(`[data-testid="expanded-room-${roomId}"]`).length > 0;
+          cy.get("body").then(($body) => {
+            const expandedExists =
+              $body.find(`[data-testid="expanded-room-${roomId}"]`).length > 0;
             if (expandedExists) {
               cy.get('[data-testid^="room-row-"]')
                 .first()
-                .find('button.cds--table-expand__button, button[aria-label*="expand"], button[aria-label*="row"]', { timeout: 5000 })
+                .find(
+                  'button.cds--table-expand__button, button[aria-label*="expand"], button[aria-label*="row"]',
+                  { timeout: 5000 },
+                )
                 .first()
                 .click();
-              cy.get(`[data-testid="expanded-room-${roomId}"]`).should("not.exist");
+              cy.get(`[data-testid="expanded-room-${roomId}"]`).should(
+                "not.exist",
+              );
             }
           });
         });
@@ -524,7 +606,10 @@ describe("Location Expandable Rows", function () {
       // Expand row
       cy.get('[data-testid^="room-row-"]')
         .first()
-        .find('button.cds--table-expand__button, button[aria-label*="expand"], button[aria-label*="row"]', { timeout: 5000 })
+        .find(
+          'button.cds--table-expand__button, button[aria-label*="expand"], button[aria-label*="row"]',
+          { timeout: 5000 },
+        )
         .first()
         .should("be.visible")
         .click();
@@ -535,7 +620,9 @@ describe("Location Expandable Rows", function () {
         .invoke("attr", "data-testid")
         .then((testId) => {
           const roomId = testId.replace("room-row-", "");
-          cy.get(`[data-testid="expanded-room-${roomId}"]`, { timeout: 10000 }).should("be.visible");
+          cy.get(`[data-testid="expanded-room-${roomId}"]`, {
+            timeout: 10000,
+          }).should("be.visible");
         });
 
       // Verify no input fields in expanded content (should be read-only)
@@ -573,15 +660,21 @@ describe("Location Expandable Rows", function () {
         .invoke("attr", "data-testid")
         .then((testId) => {
           const roomId = testId.replace("room-row-", "");
-          cy.get('body').then(($body) => {
-            const expandedExists = $body.find(`[data-testid="expanded-room-${roomId}"]`).length > 0;
+          cy.get("body").then(($body) => {
+            const expandedExists =
+              $body.find(`[data-testid="expanded-room-${roomId}"]`).length > 0;
             if (expandedExists) {
               cy.get('[data-testid^="room-row-"]')
                 .first()
-                .find('button.cds--table-expand__button, button[aria-label*="expand"], button[aria-label*="row"]', { timeout: 5000 })
+                .find(
+                  'button.cds--table-expand__button, button[aria-label*="expand"], button[aria-label*="row"]',
+                  { timeout: 5000 },
+                )
                 .first()
                 .click();
-              cy.get(`[data-testid="expanded-room-${roomId}"]`).should("not.exist");
+              cy.get(`[data-testid="expanded-room-${roomId}"]`).should(
+                "not.exist",
+              );
             }
           });
         });
@@ -589,17 +682,29 @@ describe("Location Expandable Rows", function () {
       // Check ARIA attributes on expand button (use the same selector pattern as other tests)
       cy.get('[data-testid^="room-row-"]')
         .first()
-        .find('button.cds--table-expand__button, button[aria-label*="expand"], button[aria-label*="row"]', { timeout: 5000 })
+        .find(
+          'button.cds--table-expand__button, button[aria-label*="expand"], button[aria-label*="row"]',
+          { timeout: 5000 },
+        )
         .first()
         .should("have.attr", "aria-label")
         .and("satisfy", (label) => {
-          return label && (label.includes("expand") || label.includes("row") || label.includes("Expand") || label.includes("Collapse"));
+          return (
+            label &&
+            (label.includes("expand") ||
+              label.includes("row") ||
+              label.includes("Expand") ||
+              label.includes("Collapse"))
+          );
         });
 
       // Expand row
       cy.get('[data-testid^="room-row-"]')
         .first()
-        .find('button.cds--table-expand__button, button[aria-label*="expand"], button[aria-label*="row"]', { timeout: 5000 })
+        .find(
+          'button.cds--table-expand__button, button[aria-label*="expand"], button[aria-label*="row"]',
+          { timeout: 5000 },
+        )
         .first()
         .should("be.visible")
         .click();
@@ -611,7 +716,9 @@ describe("Location Expandable Rows", function () {
         .invoke("attr", "data-testid")
         .then((testId) => {
           const roomId = testId.replace("room-row-", "");
-          cy.get(`[data-testid="expanded-room-${roomId}"]`, { timeout: 10000 }).should("be.visible");
+          cy.get(`[data-testid="expanded-room-${roomId}"]`, {
+            timeout: 10000,
+          }).should("be.visible");
         });
     });
 
@@ -626,7 +733,10 @@ describe("Location Expandable Rows", function () {
       // Verify button can be focused (keyboard accessibility)
       cy.get('[data-testid^="device-row-"]')
         .first()
-        .find('button.cds--table-expand__button, button[aria-label*="expand"], button[aria-label*="row"]', { timeout: 5000 })
+        .find(
+          'button.cds--table-expand__button, button[aria-label*="expand"], button[aria-label*="row"]',
+          { timeout: 5000 },
+        )
         .first()
         .should("be.visible")
         .focus()
@@ -642,7 +752,9 @@ describe("Location Expandable Rows", function () {
         .invoke("attr", "data-testid")
         .then((testId) => {
           const deviceId = testId.replace("device-row-", "");
-          cy.get(`[data-testid="expanded-device-${deviceId}"]`, { timeout: 5000 })
+          cy.get(`[data-testid="expanded-device-${deviceId}"]`, {
+            timeout: 5000,
+          })
             .should("be.visible")
             .and("contain.text", "Description");
         });
@@ -650,7 +762,10 @@ describe("Location Expandable Rows", function () {
       // Focus button again and click to collapse
       cy.get('[data-testid^="device-row-"]')
         .first()
-        .find('button.cds--table-expand__button, button[aria-label*="expand"], button[aria-label*="row"]', { timeout: 5000 })
+        .find(
+          'button.cds--table-expand__button, button[aria-label*="expand"], button[aria-label*="row"]',
+          { timeout: 5000 },
+        )
         .first()
         .should("be.visible")
         .focus()
@@ -663,7 +778,9 @@ describe("Location Expandable Rows", function () {
         .invoke("attr", "data-testid")
         .then((testId) => {
           const deviceId = testId.replace("device-row-", "");
-          cy.get(`[data-testid="expanded-device-${deviceId}"]`).should("not.exist");
+          cy.get(`[data-testid="expanded-device-${deviceId}"]`).should(
+            "not.exist",
+          );
         });
     });
 
@@ -677,7 +794,10 @@ describe("Location Expandable Rows", function () {
       // Expand row
       cy.get('[data-testid^="room-row-"]')
         .first()
-        .find('button.cds--table-expand__button, button[aria-label*="expand"], button[aria-label*="row"]', { timeout: 5000 })
+        .find(
+          'button.cds--table-expand__button, button[aria-label*="expand"], button[aria-label*="row"]',
+          { timeout: 5000 },
+        )
         .first()
         .should("be.visible")
         .click();
@@ -739,12 +859,12 @@ describe("Location Expandable Rows", function () {
 
     it("should display correct occupancy in shelves table", function () {
       cy.get('[data-testid="tab-shelves"]').click();
-      
+
       // Wait for tab to be selected
       cy.get('button[role="tab"]')
         .contains("Shelves")
         .should("have.attr", "aria-selected", "true");
-      
+
       // Wait for shelf rows to be visible (this ensures tab content is loaded)
       cy.get('[data-testid^="shelf-row-"]', { timeout: 10000 })
         .should("have.length.at.least", 1)
@@ -759,8 +879,8 @@ describe("Location Expandable Rows", function () {
         .should("have.length.at.least", 1)
         .then(($cells) => {
           // Check if any cell contains the occupancy format (contains "/")
-          const hasOccupancy = Array.from($cells).some((cell) => 
-            cell.textContent.includes("/")
+          const hasOccupancy = Array.from($cells).some((cell) =>
+            cell.textContent.includes("/"),
           );
           expect(hasOccupancy).to.be.true;
         });

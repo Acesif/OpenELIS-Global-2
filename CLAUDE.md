@@ -1,6 +1,7 @@
 # CLAUDE.md - Claude Code CLI Instructions
 
-> **For Claude Code Users:** This file contains Claude-specific instructions. For comprehensive project context, **read [AGENTS.md](AGENTS.md) first.**
+> **For Claude Code Users:** This file contains Claude-specific instructions.
+> For comprehensive project context, **read [AGENTS.md](AGENTS.md) first.**
 
 ---
 
@@ -8,9 +9,12 @@
 
 When working on this project, follow this documentation order:
 
-1. **[constitution.md](.specify/memory/constitution.md)** - AUTHORITATIVE governance (v1.7.0, 8 core principles)
-2. **[AGENTS.md](AGENTS.md)** - Comprehensive agent onboarding (works for ALL AI tools)
-3. **[quickstart.md](specs/001-sample-storage/quickstart.md)** - Step-by-step feature development example
+1. **[constitution.md](.specify/memory/constitution.md)** - AUTHORITATIVE
+   governance (v1.7.0, 8 core principles)
+2. **[AGENTS.md](AGENTS.md)** - Comprehensive agent onboarding (works for ALL AI
+   tools)
+3. **[quickstart.md](specs/001-sample-storage/quickstart.md)** - Step-by-step
+   feature development example
 4. **[README.md](README.md)** - Human-facing project overview
 5. **CLAUDE.md** - Claude-specific notes (this file)
 
@@ -25,8 +29,10 @@ This project uses **GitHub SpecKit** for Specification-Driven Development (SDD).
 ### Available Slash Commands
 
 - `/speckit.specify` - Create/update feature specification from description
-- `/speckit.clarify` - Identify underspecified areas (max 5 clarification questions)
-- `/speckit.plan` - Generate implementation plan with constitution check and research
+- `/speckit.clarify` - Identify underspecified areas (max 5 clarification
+  questions)
+- `/speckit.plan` - Generate implementation plan with constitution check and
+  research
 - `/speckit.tasks` - Generate actionable, dependency-ordered tasks.md
 - `/speckit.implement` - Execute implementation plan (process tasks.md)
 - `/speckit.analyze` - Cross-artifact consistency analysis
@@ -35,9 +41,11 @@ This project uses **GitHub SpecKit** for Specification-Driven Development (SDD).
 
 ### Standard Workflow
 
-1. `/speckit.specify "Feature description"` → Creates `specs/{###-feature-name}/spec.md`
+1. `/speckit.specify "Feature description"` → Creates
+   `specs/{###-feature-name}/spec.md`
 2. `/speckit.clarify` → Resolves ambiguities (max 3 rounds recommended)
-3. `/speckit.plan` → Creates `plan.md` with architecture, research, constitution check
+3. `/speckit.plan` → Creates `plan.md` with architecture, research, constitution
+   check
 4. `/speckit.tasks` → Creates `tasks.md` with dependency-ordered task breakdown
 5. `/speckit.implement` → Executes tasks using TDD workflow
 6. `/speckit.analyze` → Validates consistency across spec/plan/tasks
@@ -59,8 +67,10 @@ mvn clean install -DskipTests
 ```
 
 **Why both flags?**
+
 - `-DskipTests`: Skips Surefire unit test execution
-- `-Dmaven.test.skip=true`: Skips test compilation AND execution (including Failsafe)
+- `-Dmaven.test.skip=true`: Skips test compilation AND execution (including
+  Failsafe)
 
 ### Pre-Commit Formatting (MANDATORY)
 
@@ -76,17 +86,21 @@ cd frontend && npm run format && cd ..
 
 ### Constitution Compliance (MANDATORY)
 
-**ALWAYS check [constitution.md](.specify/memory/constitution.md) BEFORE implementing features.**
+**ALWAYS check [constitution.md](.specify/memory/constitution.md) BEFORE
+implementing features.**
 
 Key principles to verify:
-- [ ] Layered architecture (5-layer pattern: Valueholder→DAO→Service→Controller→Form)
+
+- [ ] Layered architecture (5-layer pattern:
+      Valueholder→DAO→Service→Controller→Form)
 - [ ] Carbon Design System (NO Bootstrap/Tailwind)
 - [ ] FHIR R4 compliance (for external-facing entities)
 - [ ] React Intl (NO hardcoded strings)
 - [ ] Test-Driven Development (TDD workflow)
 - [ ] Liquibase for schema changes
 - [ ] @Transactional in services ONLY (NOT controllers)
-- [ ] Services compile all data within transaction (prevent LazyInitializationException)
+- [ ] Services compile all data within transaction (prevent
+      LazyInitializationException)
 
 ### TDD Workflow (MANDATORY for SpecKit)
 
@@ -114,7 +128,8 @@ npm run cy:run
 
 ## Quick Links
 
-- **Constitution:** [.specify/memory/constitution.md](.specify/memory/constitution.md)
+- **Constitution:**
+  [.specify/memory/constitution.md](.specify/memory/constitution.md)
 - **Agent Onboarding:** [AGENTS.md](AGENTS.md)
 - **Project Overview:** [README.md](README.md)
 - **Contributing:** [CONTRIBUTING.md](CONTRIBUTING.md)
@@ -123,5 +138,4 @@ npm run cy:run
 
 ---
 
-**Last Updated:** 2025-11-09
-**Constitution Version:** 1.7.0
+**Last Updated:** 2025-11-09 **Constitution Version:** 1.7.0

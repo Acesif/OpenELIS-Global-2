@@ -4,8 +4,8 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 
 /**
- * Form object for SampleItem storage assignment Supports flexible hierarchy: assign
- * to device/shelf/rack level with optional position coordinate
+ * Form object for SampleItem storage assignment Supports flexible hierarchy:
+ * assign to device/shelf/rack level with optional position coordinate
  */
 public class SampleAssignmentForm {
 

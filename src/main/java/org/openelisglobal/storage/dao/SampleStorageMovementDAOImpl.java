@@ -22,8 +22,10 @@ public class SampleStorageMovementDAOImpl extends BaseDAOImpl<SampleStorageMovem
     @Transactional(readOnly = true)
     public List<SampleStorageMovement> findBySampleItemId(String sampleItemId) {
         try {
-            // Note: SampleItem.id uses LIMSStringNumberUserType (String in Java, numeric in DB)
-            // When querying through relationships, we must parse String to Integer for the parameter
+            // Note: SampleItem.id uses LIMSStringNumberUserType (String in Java, numeric in
+            // DB)
+            // When querying through relationships, we must parse String to Integer for the
+            // parameter
             // This matches the pattern in SampleItemDAOImpl.getSampleItemsBySampleId()
             String hql = "FROM SampleStorageMovement ssm WHERE ssm.sampleItem.id = :sampleItemId ORDER BY ssm.movementDate DESC";
             Query<SampleStorageMovement> query = entityManager.unwrap(Session.class).createQuery(hql,

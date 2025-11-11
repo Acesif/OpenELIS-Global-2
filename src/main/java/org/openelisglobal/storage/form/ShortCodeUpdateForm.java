@@ -20,4 +20,3 @@ public class ShortCodeUpdateForm {
         this.shortCode = shortCode;
     }
 }
-

@@ -18,8 +18,9 @@ public interface StorageSearchService {
      * of these fields (OR logic).
      * 
      * @param query Search term (case-insensitive partial match)
-     * @return List of matching SampleItems with id, sampleItemId, sampleItemExternalId,
-     *         sampleAccessionNumber, type, status, location, assignedBy, date
+     * @return List of matching SampleItems with id, sampleItemId,
+     *         sampleItemExternalId, sampleAccessionNumber, type, status, location,
+     *         assignedBy, date
      */
     List<Map<String, Object>> searchSamples(String query);
 

@@ -19,7 +19,7 @@ public interface StorageRackDAO extends BaseDAO<StorageRack, Integer> {
     /**
      * Find rack by label and parent shelf (for barcode validation)
      *
-     * @param label Rack label
+     * @param label       Rack label
      * @param parentShelf Parent shelf entity
      * @return StorageRack or null if not found
      */
@@ -34,8 +34,8 @@ public interface StorageRackDAO extends BaseDAO<StorageRack, Integer> {
     int countByShelfId(Integer shelfId);
 
     /**
-     * Find rack by short code (for label management)
-     * TODO: Add shortCode field to StorageRack entity in Phase 5.4
+     * Find rack by short code (for label management) TODO: Add shortCode field to
+     * StorageRack entity in Phase 5.4
      *
      * @param shortCode Short code
      * @return StorageRack or null if not found

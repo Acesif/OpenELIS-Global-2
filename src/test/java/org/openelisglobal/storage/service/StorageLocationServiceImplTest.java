@@ -206,7 +206,8 @@ public class StorageLocationServiceImplTest {
             storageLocationService.update(deviceToUpdate);
             fail("Expected LIMSRuntimeException for device with active samples");
         } catch (LIMSRuntimeException e) {
-            assertTrue("Warning should mention active samples", e.getMessage().toLowerCase().contains("active samples"));
+            assertTrue("Warning should mention active samples",
+                    e.getMessage().toLowerCase().contains("active samples"));
         }
 
         // Then: Exception should have been thrown with warning message
@@ -298,7 +299,8 @@ public class StorageLocationServiceImplTest {
     @Test
     public void testValidateLocationActive_AllActive_ReturnsTrue() {
         // Given: Position in fully active hierarchy with all parent relationships
-        // Position needs parentDevice (required) and optionally parentShelf and parentRack
+        // Position needs parentDevice (required) and optionally parentShelf and
+        // parentRack
         StoragePosition position = new StoragePosition();
         position.setParentDevice(testDevice); // Required parent
         position.setParentShelf(testShelf); // Optional but set for full hierarchy
@@ -318,7 +320,8 @@ public class StorageLocationServiceImplTest {
         assertTrue("Position should be valid with all active parents", isActive);
     }
 
-    // ========== Phase 6: Location CRUD Operations - Constraint Validation Tests (T102) ==========
+    // ========== Phase 6: Location CRUD Operations - Constraint Validation Tests
+    // (T102) ==========
 
     /**
      * T102: Test validating delete constraints for room with devices returns false
@@ -424,11 +427,12 @@ public class StorageLocationServiceImplTest {
         assertNotNull("Message should not be null", message);
     }
 
-    // ========== Phase 6: Location CRUD Operations - Update Validation Tests (T103) ==========
+    // ========== Phase 6: Location CRUD Operations - Update Validation Tests (T103)
+    // ==========
 
     /**
-     * T103: Test updating location with code uniqueness check
-     * Validation: Code uniqueness should be validated before update
+     * T103: Test updating location with code uniqueness check Validation: Code
+     * uniqueness should be validated before update
      */
     @Test
     public void testUpdateLocation_CodeUniquenessCheck() {
@@ -440,7 +444,8 @@ public class StorageLocationServiceImplTest {
 
         when(storageRoomDAO.get(1)).thenReturn(java.util.Optional.of(existingRoom));
 
-        // Given: Update attempt with duplicate code (but code is read-only, so should be ignored)
+        // Given: Update attempt with duplicate code (but code is read-only, so should
+        // be ignored)
         StorageRoom updateRoom = new StorageRoom();
         updateRoom.setId(1);
         updateRoom.setCode("NEW-CODE"); // Attempt to change code
@@ -463,8 +468,8 @@ public class StorageLocationServiceImplTest {
     }
 
     /**
-     * T103: Test updating location with read-only fields ignored
-     * Validation: Code and Parent fields should not be updated even if provided
+     * T103: Test updating location with read-only fields ignored Validation: Code
+     * and Parent fields should not be updated even if provided
      */
     @Test
     public void testUpdateLocation_ReadOnlyFieldsIgnored() {
@@ -512,8 +517,8 @@ public class StorageLocationServiceImplTest {
     // ========== Phase 9.5: Capacity Calculation Logic Tests (T184) ==========
 
     /**
-     * T184: Test calculateDeviceCapacity with capacity_limit set returns manual limit
-     * Two-tier logic: Tier 1 - If capacity_limit is set, use that value
+     * T184: Test calculateDeviceCapacity with capacity_limit set returns manual
+     * limit Two-tier logic: Tier 1 - If capacity_limit is set, use that value
      */
     @Test
     public void testCalculateDeviceCapacity_WithCapacityLimit_ReturnsManualLimit() {
@@ -529,8 +534,9 @@ public class StorageLocationServiceImplTest {
     }
 
     /**
-     * T184: Test calculateDeviceCapacity without capacity_limit, all shelves have capacities, returns sum
-     * Two-tier logic: Tier 2 - Calculate from children if all have defined capacities
+     * T184: Test calculateDeviceCapacity without capacity_limit, all shelves have
+     * capacities, returns sum Two-tier logic: Tier 2 - Calculate from children if
+     * all have defined capacities
      */
     @Test
     public void testCalculateDeviceCapacity_WithoutCapacityLimit_AllShelvesHaveCapacities_ReturnsSum() {
@@ -551,7 +557,8 @@ public class StorageLocationServiceImplTest {
         when(storageShelfDAO.findByParentDeviceId(testDevice.getId())).thenReturn(Arrays.asList(shelf1, shelf2));
 
         // Mock calculateShelfCapacity to return shelf capacities
-        // Note: This will require the actual implementation to work, but for now we test the logic
+        // Note: This will require the actual implementation to work, but for now we
+        // test the logic
         // We'll need to mock the recursive call or implement it properly
         // For now, let's test that it calls calculateShelfCapacity for each shelf
         // The actual implementation will handle the recursion
@@ -566,8 +573,9 @@ public class StorageLocationServiceImplTest {
     }
 
     /**
-     * T184: Test calculateDeviceCapacity without capacity_limit, some shelves missing capacity, returns null
-     * Two-tier logic: If ANY child lacks defined capacity, parent capacity cannot be determined
+     * T184: Test calculateDeviceCapacity without capacity_limit, some shelves
+     * missing capacity, returns null Two-tier logic: If ANY child lacks defined
+     * capacity, parent capacity cannot be determined
      */
     @Test
     public void testCalculateDeviceCapacity_WithoutCapacityLimit_SomeShelvesMissingCapacity_ReturnsNull() {
@@ -611,7 +619,8 @@ public class StorageLocationServiceImplTest {
     }
 
     /**
-     * T184: Test calculateShelfCapacity with capacity_limit set returns manual limit
+     * T184: Test calculateShelfCapacity with capacity_limit set returns manual
+     * limit
      */
     @Test
     public void testCalculateShelfCapacity_WithCapacityLimit_ReturnsManualLimit() {
@@ -627,8 +636,8 @@ public class StorageLocationServiceImplTest {
     }
 
     /**
-     * T184: Test calculateShelfCapacity without capacity_limit, all racks have capacities, returns sum
-     * Racks always have defined capacity (rows × columns)
+     * T184: Test calculateShelfCapacity without capacity_limit, all racks have
+     * capacities, returns sum Racks always have defined capacity (rows × columns)
      */
     @Test
     public void testCalculateShelfCapacity_WithoutCapacityLimit_AllRacksHaveCapacities_ReturnsSum() {
@@ -659,7 +668,8 @@ public class StorageLocationServiceImplTest {
     }
 
     /**
-     * T184: Test calculateShelfCapacity without capacity_limit, no racks, returns null
+     * T184: Test calculateShelfCapacity without capacity_limit, no racks, returns
+     * null
      */
     @Test
     public void testCalculateShelfCapacity_WithoutCapacityLimit_NoRacks_ReturnsNull() {
@@ -675,8 +685,8 @@ public class StorageLocationServiceImplTest {
     }
 
     /**
-     * T184: Test rack capacity always calculated as rows × columns
-     * Racks never use capacity_limit field
+     * T184: Test rack capacity always calculated as rows × columns Racks never use
+     * capacity_limit field
      */
     @Test
     public void testCalculateRackCapacity_AlwaysRowsTimesColumns() {
@@ -685,7 +695,8 @@ public class StorageLocationServiceImplTest {
         testRack.setColumns(12);
 
         // When: Calculate capacity (if method exists, or verify in getRacksForAPI)
-        // Note: Racks don't have a separate calculate method, capacity is always rows × columns
+        // Note: Racks don't have a separate calculate method, capacity is always rows ×
+        // columns
         int capacity = testRack.getRows() * testRack.getColumns();
 
         // Then: Should return rows × columns
@@ -695,7 +706,8 @@ public class StorageLocationServiceImplTest {
     // ========== Phase 9.5: API Response Updates Tests (T185) ==========
 
     /**
-     * T185: Test getDevicesForAPI includes capacityLimit and capacityType="manual" when capacity_limit set
+     * T185: Test getDevicesForAPI includes capacityLimit and capacityType="manual"
+     * when capacity_limit set
      */
     @Test
     public void testGetDevicesForAPI_IncludesTotalCapacityAndCapacityType() {
@@ -716,11 +728,13 @@ public class StorageLocationServiceImplTest {
     }
 
     /**
-     * T185: Test getDevicesForAPI includes totalCapacity and capacityType="calculated" when capacity_limit null but calculated available
+     * T185: Test getDevicesForAPI includes totalCapacity and
+     * capacityType="calculated" when capacity_limit null but calculated available
      */
     @Test
     public void testGetDevicesForAPI_CalculatedCapacity_IncludesTotalCapacityAndCapacityType() {
-        // Given: Device without capacity_limit but with shelves having defined capacities
+        // Given: Device without capacity_limit but with shelves having defined
+        // capacities
         testDevice.setCapacityLimit(null);
         when(storageDeviceDAO.getAll()).thenReturn(Arrays.asList(testDevice));
         when(storagePositionDAO.countOccupiedInDevice(testDevice.getId())).thenReturn(287);
@@ -747,7 +761,8 @@ public class StorageLocationServiceImplTest {
     }
 
     /**
-     * T185: Test getDevicesForAPI includes capacityType=null when capacity cannot be determined
+     * T185: Test getDevicesForAPI includes capacityType=null when capacity cannot
+     * be determined
      */
     @Test
     public void testGetDevicesForAPI_UndeterminedCapacity_IncludesNullCapacityType() {
@@ -773,11 +788,13 @@ public class StorageLocationServiceImplTest {
         assertEquals("Should return one device", 1, result.size());
         Map<String, Object> deviceMap = result.get(0);
         // Note: This will fail until implementation adds capacityType
-        assertNull("Should include capacityType=null when capacity cannot be determined", deviceMap.get("capacityType"));
+        assertNull("Should include capacityType=null when capacity cannot be determined",
+                deviceMap.get("capacityType"));
     }
 
     /**
-     * T185: Test getShelvesForAPI includes capacityLimit and capacityType="manual" when capacity_limit set
+     * T185: Test getShelvesForAPI includes capacityLimit and capacityType="manual"
+     * when capacity_limit set
      */
     @Test
     public void testGetShelvesForAPI_IncludesTotalCapacityAndCapacityType() {

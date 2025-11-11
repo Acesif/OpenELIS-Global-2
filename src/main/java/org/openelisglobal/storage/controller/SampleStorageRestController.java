@@ -24,8 +24,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 /**
- * REST Controller for SampleItem Storage operations Handles SampleItem assignment and
- * movement
+ * REST Controller for SampleItem Storage operations Handles SampleItem
+ * assignment and movement
  */
 @RestController
 @RequestMapping("/rest/storage/sample-items")
@@ -46,8 +46,8 @@ public class SampleStorageRestController extends BaseRestController {
     private StorageDashboardService storageDashboardService;
 
     /**
-     * Get all SampleItems with storage assignments GET /rest/storage/sample-items Supports
-     * filtering by location and status (FR-065)
+     * Get all SampleItems with storage assignments GET /rest/storage/sample-items
+     * Supports filtering by location and status (FR-065)
      * 
      * @param countOnly If "true", returns metrics only
      * @param location  Optional location filter (hierarchical path substring)
@@ -66,8 +66,8 @@ public class SampleStorageRestController extends BaseRestController {
                         .filter(a -> a.getSampleItem() != null && (a.getSampleItem().getStatusId() == null
                                 || !"disposed".equalsIgnoreCase(a.getSampleItem().getStatusId())))
                         .count();
-                long disposed = allAssignments.stream()
-                        .filter(a -> a.getSampleItem() != null && "disposed".equalsIgnoreCase(a.getSampleItem().getStatusId()))
+                long disposed = allAssignments.stream().filter(
+                        a -> a.getSampleItem() != null && "disposed".equalsIgnoreCase(a.getSampleItem().getStatusId()))
                         .count();
 
                 // Count unique storage locations (rooms, devices, shelves, racks)
@@ -128,8 +128,10 @@ public class SampleStorageRestController extends BaseRestController {
 
             // Log incoming request for debugging
             if (logger.isDebugEnabled()) {
-                logger.debug("Assigning SampleItem {} to location: locationId={}, locationType={}, positionCoordinate={}", 
-                    form.getSampleItemId(), form.getLocationId(), form.getLocationType(), form.getPositionCoordinate());
+                logger.debug(
+                        "Assigning SampleItem {} to location: locationId={}, locationType={}, positionCoordinate={}",
+                        form.getSampleItemId(), form.getLocationId(), form.getLocationType(),
+                        form.getPositionCoordinate());
             }
 
             // Service layer prepares all data including hierarchical path within
@@ -139,8 +141,10 @@ public class SampleStorageRestController extends BaseRestController {
 
             // Log successful assignment
             if (logger.isInfoEnabled()) {
-                logger.info("SampleItem {} assigned successfully to locationId={}, locationType={}, positionCoordinate={}", 
-                    form.getSampleItemId(), form.getLocationId(), form.getLocationType(), form.getPositionCoordinate());
+                logger.info(
+                        "SampleItem {} assigned successfully to locationId={}, locationType={}, positionCoordinate={}",
+                        form.getSampleItemId(), form.getLocationId(), form.getLocationType(),
+                        form.getPositionCoordinate());
             }
 
             return ResponseEntity.status(HttpStatus.CREATED).body(response);
@@ -182,18 +186,21 @@ public class SampleStorageRestController extends BaseRestController {
 
             // Log incoming request for debugging
             if (logger.isDebugEnabled()) {
-                logger.debug("Moving SampleItem {} to location: locationId={}, locationType={}, positionCoordinate={}", 
-                    form.getSampleItemId(), form.getLocationId(), form.getLocationType(), form.getPositionCoordinate());
+                logger.debug("Moving SampleItem {} to location: locationId={}, locationType={}, positionCoordinate={}",
+                        form.getSampleItemId(), form.getLocationId(), form.getLocationType(),
+                        form.getPositionCoordinate());
             }
 
             // Service layer handles all business logic
-            String movementId = sampleStorageService.moveSampleItemWithLocation(form.getSampleItemId(), form.getLocationId(),
-                    form.getLocationType(), form.getPositionCoordinate(), form.getReason());
+            String movementId = sampleStorageService.moveSampleItemWithLocation(form.getSampleItemId(),
+                    form.getLocationId(), form.getLocationType(), form.getPositionCoordinate(), form.getReason());
 
             // Log successful movement
             if (logger.isInfoEnabled()) {
-                logger.info("SampleItem {} moved successfully to locationId={}, locationType={}, positionCoordinate={}, movementId={}", 
-                    form.getSampleItemId(), form.getLocationId(), form.getLocationType(), form.getPositionCoordinate(), movementId);
+                logger.info(
+                        "SampleItem {} moved successfully to locationId={}, locationType={}, positionCoordinate={}, movementId={}",
+                        form.getSampleItemId(), form.getLocationId(), form.getLocationType(),
+                        form.getPositionCoordinate(), movementId);
             }
 
             // Build hierarchical path for new location
@@ -286,7 +293,9 @@ public class SampleStorageRestController extends BaseRestController {
             response.put("movementId", movementId);
             response.put("previousLocation", previousHierarchicalPath);
             response.put("newLocation", newHierarchicalPath != null ? newHierarchicalPath : "Unknown");
-            response.put("newHierarchicalPath", newHierarchicalPath != null ? newHierarchicalPath : "Unknown"); // Alias for consistency
+            response.put("newHierarchicalPath", newHierarchicalPath != null ? newHierarchicalPath : "Unknown"); // Alias
+                                                                                                                // for
+                                                                                                                // consistency
             response.put("movedDate", new java.sql.Timestamp(System.currentTimeMillis()).toString());
             if (shelfCapacityWarning != null) {
                 response.put("shelfCapacityWarning", shelfCapacityWarning);

@@ -1,5 +1,6 @@
 package org.openelisglobal.storage.controller;
 
+import static org.junit.Assert.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
@@ -10,7 +11,6 @@ import javax.sql.DataSource;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-import static org.junit.Assert.*;
 import org.openelisglobal.BaseWebContextSensitiveTest;
 import org.openelisglobal.storage.form.StorageDeviceForm;
 import org.openelisglobal.storage.form.StoragePositionForm;
@@ -662,9 +662,10 @@ public class StorageLocationRestControllerTest extends BaseWebContextSensitiveTe
                 .content(objectMapper.writeValueAsString(unoccupiedPosition))).andExpect(status().isCreated());
 
         // When: GET positions in rack
-        // Then: Expect positions returned (occupancy is now calculated dynamically from SampleStorageAssignment)
-        mockMvc.perform(get("/rest/storage/positions").param("rackId", rackId)
-                .contentType(MediaType.APPLICATION_JSON)).andExpect(status().isOk()).andExpect(jsonPath("$").isArray());
+        // Then: Expect positions returned (occupancy is now calculated dynamically from
+        // SampleStorageAssignment)
+        mockMvc.perform(get("/rest/storage/positions").param("rackId", rackId).contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk()).andExpect(jsonPath("$").isArray());
     }
 
     // ========== Helper Methods for Test Setup ==========
@@ -731,11 +732,12 @@ public class StorageLocationRestControllerTest extends BaseWebContextSensitiveTe
         return objectMapper.readTree(response).get("id").asInt() + "";
     }
 
-    // ========== Phase 6: Location CRUD Operations - Edit Location Tests (T099) ==========
+    // ========== Phase 6: Location CRUD Operations - Edit Location Tests (T099)
+    // ==========
 
     /**
-     * T099: Test updating room with editable fields returns HTTP 200
-     * Contract: PUT /rest/storage/rooms/{id} with name, description, status → 200
+     * T099: Test updating room with editable fields returns HTTP 200 Contract: PUT
+     * /rest/storage/rooms/{id} with name, description, status → 200
      */
     @Test
     public void testUpdateRoom_UpdatesEditableFields() throws Exception {
@@ -752,15 +754,17 @@ public class StorageLocationRestControllerTest extends BaseWebContextSensitiveTe
 
         // When: PUT /rest/storage/rooms/{id}
         // Then: Expect 200 OK with updated fields (code should remain unchanged)
-        mockMvc.perform(put("/rest/storage/rooms/" + roomId).contentType(MediaType.APPLICATION_JSON)
-                .content(requestBody)).andExpect(status().isOk()).andExpect(jsonPath("$.name").value("Updated Room Name"))
+        mockMvc.perform(
+                put("/rest/storage/rooms/" + roomId).contentType(MediaType.APPLICATION_JSON).content(requestBody))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.name").value("Updated Room Name"))
                 .andExpect(jsonPath("$.description").value("Updated description"))
                 .andExpect(jsonPath("$.active").value(false));
     }
 
     /**
      * T099: Test updating room with code field returns HTTP 200 but code is ignored
-     * Contract: PUT /rest/storage/rooms/{id} with code in request → 200, code unchanged
+     * Contract: PUT /rest/storage/rooms/{id} with code in request → 200, code
+     * unchanged
      */
     @Test
     public void testUpdateRoom_CodeReadOnly() throws Exception {
@@ -788,14 +792,15 @@ public class StorageLocationRestControllerTest extends BaseWebContextSensitiveTe
 
         // When: PUT /rest/storage/rooms/{id} with code change
         // Then: Expect 200 OK but code remains unchanged (read-only)
-        mockMvc.perform(put("/rest/storage/rooms/" + roomId).contentType(MediaType.APPLICATION_JSON)
-                .content(requestBody)).andExpect(status().isOk()).andExpect(jsonPath("$.code").value(originalCode))
+        mockMvc.perform(
+                put("/rest/storage/rooms/" + roomId).contentType(MediaType.APPLICATION_JSON).content(requestBody))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.code").value(originalCode))
                 .andExpect(jsonPath("$.name").value("Updated Name"));
     }
 
     /**
-     * T099: Test updating device with editable fields returns HTTP 200
-     * Contract: PUT /rest/storage/devices/{id} with name, type, temperature, capacity → 200
+     * T099: Test updating device with editable fields returns HTTP 200 Contract:
+     * PUT /rest/storage/devices/{id} with name, type, temperature, capacity → 200
      */
     @Test
     public void testUpdateDevice_UpdatesEditableFields() throws Exception {
@@ -815,17 +820,18 @@ public class StorageLocationRestControllerTest extends BaseWebContextSensitiveTe
 
         // When: PUT /rest/storage/devices/{id}
         // Then: Expect 200 OK with updated fields
-        mockMvc.perform(put("/rest/storage/devices/" + deviceId).contentType(MediaType.APPLICATION_JSON)
-                .content(requestBody)).andExpect(status().isOk()).andExpect(jsonPath("$.name").value("Updated Device Name"))
+        mockMvc.perform(
+                put("/rest/storage/devices/" + deviceId).contentType(MediaType.APPLICATION_JSON).content(requestBody))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.name").value("Updated Device Name"))
                 .andExpect(jsonPath("$.type").value("refrigerator"))
                 .andExpect(jsonPath("$.temperatureSetting").value(-20.0))
-                .andExpect(jsonPath("$.capacityLimit").value(100))
-                .andExpect(jsonPath("$.active").value(false));
+                .andExpect(jsonPath("$.capacityLimit").value(100)).andExpect(jsonPath("$.active").value(false));
     }
 
     /**
-     * T099: Test updating device with parent room change returns HTTP 200 but parent unchanged
-     * Contract: PUT /rest/storage/devices/{id} with parentRoomId → 200, parent unchanged
+     * T099: Test updating device with parent room change returns HTTP 200 but
+     * parent unchanged Contract: PUT /rest/storage/devices/{id} with parentRoomId →
+     * 200, parent unchanged
      */
     @Test
     public void testUpdateDevice_ParentReadOnly() throws Exception {
@@ -845,14 +851,15 @@ public class StorageLocationRestControllerTest extends BaseWebContextSensitiveTe
 
         // When: PUT /rest/storage/devices/{id} with parent change
         // Then: Expect 200 OK but parent room remains unchanged (read-only)
-        mockMvc.perform(put("/rest/storage/devices/" + deviceId).contentType(MediaType.APPLICATION_JSON)
-                .content(requestBody)).andExpect(status().isOk()).andExpect(jsonPath("$.roomId").value(Integer.parseInt(roomId1)))
+        mockMvc.perform(
+                put("/rest/storage/devices/" + deviceId).contentType(MediaType.APPLICATION_JSON).content(requestBody))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.roomId").value(Integer.parseInt(roomId1)))
                 .andExpect(jsonPath("$.name").value("Updated Device"));
     }
 
     /**
-     * T099: Test updating shelf with editable fields returns HTTP 200
-     * Contract: PUT /rest/storage/shelves/{id} with label, capacity, status → 200
+     * T099: Test updating shelf with editable fields returns HTTP 200 Contract: PUT
+     * /rest/storage/shelves/{id} with label, capacity, status → 200
      */
     @Test
     public void testUpdateShelf_UpdatesEditableFields() throws Exception {
@@ -871,15 +878,15 @@ public class StorageLocationRestControllerTest extends BaseWebContextSensitiveTe
 
         // When: PUT /rest/storage/shelves/{id}
         // Then: Expect 200 OK with updated fields
-        mockMvc.perform(put("/rest/storage/shelves/" + shelfId).contentType(MediaType.APPLICATION_JSON)
-                .content(requestBody)).andExpect(status().isOk()).andExpect(jsonPath("$.label").value("Updated Shelf Label"))
-                .andExpect(jsonPath("$.capacityLimit").value(75))
-                .andExpect(jsonPath("$.active").value(false));
+        mockMvc.perform(
+                put("/rest/storage/shelves/" + shelfId).contentType(MediaType.APPLICATION_JSON).content(requestBody))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.label").value("Updated Shelf Label"))
+                .andExpect(jsonPath("$.capacityLimit").value(75)).andExpect(jsonPath("$.active").value(false));
     }
 
     /**
-     * T099: Test updating rack with editable fields returns HTTP 200
-     * Contract: PUT /rest/storage/racks/{id} with label, dimensions, status → 200
+     * T099: Test updating rack with editable fields returns HTTP 200 Contract: PUT
+     * /rest/storage/racks/{id} with label, dimensions, status → 200
      */
     @Test
     public void testUpdateRack_UpdatesEditableFields() throws Exception {
@@ -901,16 +908,16 @@ public class StorageLocationRestControllerTest extends BaseWebContextSensitiveTe
 
         // When: PUT /rest/storage/racks/{id}
         // Then: Expect 200 OK with updated fields
-        mockMvc.perform(put("/rest/storage/racks/" + rackId).contentType(MediaType.APPLICATION_JSON)
-                .content(requestBody)).andExpect(status().isOk()).andExpect(jsonPath("$.label").value("Updated Rack Label"))
+        mockMvc.perform(
+                put("/rest/storage/racks/" + rackId).contentType(MediaType.APPLICATION_JSON).content(requestBody))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.label").value("Updated Rack Label"))
                 .andExpect(jsonPath("$.rows").value(10)).andExpect(jsonPath("$.columns").value(15))
-                .andExpect(jsonPath("$.positionSchemaHint").value("B2"))
-                .andExpect(jsonPath("$.active").value(false));
+                .andExpect(jsonPath("$.positionSchemaHint").value("B2")).andExpect(jsonPath("$.active").value(false));
     }
 
     /**
-     * T099: Test updating location with duplicate code returns HTTP 400
-     * Contract: PUT /rest/storage/rooms/{id} with duplicate code → 400
+     * T099: Test updating location with duplicate code returns HTTP 400 Contract:
+     * PUT /rest/storage/rooms/{id} with duplicate code → 400
      */
     @Test
     public void testUpdateLocation_CodeUniquenessValidation() throws Exception {
@@ -953,13 +960,14 @@ public class StorageLocationRestControllerTest extends BaseWebContextSensitiveTe
         // happens before ignoring, it may return 400
         // For now, we expect the code to be ignored, so this test verifies that
         // behavior
-        mockMvc.perform(put("/rest/storage/rooms/" + roomId2).contentType(MediaType.APPLICATION_JSON)
-                .content(requestBody)).andExpect(status().isOk()); // Code is ignored, so update succeeds
+        mockMvc.perform(
+                put("/rest/storage/rooms/" + roomId2).contentType(MediaType.APPLICATION_JSON).content(requestBody))
+                .andExpect(status().isOk()); // Code is ignored, so update succeeds
     }
 
     /**
-     * T099: Test updating location with invalid data returns HTTP 400
-     * Contract: PUT /rest/storage/rooms/{id} with invalid field values → 400
+     * T099: Test updating location with invalid data returns HTTP 400 Contract: PUT
+     * /rest/storage/rooms/{id} with invalid field values → 400
      */
     @Test
     public void testUpdateLocation_InvalidData_Returns400() throws Exception {
@@ -976,11 +984,13 @@ public class StorageLocationRestControllerTest extends BaseWebContextSensitiveTe
 
         // When: PUT /rest/storage/rooms/{id} with invalid data
         // Then: Expect 400 Bad Request
-        mockMvc.perform(put("/rest/storage/rooms/" + roomId).contentType(MediaType.APPLICATION_JSON)
-                .content(requestBody)).andExpect(status().isBadRequest());
+        mockMvc.perform(
+                put("/rest/storage/rooms/" + roomId).contentType(MediaType.APPLICATION_JSON).content(requestBody))
+                .andExpect(status().isBadRequest());
     }
 
-    // ========== Phase 6: Location CRUD Operations - Delete Location Tests (T100) ==========
+    // ========== Phase 6: Location CRUD Operations - Delete Location Tests (T100)
+    // ==========
 
     /**
      * T100: Test deleting room with child devices returns HTTP 409 Conflict
@@ -1005,9 +1015,9 @@ public class StorageLocationRestControllerTest extends BaseWebContextSensitiveTe
 
     /**
      * T100: Test deleting room with active samples returns HTTP 409 Conflict
-     * Contract: DELETE /rest/storage/rooms/{id} with active samples → 409
-     * Note: This test requires sample assignment setup, which may not be available
-     * in Phase 6 scope. We'll verify the constraint check exists.
+     * Contract: DELETE /rest/storage/rooms/{id} with active samples → 409 Note:
+     * This test requires sample assignment setup, which may not be available in
+     * Phase 6 scope. We'll verify the constraint check exists.
      */
     @Test
     public void testDeleteRoom_WithActiveSamples_ReturnsError() throws Exception {
@@ -1023,8 +1033,8 @@ public class StorageLocationRestControllerTest extends BaseWebContextSensitiveTe
     }
 
     /**
-     * T100: Test deleting room with no constraints returns HTTP 200/204
-     * Contract: DELETE /rest/storage/rooms/{id} with no children/samples → 200/204
+     * T100: Test deleting room with no constraints returns HTTP 200/204 Contract:
+     * DELETE /rest/storage/rooms/{id} with no children/samples → 200/204
      */
     @Test
     public void testDeleteRoom_NoConstraints_DeletesSuccessfully() throws Exception {
@@ -1132,8 +1142,9 @@ public class StorageLocationRestControllerTest extends BaseWebContextSensitiveTe
 
     /**
      * T100: Test deleting location requires confirmation (handled in frontend)
-     * Contract: DELETE /rest/storage/rooms/{id} → 200/204 (confirmation in frontend)
-     * Note: Confirmation is handled in frontend, backend just validates constraints
+     * Contract: DELETE /rest/storage/rooms/{id} → 200/204 (confirmation in
+     * frontend) Note: Confirmation is handled in frontend, backend just validates
+     * constraints
      */
     @Test
     public void testDeleteLocation_ConfirmationRequired() throws Exception {
@@ -1151,7 +1162,8 @@ public class StorageLocationRestControllerTest extends BaseWebContextSensitiveTe
     /**
      * Test that occupancy counting reflects actual SampleStorageAssignment records,
      * not StoragePosition.occupied flag. This verifies the fix for the bug where
-     * occupancy showed incorrect values (73) instead of actual assignment count (9).
+     * occupancy showed incorrect values (73) instead of actual assignment count
+     * (9).
      */
     @Test
     public void testOccupancyCount_MatchesActualAssignments() throws Exception {
@@ -1205,7 +1217,8 @@ public class StorageLocationRestControllerTest extends BaseWebContextSensitiveTe
         // When: Get shelves for API (which includes occupiedCount)
         List<Map<String, Object>> shelves = storageLocationService.getShelvesForAPI(null);
 
-        // Then: Find our test shelf and verify occupancy count matches assignments (5 + 4 = 9)
+        // Then: Find our test shelf and verify occupancy count matches assignments (5 +
+        // 4 = 9)
         Map<String, Object> testShelf = null;
         for (Map<String, Object> shelf : shelves) {
             if (shelfId.equals(shelf.get("id").toString())) {

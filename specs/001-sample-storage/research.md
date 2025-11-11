@@ -556,8 +556,9 @@ module.exports = defineConfig({
 });
 ```
 
-**Note**: For complete Cypress E2E testing guidelines, see Constitution Section V.5.
-Key requirements:
+**Note**: For complete Cypress E2E testing guidelines, see Constitution Section
+V.5. Key requirements:
+
 - Run tests individually during development (not full suite)
 - Browser console logging enabled by default
 - Video recording disabled (`video: false`)
@@ -585,7 +586,7 @@ describe("Sample Storage Assignment (P1)", function () {
     cy.intercept("GET", "**/rest/storage/rooms").as("getRooms");
     cy.intercept("GET", "**/rest/storage/devices**").as("getDevices");
     cy.intercept("POST", "**/rest/storage/assignments").as("createAssignment");
-    
+
     // Login
     const loginPage = new LoginPage();
     loginPage.visit();
@@ -595,18 +596,18 @@ describe("Sample Storage Assignment (P1)", function () {
 
   it("should assign sample using cascading dropdowns", function () {
     cy.log("Starting assignment workflow");
-    
+
     // Wait for storage selector to be ready (best practice: element readiness)
     cy.get('[data-testid="storage-location-selector"]').should("be.visible");
-    
+
     // Open selector and wait for API call (best practice: intercept timing)
     cy.get('[data-testid="storage-location-selector"]').click();
     cy.wait("@getRooms");
-    
+
     // Select room - wait for element readiness (best practice: retry-ability)
     cy.get('[data-testid="room-dropdown"]').should("be.visible").click();
     cy.contains("Main Laboratory").should("be.visible").click();
-    
+
     // Select device - wait for API and element readiness
     cy.wait("@getDevices");
     cy.get('[data-testid="device-dropdown"]')
@@ -614,7 +615,7 @@ describe("Sample Storage Assignment (P1)", function () {
       .should("not.be.disabled")
       .click();
     cy.contains("Freezer Unit 1").should("be.visible").click();
-    
+
     // Select shelf - same pattern
     cy.wait("@getDevices"); // May trigger again for shelf data
     cy.get('[data-testid="shelf-dropdown"]')
@@ -622,23 +623,23 @@ describe("Sample Storage Assignment (P1)", function () {
       .should("not.be.disabled")
       .click();
     cy.contains("Shelf-A").should("be.visible").click();
-    
+
     // Select rack - same pattern
     cy.get('[data-testid="rack-dropdown"]')
       .should("be.visible")
       .should("not.be.disabled")
       .click();
     cy.contains("Rack R1").should("be.visible").click();
-    
+
     // Enter position - wait for field to be ready
-    cy.get('[data-testid="position-input"]')
-      .should("be.visible")
-      .type("A5");
-    
+    cy.get('[data-testid="position-input"]').should("be.visible").type("A5");
+
     // Verify hierarchical path display (best practice: retry-able assertions)
-    cy.get('[data-testid="location-path"]')
-      .should("contain.text", "Main Laboratory > Freezer Unit 1 > Shelf-A > Rack R1 > Position A5");
-    
+    cy.get('[data-testid="location-path"]').should(
+      "contain.text",
+      "Main Laboratory > Freezer Unit 1 > Shelf-A > Rack R1 > Position A5"
+    );
+
     // Save assignment and verify
     cy.get('[data-testid="save-button"]').should("not.be.disabled").click();
     cy.wait("@createAssignment");
@@ -650,7 +651,9 @@ describe("Sample Storage Assignment (P1)", function () {
 ```
 
 **Key Best Practices Demonstrated**:
-- **Intercept Timing**: Set up `cy.intercept()` before actions that trigger API calls
+
+- **Intercept Timing**: Set up `cy.intercept()` before actions that trigger API
+  calls
 - **Retry-Ability**: Use `.should()` assertions that automatically retry
 - **Element Readiness**: Wait for elements to be visible before interaction
 - **State Verification**: Use proper assertions (`contain.text`, `be.visible`)
@@ -714,9 +717,9 @@ npx cypress run --headed
 npm run cy:run
 ```
 
-**Note**: Per Constitution V.5, tests MUST be run individually during development
-(not full suite). Full suite runs are for CI/CD only. After each run, review
-browser console logs and screenshots (especially on failures).
+**Note**: Per Constitution V.5, tests MUST be run individually during
+development (not full suite). Full suite runs are for CI/CD only. After each
+run, review browser console logs and screenshots (especially on failures).
 
 ---
 
@@ -857,21 +860,22 @@ echo | openssl s_client -servername storage.openelis-global.org -connect storage
 
 #### Q1: How to implement Carbon DataTable expandable rows?
 
-**Decision**: Use Carbon DataTable `expandableRows` prop with `TableExpandHeader`, `TableExpandRow`, and `TableExpandedRow` components.
+**Decision**: Use Carbon DataTable `expandableRows` prop with
+`TableExpandHeader`, `TableExpandRow`, and `TableExpandedRow` components.
 
-**Rationale**: 
-- Carbon Design System v1.15 provides built-in expandable row support via `expandableRows` prop
-- Existing codebase pattern found in `EOrder.js` component demonstrates this pattern
+**Rationale**:
+
+- Carbon Design System v1.15 provides built-in expandable row support via
+  `expandableRows` prop
+- Existing codebase pattern found in `EOrder.js` component demonstrates this
+  pattern
 - Follows constitution requirement (Principle II: Carbon Design System First)
 - Provides accessibility support (ARIA labels, keyboard navigation)
 
 **Implementation Pattern** (from EOrder.js):
+
 ```jsx
-<DataTable
-  rows={data}
-  headers={headers}
-  expandableRows
->
+<DataTable rows={data} headers={headers} expandableRows>
   {({ rows, headers, getHeaderProps, getRowProps, getTableProps }) => (
     <TableContainer>
       <Table>
@@ -904,25 +908,32 @@ echo | openssl s_client -servername storage.openelis-global.org -connect storage
 ```
 
 **Alternatives Considered**:
+
 - ❌ Custom accordion component: Would violate Carbon Design System requirement
 - ❌ Modal dialog: Would interrupt workflow, not inline
 - ❌ Side panel: More complex, not standard Carbon pattern
 
-**Reference**: 
-- Carbon DataTable documentation: https://react.carbondesignsystem.com/?path=/docs/components-datatable--expandable
-- Existing implementation: `frontend/src/components/eOrder/EOrder.js` (lines 290-340)
+**Reference**:
+
+- Carbon DataTable documentation:
+  https://react.carbondesignsystem.com/?path=/docs/components-datatable--expandable
+- Existing implementation: `frontend/src/components/eOrder/EOrder.js` (lines
+  290-340)
 
 #### Q2: How to manage single-row expansion state?
 
-**Decision**: Use React `useState` to track expanded row ID, with logic to collapse previous row when new row expands.
+**Decision**: Use React `useState` to track expanded row ID, with logic to
+collapse previous row when new row expands.
 
 **Rationale**:
+
 - Simple state management pattern
 - Single source of truth for expanded state
 - Easy to implement "only one expanded at a time" behavior
 - No need for complex state management library
 
 **Implementation Pattern**:
+
 ```jsx
 const [expandedRowId, setExpandedRowId] = useState(null);
 
@@ -939,28 +950,32 @@ const handleRowExpand = (rowId) => {
 ```
 
 **Alternatives Considered**:
+
 - ❌ Multiple rows expanded: Violates spec requirement (FR-059d)
 - ❌ Redux/Context: Overkill for simple local component state
 
 #### Q3: What data format for expanded content?
 
-**Decision**: Display additional fields as key-value pairs in a structured layout using Carbon Grid/Column components.
+**Decision**: Display additional fields as key-value pairs in a structured
+layout using Carbon Grid/Column components.
 
 **Rationale**:
+
 - Clear, scannable format
 - Easy to implement with Carbon components
 - Consistent with read-only requirement (FR-059e)
 - Supports internationalization (key labels via React Intl)
 
 **Implementation Pattern**:
+
 ```jsx
 const renderExpandedContent = (row) => {
   const location = row.original; // Full location object
   return (
-    <div style={{ padding: '1rem' }}>
+    <div style={{ padding: "1rem" }}>
       <Grid>
         <Column md={6}>
-          <strong>Description:</strong> {location.description || 'N/A'}
+          <strong>Description:</strong> {location.description || "N/A"}
         </Column>
         <Column md={6}>
           <strong>Created Date:</strong> {formatDate(location.createdDate)}
@@ -973,45 +988,56 @@ const renderExpandedContent = (row) => {
 ```
 
 **Alternatives Considered**:
+
 - ❌ Plain text list: Less structured, harder to scan
 - ❌ Nested table: Overkill for simple key-value display
 - ❌ Card component: More visual weight than needed
 
 #### Q4: How to handle missing/optional fields in expanded view?
 
-**Decision**: Display "N/A" or empty string for missing optional fields, format dates/timestamps consistently.
+**Decision**: Display "N/A" or empty string for missing optional fields, format
+dates/timestamps consistently.
 
 **Rationale**:
+
 - Prevents empty/blank spaces in UI
 - Consistent user experience
 - Clear indication when data is not available
 - Follows existing OpenELIS patterns
 
 **Implementation Pattern**:
+
 ```jsx
 const formatField = (value, formatter) => {
-  if (value === null || value === undefined || value === '') {
-    return intl.formatMessage({ id: 'common.not.available', defaultMessage: 'N/A' });
+  if (value === null || value === undefined || value === "") {
+    return intl.formatMessage({
+      id: "common.not.available",
+      defaultMessage: "N/A",
+    });
   }
   return formatter ? formatter(value) : value;
 };
 ```
 
 **Alternatives Considered**:
+
 - ❌ Hide missing fields: Inconsistent row heights, confusing
 - ❌ Show empty: Looks like a bug
 
 #### Q5: How to ensure expanded content is accessible?
 
-**Decision**: Use Carbon's built-in ARIA attributes from `TableExpandRow` and `TableExpandedRow`, add semantic HTML structure.
+**Decision**: Use Carbon's built-in ARIA attributes from `TableExpandRow` and
+`TableExpandedRow`, add semantic HTML structure.
 
 **Rationale**:
+
 - Carbon components provide accessibility out of the box
 - ARIA labels automatically handled by `TableExpandHeader` and `TableExpandRow`
 - Keyboard navigation supported (Enter/Space to expand)
 - Screen reader friendly with proper heading structure
 
 **Implementation Pattern**:
+
 - Carbon `TableExpandRow` automatically handles:
   - `aria-expanded` attribute
   - `aria-controls` linking to expanded content
@@ -1026,34 +1052,39 @@ const formatField = (value, formatter) => {
   ```
 
 **Alternatives Considered**:
+
 - ❌ Custom ARIA implementation: Carbon already handles this
 - ❌ No accessibility: Violates WCAG 2.1 AA requirement
 
 ### Technical Decisions Summary
 
-| Decision | Choice | Rationale |
-|----------|--------|-----------|
-| UI Pattern | Carbon DataTable expandable rows | Constitution compliance, existing pattern |
-| State Management | React useState (single expandedRowId) | Simple, sufficient for requirement |
-| Content Format | Key-value pairs in Grid layout | Clear, scannable, i18n-friendly |
-| Missing Fields | Display "N/A" | Consistent UX, clear indication |
-| Accessibility | Carbon built-in + semantic HTML | WCAG compliance, minimal custom work |
+| Decision         | Choice                                | Rationale                                 |
+| ---------------- | ------------------------------------- | ----------------------------------------- |
+| UI Pattern       | Carbon DataTable expandable rows      | Constitution compliance, existing pattern |
+| State Management | React useState (single expandedRowId) | Simple, sufficient for requirement        |
+| Content Format   | Key-value pairs in Grid layout        | Clear, scannable, i18n-friendly           |
+| Missing Fields   | Display "N/A"                         | Consistent UX, clear indication           |
+| Accessibility    | Carbon built-in + semantic HTML       | WCAG compliance, minimal custom work      |
 
 ### Dependencies
 
-- **Carbon Design System v1.15**: `@carbon/react` with `TableExpandHeader`, `TableExpandRow`, `TableExpandedRow`
+- **Carbon Design System v1.15**: `@carbon/react` with `TableExpandHeader`,
+  `TableExpandRow`, `TableExpandedRow`
 - **React Intl**: For internationalized field labels
 - **Existing StorageDashboard**: Modify current table implementations
 
 ### Implementation Notes
 
-1. **Backend Changes**: None required - all fields already available in API responses
+1. **Backend Changes**: None required - all fields already available in API
+   responses
 2. **API Changes**: None required - expanded view uses existing location data
-3. **State Management**: Local component state sufficient (no global state needed)
-4. **Testing**: 
+3. **State Management**: Local component state sufficient (no global state
+   needed)
+4. **Testing**:
    - Unit tests: Test expanded state management, content rendering
    - E2E tests: Test expand/collapse interaction, single-row behavior
-5. **Performance**: Minimal impact - expanded content rendered on-demand, no additional API calls
+5. **Performance**: Minimal impact - expanded content rendered on-demand, no
+   additional API calls
 
 ---
 
@@ -1066,24 +1097,33 @@ const formatField = (value, formatter) => {
 
 #### Q1: What barcode printing infrastructure already exists in OpenELIS?
 
-**Decision**: OpenELIS has a complete barcode printing system using iTextPDF library.
+**Decision**: OpenELIS has a complete barcode printing system using iTextPDF
+library.
 
 **Existing Infrastructure**:
 
-1. **BarcodeLabelMaker.java** (`src/main/java/org/openelisglobal/barcode/BarcodeLabelMaker.java`):
+1. **BarcodeLabelMaker.java**
+   (`src/main/java/org/openelisglobal/barcode/BarcodeLabelMaker.java`):
+
    - Uses `com.itextpdf.text.pdf.Barcode128` for Code 128 barcodes
    - Uses `com.google.zxing` for QR codes
    - Generates PDF streams via `createLabelsAsStream()` method
-   - Supports multiple label types: OrderLabel, SpecimenLabel, BlankLabel, BlockLabel, SlideLabel
+   - Supports multiple label types: OrderLabel, SpecimenLabel, BlankLabel,
+     BlockLabel, SlideLabel
    - Label dimensions configurable via `ConfigurationProperties`
 
-2. **LabelMakerServlet.java** (`src/main/java/org/openelisglobal/common/servlet/barcode/LabelMakerServlet.java`):
+2. **LabelMakerServlet.java**
+   (`src/main/java/org/openelisglobal/common/servlet/barcode/LabelMakerServlet.java`):
+
    - Servlet endpoint: `/LabelMakerServlet`
    - Query parameters: `labNo`, `type`, `quantity`, `override`
    - Returns PDF stream with `Content-Type: application/pdf`
-   - Frontend usage: `<iframe src="/LabelMakerServlet?labNo=...&type=...&quantity=..."/>`
+   - Frontend usage:
+     `<iframe src="/LabelMakerServlet?labNo=...&type=...&quantity=..."/>`
 
-3. **BarcodeConfigurationForm.java** (`src/main/java/org/openelisglobal/barcode/form/BarcodeConfigurationForm.java`):
+3. **BarcodeConfigurationForm.java**
+   (`src/main/java/org/openelisglobal/barcode/form/BarcodeConfigurationForm.java`):
+
    - System administration form for barcode settings
    - Configurable properties:
      - Label dimensions (height/width for each label type)
@@ -1091,20 +1131,24 @@ const formatField = (value, formatter) => {
      - Default print quantities
    - Stored in `SiteInformation` table via `BarcodeInformationService`
 
-4. **BarcodeLabelInfo.java** (`src/main/java/org/openelisglobal/barcode/valueholder/BarcodeLabelInfo.java`):
+4. **BarcodeLabelInfo.java**
+   (`src/main/java/org/openelisglobal/barcode/valueholder/BarcodeLabelInfo.java`):
+
    - Entity for tracking print history
    - Fields: `id`, `numPrinted`, `code`, `type`
    - Tracks how many times a label has been printed
    - Used for enforcing maximum print limits
 
-5. **ConfigurationProperties.java** (`src/main/java/org/openelisglobal/common/util/ConfigurationProperties.java`):
+5. **ConfigurationProperties.java**
+   (`src/main/java/org/openelisglobal/common/util/ConfigurationProperties.java`):
    - Property enum values for barcode configuration:
      - `ORDER_BARCODE_HEIGHT`, `ORDER_BARCODE_WIDTH`
      - `SPECIMEN_BARCODE_HEIGHT`, `SPECIMEN_BARCODE_WIDTH`
      - `BLOCK_BARCODE_HEIGHT`, `BLOCK_BARCODE_WIDTH`
      - `SLIDE_BARCODE_HEIGHT`, `SLIDE_BARCODE_WIDTH`
      - `MAX_ORDER_PRINTED`, `MAX_SPECIMEN_PRINTED`
-   - Properties stored in database (`site_information` table) or `SystemConfiguration.properties` file
+   - Properties stored in database (`site_information` table) or
+     `SystemConfiguration.properties` file
 
 **Pattern for Creating New Label Types**:
 
@@ -1117,10 +1161,10 @@ public class StorageLocationLabel extends Label {
             .getPropertyValue(Property.STORAGE_LOCATION_BARCODE_WIDTH));
         height = Float.parseFloat(ConfigurationProperties.getInstance()
             .getPropertyValue(Property.STORAGE_LOCATION_BARCODE_HEIGHT));
-        
+
         // Set barcode code (hierarchical path or short code)
         setCode(shortCode != null ? shortCode : buildHierarchicalPath(device));
-        
+
         // Add fields above/below barcode
         aboveFields = new ArrayList<>();
         aboveFields.add(new LabelField("Location", device.getName(), 12));
@@ -1132,48 +1176,67 @@ public class StorageLocationLabel extends Label {
 **Integration Strategy**:
 
 1. **Create StorageLocationLabel class** extending `Label`:
-   - Use hierarchical path (`ROOM-DEVICE-SHELF-RACK`) or short code for barcode value
-   - Read dimensions from `ConfigurationProperties` (add new properties: `STORAGE_LOCATION_BARCODE_HEIGHT`, `STORAGE_LOCATION_BARCODE_WIDTH`)
+
+   - Use hierarchical path (`ROOM-DEVICE-SHELF-RACK`) or short code for barcode
+     value
+   - Read dimensions from `ConfigurationProperties` (add new properties:
+     `STORAGE_LOCATION_BARCODE_HEIGHT`, `STORAGE_LOCATION_BARCODE_WIDTH`)
    - Display location name, code, hierarchical path on label
 
 2. **Extend LabelMakerServlet** or create new endpoint:
-   - Option A: Extend existing servlet with new `type=storage-location` parameter
-   - Option B: Create REST endpoint `/rest/storage/{type}/{id}/print-label` (preferred for consistency with REST API pattern)
+
+   - Option A: Extend existing servlet with new `type=storage-location`
+     parameter
+   - Option B: Create REST endpoint `/rest/storage/{type}/{id}/print-label`
+     (preferred for consistency with REST API pattern)
    - Return PDF stream same as existing servlet
 
 3. **Add Configuration Properties**:
-   - Add `STORAGE_LOCATION_BARCODE_HEIGHT` and `STORAGE_LOCATION_BARCODE_WIDTH` to `ConfigurationProperties.Property` enum
+
+   - Add `STORAGE_LOCATION_BARCODE_HEIGHT` and `STORAGE_LOCATION_BARCODE_WIDTH`
+     to `ConfigurationProperties.Property` enum
    - Add to `BarcodeConfigurationForm` for system admin UI
    - Store in `site_information` table via `BarcodeInformationService`
 
 4. **Print History Tracking**:
-   - Reuse existing `BarcodeLabelInfo` entity or create new `StorageLocationPrintHistory` entity
-   - Track: location entity ID, short code (if used), printed by (user ID), printed date, print count
+   - Reuse existing `BarcodeLabelInfo` entity or create new
+     `StorageLocationPrintHistory` entity
+   - Track: location entity ID, short code (if used), printed by (user ID),
+     printed date, print count
    - Store in database for audit trail
 
-**Rationale**: Leveraging existing infrastructure reduces development effort and maintains consistency with OpenELIS patterns. iTextPDF is already in dependencies, label configuration system exists, and print history pattern is established.
+**Rationale**: Leveraging existing infrastructure reduces development effort and
+maintains consistency with OpenELIS patterns. iTextPDF is already in
+dependencies, label configuration system exists, and print history pattern is
+established.
 
 **Alternatives Considered**:
+
 - ❌ Custom PDF generation library: Would duplicate existing functionality
-- ❌ Separate label printing system: Would create inconsistency and maintenance overhead
+- ❌ Separate label printing system: Would create inconsistency and maintenance
+  overhead
 - ❌ Third-party label printing service: Would add external dependency and cost
 
 #### Q2: How to configure default printer for label printing?
 
-**Decision**: NEEDS CLARIFICATION - Research required on printer configuration in OpenELIS.
+**Decision**: NEEDS CLARIFICATION - Research required on printer configuration
+in OpenELIS.
 
 **Research Needed**:
+
 - Does OpenELIS have system-wide default printer configuration?
 - How do existing label printing workflows handle printer selection?
 - Is printer selection handled by browser (user selects printer when PDF opens)?
 - Or is there server-side printer configuration?
 
 **Current Understanding**:
+
 - LabelMakerServlet returns PDF stream to browser
 - Browser PDF viewer handles printing (user selects printer)
 - No evidence of server-side printer configuration in existing code
 
 **Action Required**: Research printer configuration options:
+
 1. Check if `ConfigurationProperties` has printer-related settings
 2. Check if there's a printer selection dialog in frontend
 3. Determine if "default printer" means browser default or system default
@@ -1181,9 +1244,11 @@ public class StorageLocationLabel extends Label {
 
 #### Q3: What are the detailed requirements for USB HID barcode scanner integration?
 
-**Decision**: Basic keyboard event handling is documented, but hardware-specific details need research.
+**Decision**: Basic keyboard event handling is documented, but hardware-specific
+details need research.
 
 **Current Research** (from Section 4):
+
 - USB HID scanners emit rapid keyboard events (30-50ms between characters)
 - Detection via character buffer with timeout
 - Enter key indicates scan completion
@@ -1191,11 +1256,13 @@ public class StorageLocationLabel extends Label {
 **Additional Research Needed**:
 
 1. **Scanner Configuration**:
+
    - Do scanners need any configuration (prefix/suffix characters)?
    - How to handle scanners that add Enter automatically vs manual Enter?
    - What happens if user types manually vs scans (detection method)?
 
 2. **Browser Compatibility**:
+
    - Do all browsers handle USB HID scanners identically?
    - Any browser-specific quirks or limitations?
    - Mobile browser support (if applicable)?
@@ -1205,45 +1272,53 @@ public class StorageLocationLabel extends Label {
    - How to distinguish scanner input from normal typing?
    - Should we detect scan speed vs typing speed?
 
-**Action Required**: Document hardware testing results and browser compatibility findings.
+**Action Required**: Document hardware testing results and browser compatibility
+findings.
 
-**Reference**: Existing research in Section 4 provides basic implementation pattern. Additional hardware testing recommended during implementation phase.
+**Reference**: Existing research in Section 4 provides basic implementation
+pattern. Additional hardware testing recommended during implementation phase.
 
 ### Technical Decisions Summary
 
-| Decision | Choice | Rationale |
-|----------|--------|-----------|
-| PDF Generation | Reuse existing iTextPDF via BarcodeLabelMaker | Already in dependencies, proven pattern |
-| Label Type | Create StorageLocationLabel extending Label | Follows existing pattern, maintains consistency |
-| Print Endpoint | REST endpoint `/rest/storage/{type}/{id}/print-label` | Consistent with REST API architecture |
-| Configuration | Extend ConfigurationProperties and BarcodeConfigurationForm | Leverages existing system admin infrastructure |
-| Print History | Create StorageLocationPrintHistory entity | Separate from sample labels, storage-specific audit trail |
-| Printer Selection | Browser PDF viewer (user selects) | Matches existing pattern, no server-side printer config needed |
+| Decision          | Choice                                                      | Rationale                                                      |
+| ----------------- | ----------------------------------------------------------- | -------------------------------------------------------------- |
+| PDF Generation    | Reuse existing iTextPDF via BarcodeLabelMaker               | Already in dependencies, proven pattern                        |
+| Label Type        | Create StorageLocationLabel extending Label                 | Follows existing pattern, maintains consistency                |
+| Print Endpoint    | REST endpoint `/rest/storage/{type}/{id}/print-label`       | Consistent with REST API architecture                          |
+| Configuration     | Extend ConfigurationProperties and BarcodeConfigurationForm | Leverages existing system admin infrastructure                 |
+| Print History     | Create StorageLocationPrintHistory entity                   | Separate from sample labels, storage-specific audit trail      |
+| Printer Selection | Browser PDF viewer (user selects)                           | Matches existing pattern, no server-side printer config needed |
 
 ### Dependencies
 
 - **iTextPDF**: Already in OpenELIS dependencies (`com.itextpdf:itextpdf`)
-- **ZXing**: Already in dependencies for QR code support (`com.google.zxing:core`)
+- **ZXing**: Already in dependencies for QR code support
+  (`com.google.zxing:core`)
 - **BarcodeLabelMaker**: Existing class, extend for storage locations
 - **ConfigurationProperties**: Existing utility, add new properties
 
 ### Implementation Notes
 
 1. **Backend Changes**:
+
    - Create `StorageLocationLabel.java` extending `Label`
-   - Add `STORAGE_LOCATION_BARCODE_HEIGHT` and `STORAGE_LOCATION_BARCODE_WIDTH` to `ConfigurationProperties.Property` enum
+   - Add `STORAGE_LOCATION_BARCODE_HEIGHT` and `STORAGE_LOCATION_BARCODE_WIDTH`
+     to `ConfigurationProperties.Property` enum
    - Extend `BarcodeConfigurationForm` with storage location label dimensions
    - Create REST endpoint for label printing (or extend LabelMakerServlet)
    - Create `StorageLocationPrintHistory` entity and DAO/Service
 
 2. **Frontend Changes**:
+
    - Label Management modal calls REST endpoint
    - PDF opens in new tab (browser handles printing)
    - Display print history from `StorageLocationPrintHistory` entity
 
 3. **Database Changes**:
+
    - Add `storage_location_print_history` table (Liquibase changeset)
-   - Add configuration properties to `site_information` table (via system admin UI)
+   - Add configuration properties to `site_information` table (via system admin
+     UI)
 
 4. **Testing**:
    - Unit tests for `StorageLocationLabel` class
@@ -1254,19 +1329,19 @@ public class StorageLocationLabel extends Label {
 
 ## Summary of Research Findings
 
-| Question                    | Answer                                                                                                                                                                                                                        | Source                                                          |
-| --------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------- |
-| Hibernate XML Mapping       | StringSequenceGenerator + LIMSStringNumberUserType, version on lastupdated, dynamic-update=true                                                                                                                               | Existing .hbm.xml files                                         |
-| FHIR Location Structure     | R4 Location resource with partOf hierarchy, physicalType codes (ro/ve/co), IHE mCSD compliance                                                                                                                                | FHIR R4 spec + IHE mCSD                                         |
-| Carbon Dropdown Cascading   | Controlled components, useEffect for child data fetching, disabled until parent selected                                                                                                                                      | @carbon/react Dropdown API                                      |
-| Barcode Scanner Integration | USB HID keyboard events, character buffer with 50ms timeout, detect Enter key                                                                                                                                                 | Browser keyboard event handling                                 |
-| Barcode Printing Infrastructure | Reuse existing iTextPDF/BarcodeLabelMaker, create StorageLocationLabel extending Label, REST endpoint for printing, extend ConfigurationProperties | Existing OpenELIS barcode printing system (BarcodeLabelMaker.java, LabelMakerServlet.java) |
-| Frontend Data Fetching      | Custom `getFromOpenElisServer` utility with useState/useEffect (NOT SWR)                                                                                                                                                      | Existing OpenELIS hooks                                         |
-| Cypress E2E Setup           | Use existing Cypress 12.17.3 framework, follow patientEntry.cy.js pattern                                                                                                                                                     | Existing OpenELIS E2E tests                                     |
-| Certificate Architecture    | Self-signed certs via certgen container, distributed via Docker volumes to nginx/proxy and Java services. Let's Encrypt setup requires Certbot container, nginx ACME challenge handling, and subdomain-specific server blocks | dev.docker-compose.yml, nginx.conf, certificate-setup-report.md |
-| Carbon DataTable Expandable Rows | Carbon DataTable expandableRows prop with TableExpandHeader/TableExpandRow/TableExpandedRow, React useState for single-row expansion, key-value pairs in Grid layout | Carbon DataTable docs, EOrder.js implementation |
-| Capacity Calculation Logic | Two-tier system: manual `capacity_limit` (if set) OR calculated from children (sum if all children have defined capacities). Racks always use rows × columns. Show "N/A" if capacity cannot be determined. | Spec FR-062a, FR-062b, FR-062c, laboratory workflow analysis |
-| Frontend Unit Testing Pattern | Standard import order (React → Testing Library → jest-dom → Intl → Component → Utils → Messages), mock utilities before imports, use `renderWithIntl` helper, AAA pattern, `getBy*`/`queryBy*`/`findBy*` selection, `waitFor` for async (never `setTimeout`) | StorageDashboard.test.jsx (canonical example), React Testing Library docs |
+| Question                         | Answer                                                                                                                                                                                                                                                       | Source                                                                                     |
+| -------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------ |
+| Hibernate XML Mapping            | StringSequenceGenerator + LIMSStringNumberUserType, version on lastupdated, dynamic-update=true                                                                                                                                                              | Existing .hbm.xml files                                                                    |
+| FHIR Location Structure          | R4 Location resource with partOf hierarchy, physicalType codes (ro/ve/co), IHE mCSD compliance                                                                                                                                                               | FHIR R4 spec + IHE mCSD                                                                    |
+| Carbon Dropdown Cascading        | Controlled components, useEffect for child data fetching, disabled until parent selected                                                                                                                                                                     | @carbon/react Dropdown API                                                                 |
+| Barcode Scanner Integration      | USB HID keyboard events, character buffer with 50ms timeout, detect Enter key                                                                                                                                                                                | Browser keyboard event handling                                                            |
+| Barcode Printing Infrastructure  | Reuse existing iTextPDF/BarcodeLabelMaker, create StorageLocationLabel extending Label, REST endpoint for printing, extend ConfigurationProperties                                                                                                           | Existing OpenELIS barcode printing system (BarcodeLabelMaker.java, LabelMakerServlet.java) |
+| Frontend Data Fetching           | Custom `getFromOpenElisServer` utility with useState/useEffect (NOT SWR)                                                                                                                                                                                     | Existing OpenELIS hooks                                                                    |
+| Cypress E2E Setup                | Use existing Cypress 12.17.3 framework, follow patientEntry.cy.js pattern                                                                                                                                                                                    | Existing OpenELIS E2E tests                                                                |
+| Certificate Architecture         | Self-signed certs via certgen container, distributed via Docker volumes to nginx/proxy and Java services. Let's Encrypt setup requires Certbot container, nginx ACME challenge handling, and subdomain-specific server blocks                                | dev.docker-compose.yml, nginx.conf, certificate-setup-report.md                            |
+| Carbon DataTable Expandable Rows | Carbon DataTable expandableRows prop with TableExpandHeader/TableExpandRow/TableExpandedRow, React useState for single-row expansion, key-value pairs in Grid layout                                                                                         | Carbon DataTable docs, EOrder.js implementation                                            |
+| Capacity Calculation Logic       | Two-tier system: manual `capacity_limit` (if set) OR calculated from children (sum if all children have defined capacities). Racks always use rows × columns. Show "N/A" if capacity cannot be determined.                                                   | Spec FR-062a, FR-062b, FR-062c, laboratory workflow analysis                               |
+| Frontend Unit Testing Pattern    | Standard import order (React → Testing Library → jest-dom → Intl → Component → Utils → Messages), mock utilities before imports, use `renderWithIntl` helper, AAA pattern, `getBy*`/`queryBy*`/`findBy*` selection, `waitFor` for async (never `setTimeout`) | StorageDashboard.test.jsx (canonical example), React Testing Library docs                  |
 
 **Decisions Made**:
 
@@ -1280,8 +1355,12 @@ public class StorageLocationLabel extends Label {
 7. Set up Let's Encrypt for `storage.openelis-global.org` subdomain
    incrementally, keeping self-signed certs for other services during
    development phase
-8. Reuse existing OpenELIS barcode printing infrastructure (iTextPDF, BarcodeLabelMaker) for storage location labels
-9. Implement two-tier capacity system: manual `capacity_limit` takes precedence, otherwise calculate from children (sum if all children have defined capacities). Display "N/A" with tooltip when capacity cannot be determined. Visually distinguish manual vs calculated capacities.
+8. Reuse existing OpenELIS barcode printing infrastructure (iTextPDF,
+   BarcodeLabelMaker) for storage location labels
+9. Implement two-tier capacity system: manual `capacity_limit` takes precedence,
+   otherwise calculate from children (sum if all children have defined
+   capacities). Display "N/A" with tooltip when capacity cannot be determined.
+   Visually distinguish manual vs calculated capacities.
 
 **Next Steps**: Proceed to Phase 1 design artifacts (data-model.md, contracts/,
 quickstart.md)
@@ -1290,43 +1369,69 @@ quickstart.md)
 
 ## 9. Capacity Calculation Logic
 
-**Question**: How should capacity be calculated for Devices and Shelves when `capacity_limit` is not set? How should the system handle cases where some children have defined capacities and others don't?
+**Question**: How should capacity be calculated for Devices and Shelves when
+`capacity_limit` is not set? How should the system handle cases where some
+children have defined capacities and others don't?
 
-**Research Context**: 
-- Spec requires occupancy display (FR-061, FR-062) showing fraction, percentage, and progress bar
+**Research Context**:
+
+- Spec requires occupancy display (FR-061, FR-062) showing fraction, percentage,
+  and progress bar
 - Devices and Shelves have optional `capacity_limit` field
 - Racks always use calculated capacity (rows × columns per FR-017)
-- Need to support both manual planning limits and dynamic calculation from hierarchy
+- Need to support both manual planning limits and dynamic calculation from
+  hierarchy
 
 **Decision**: Two-tier capacity system with hierarchical fallback
 
 **Rationale**:
-1. **Manual limits for planning**: Labs need to set capacity limits for procurement planning (e.g., "Freezer Unit 1 can hold 500 samples")
-2. **Dynamic calculation for flexibility**: When limits aren't set, calculate from actual storage structure (sum of child capacities)
-3. **Consistency requirement**: If ANY child lacks defined capacity, cannot reliably calculate parent (would show misleading data)
-4. **User transparency**: Users must understand whether capacity is manual or calculated (visual distinction required)
+
+1. **Manual limits for planning**: Labs need to set capacity limits for
+   procurement planning (e.g., "Freezer Unit 1 can hold 500 samples")
+2. **Dynamic calculation for flexibility**: When limits aren't set, calculate
+   from actual storage structure (sum of child capacities)
+3. **Consistency requirement**: If ANY child lacks defined capacity, cannot
+   reliably calculate parent (would show misleading data)
+4. **User transparency**: Users must understand whether capacity is manual or
+   calculated (visual distinction required)
 
 **Implementation Pattern**:
+
 - **Tier 1**: If `capacity_limit` is set, use that value (manual/static limit)
 - **Tier 2**: If `capacity_limit` is NULL:
   - Calculate from child locations (shelves for devices, racks for shelves)
-  - If ALL children have defined capacities (either static `capacity_limit` OR calculated from their own children), sum those capacities
-  - If ANY child lacks defined capacity, return null (capacity cannot be determined)
-- **Racks**: Always calculated (rows × columns), never use `capacity_limit` field
+  - If ALL children have defined capacities (either static `capacity_limit` OR
+    calculated from their own children), sum those capacities
+  - If ANY child lacks defined capacity, return null (capacity cannot be
+    determined)
+- **Racks**: Always calculated (rows × columns), never use `capacity_limit`
+  field
 
 **UI Display**:
+
 - When capacity is defined: Show "287/500 (57%)" with progress bar
-- When capacity cannot be determined: Show "N/A" or "Unlimited" with tooltip explaining why
-- Visual distinction: Badge, tooltip, or icon to indicate "Manual Limit" vs "Calculated"
+- When capacity cannot be determined: Show "N/A" or "Unlimited" with tooltip
+  explaining why
+- Visual distinction: Badge, tooltip, or icon to indicate "Manual Limit" vs
+  "Calculated"
 
 **Alternatives Considered**:
-- **Option B (Simplified)**: Only show occupancy when `capacity_limit` is set, otherwise show "Unlimited" - **Rejected**: Too restrictive, doesn't leverage rack capacity data
-- **Option C (Always Calculate)**: Remove `capacity_limit` field, always calculate from children - **Rejected**: Labs need manual limits for planning purposes
+
+- **Option B (Simplified)**: Only show occupancy when `capacity_limit` is set,
+  otherwise show "Unlimited" - **Rejected**: Too restrictive, doesn't leverage
+  rack capacity data
+- **Option C (Always Calculate)**: Remove `capacity_limit` field, always
+  calculate from children - **Rejected**: Labs need manual limits for planning
+  purposes
 
 **Dependencies**:
-- Backend: `StorageLocationService` must implement `calculateDeviceCapacity()` and `calculateShelfCapacity()` methods
-- API: Device/Shelf responses must include `totalCapacity` and `capacityType` fields
-- Frontend: Occupancy display must handle null capacity and show visual distinction
+
+- Backend: `StorageLocationService` must implement `calculateDeviceCapacity()`
+  and `calculateShelfCapacity()` methods
+- API: Device/Shelf responses must include `totalCapacity` and `capacityType`
+  fields
+- Frontend: Occupancy display must handle null capacity and show visual
+  distinction
 
 **Reference**: Spec FR-062a, FR-062b, FR-062c, FR-061, FR-063
 
@@ -1335,15 +1440,18 @@ quickstart.md)
 ## 10. Frontend Unit Testing Standard Pattern
 
 **Feature**: Standardized frontend unit testing patterns for React components  
-**Purpose**: Establish consistent, reliable testing patterns to prevent recurring test failures and maintainability issues
+**Purpose**: Establish consistent, reliable testing patterns to prevent
+recurring test failures and maintainability issues
 
 ### Research Questions
 
 #### Q1: What is the standard test file structure and import pattern?
 
-**Decision**: Follow exact import order and structure from `StorageDashboard.test.jsx` (canonical reference).
+**Decision**: Follow exact import order and structure from
+`StorageDashboard.test.jsx` (canonical reference).
 
 **Standard Import Order (MANDATORY)**:
+
 ```javascript
 // 1. React
 import React from "react";
@@ -1377,18 +1485,22 @@ import messages from "../../../languages/en.json";
 ```
 
 **Rationale**:
+
 - Import order prevents module hoisting conflicts
 - Testing Library imports must come before jest-dom
 - Utilities imported explicitly (not just mocked) for type checking
 - Messages imported last (not used in mocks)
 
-**Reference**: `frontend/src/components/storage/StorageDashboard.test.jsx` (lines 1-15)
+**Reference**: `frontend/src/components/storage/StorageDashboard.test.jsx`
+(lines 1-15)
 
 #### Q2: How should mocks be structured?
 
-**Decision**: Mock utilities BEFORE imports that use them, use `jest.mock()` at module level.
+**Decision**: Mock utilities BEFORE imports that use them, use `jest.mock()` at
+module level.
 
 **Standard Mock Pattern**:
+
 ```javascript
 // Mock the API utilities (MUST be before imports that use them)
 jest.mock("../utils/Utils", () => ({
@@ -1411,27 +1523,26 @@ jest.mock("react-router-dom", () => ({
 // Mock child components if they have complex dependencies
 jest.mock("./ChildComponent", () => {
   return function MockChildComponent({ prop1, onCallback }) {
-    return (
-      <div data-testid="child-component">
-        {/* Mock implementation */}
-      </div>
-    );
+    return <div data-testid="child-component">{/* Mock implementation */}</div>;
   };
 });
 ```
 
 **Rationale**:
+
 - Jest hoists `jest.mock()` calls, so they must be before imports
 - Using `jest.requireActual()` preserves other router functionality
 - Mock child components to isolate unit under test
 
-**Reference**: `frontend/src/components/storage/StorageDashboard.test.jsx` (lines 17-31)
+**Reference**: `frontend/src/components/storage/StorageDashboard.test.jsx`
+(lines 17-31)
 
 #### Q3: What helper functions should be standardized?
 
 **Decision**: Use `renderWithIntl` helper and optional `setupApiMocks` helper.
 
 **Standard Helper Functions**:
+
 ```javascript
 // Helper function to create mock location (if using useLocation)
 const createMockLocation = (pathname) => ({ pathname });
@@ -1446,12 +1557,14 @@ const mockNotificationContext = {
 // Standard render helper with IntlProvider
 const renderWithIntl = (component) => {
   return render(
-    <BrowserRouter> {/* Include if component uses routing */}
+    <BrowserRouter>
+      {" "}
+      {/* Include if component uses routing */}
       <IntlProvider locale="en" messages={messages}>
         {/* Include NotificationContext.Provider if needed */}
         {component}
       </IntlProvider>
-    </BrowserRouter>,
+    </BrowserRouter>
   );
 };
 
@@ -1474,17 +1587,21 @@ const setupApiMocks = (overrides = {}) => {
 ```
 
 **Rationale**:
+
 - `renderWithIntl` ensures all components have i18n context
 - `setupApiMocks` centralizes API mocking logic
 - Helper functions reduce test boilerplate
 
-**Reference**: `frontend/src/components/storage/StorageDashboard.test.jsx` (lines 33-90)
+**Reference**: `frontend/src/components/storage/StorageDashboard.test.jsx`
+(lines 33-90)
 
 #### Q4: How should test structure be organized?
 
-**Decision**: Follow AAA pattern (Arrange, Act, Assert) with descriptive test names and task references.
+**Decision**: Follow AAA pattern (Arrange, Act, Assert) with descriptive test
+names and task references.
 
 **Standard Test Structure**:
+
 ```javascript
 describe("ComponentName", () => {
   // Define mock data constants
@@ -1506,10 +1623,7 @@ describe("ComponentName", () => {
   test("testName", async () => {
     // Arrange: Setup test data and render component
     renderWithIntl(
-      <ComponentName
-        prop1={mockData.prop1}
-        onCallback={mockCallback}
-      />,
+      <ComponentName prop1={mockData.prop1} onCallback={mockCallback} />
     );
 
     // Act: Perform user actions
@@ -1529,18 +1643,22 @@ describe("ComponentName", () => {
 ```
 
 **Rationale**:
+
 - AAA pattern makes tests readable and maintainable
 - Descriptive test names (testWhat_When_ExpectedResult)
 - Task references link tests to specifications
 - `beforeEach` ensures test isolation
 
-**Reference**: `frontend/src/components/storage/StorageDashboard.test.jsx` (lines 92-141)
+**Reference**: `frontend/src/components/storage/StorageDashboard.test.jsx`
+(lines 92-141)
 
 #### Q5: What query methods should be used and when?
 
-**Decision**: Use `screen.getBy*` for required elements, `screen.queryBy*` for absence checks, `screen.findBy*` for async queries.
+**Decision**: Use `screen.getBy*` for required elements, `screen.queryBy*` for
+absence checks, `screen.findBy*` for async queries.
 
 **Query Method Selection**:
+
 ```javascript
 // ✅ CORRECT: Use getBy* for required elements (throws if not found)
 const button = screen.getByTestId("button-id");
@@ -1564,18 +1682,21 @@ const button = screen.queryByTestId("button-id"); // May be null
 ```
 
 **Rationale**:
+
 - `getBy*` throws immediately if element not found (fails fast)
 - `queryBy*` returns null (safe for absence checks)
 - `findBy*` waits and retries (handles async rendering)
 - `within()` scopes queries to containers (prevents false matches)
 
-**Reference**: React Testing Library documentation, `StorageDashboard.test.jsx` examples
+**Reference**: React Testing Library documentation, `StorageDashboard.test.jsx`
+examples
 
 #### Q6: How should async operations be handled?
 
 **Decision**: Use `waitFor` for async operations, never use `setTimeout`.
 
 **Async Operation Pattern**:
+
 ```javascript
 // ✅ CORRECT: Use waitFor for async operations
 test("testAsyncOperation", async () => {
@@ -1601,6 +1722,7 @@ expect(screen.getByText("Loaded Data")).toBeInTheDocument(); // FAILS - element 
 ```
 
 **Rationale**:
+
 - `waitFor` retries assertions until they pass or timeout
 - `findBy*` queries automatically wait and retry
 - `setTimeout` is unreliable and arbitrary
@@ -1610,14 +1732,14 @@ expect(screen.getByText("Loaded Data")).toBeInTheDocument(); // FAILS - element 
 
 ### Technical Decisions Summary
 
-| Decision | Choice | Rationale |
-|----------|--------|-----------|
-| Import Order | React → Testing Library → jest-dom → Intl → Component → Utils → Messages | Prevents module hoisting conflicts |
-| Mock Placement | Before imports that use them | Jest hoisting requires this order |
-| Helper Functions | `renderWithIntl`, optional `setupApiMocks` | Reduces boilerplate, ensures i18n context |
-| Test Structure | AAA pattern with task references | Readable, maintainable, traceable |
-| Query Methods | `getBy*` (required), `queryBy*` (absence), `findBy*` (async) | Appropriate tool for each use case |
-| Async Handling | `waitFor` and `findBy*`, never `setTimeout` | Reliable, retry-able, follows best practices |
+| Decision         | Choice                                                                   | Rationale                                    |
+| ---------------- | ------------------------------------------------------------------------ | -------------------------------------------- |
+| Import Order     | React → Testing Library → jest-dom → Intl → Component → Utils → Messages | Prevents module hoisting conflicts           |
+| Mock Placement   | Before imports that use them                                             | Jest hoisting requires this order            |
+| Helper Functions | `renderWithIntl`, optional `setupApiMocks`                               | Reduces boilerplate, ensures i18n context    |
+| Test Structure   | AAA pattern with task references                                         | Readable, maintainable, traceable            |
+| Query Methods    | `getBy*` (required), `queryBy*` (absence), `findBy*` (async)             | Appropriate tool for each use case           |
+| Async Handling   | `waitFor` and `findBy*`, never `setTimeout`                              | Reliable, retry-able, follows best practices |
 
 ### Dependencies
 
@@ -1628,8 +1750,10 @@ expect(screen.getByText("Loaded Data")).toBeInTheDocument(); // FAILS - element 
 
 ### Implementation Notes
 
-1. **Test Template**: Created `frontend/src/components/storage/__tests__/TEST_TEMPLATE.jsx` as reference
-2. **Canonical Example**: `StorageDashboard.test.jsx` serves as the reference implementation
+1. **Test Template**: Created
+   `frontend/src/components/storage/__tests__/TEST_TEMPLATE.jsx` as reference
+2. **Canonical Example**: `StorageDashboard.test.jsx` serves as the reference
+   implementation
 3. **Best Practices Checklist**: Included in test template comments
 4. **Common Pitfalls**:
    - ❌ Importing `waitFor` but not using it (causes module resolution issues)
@@ -1641,7 +1765,9 @@ expect(screen.getByText("Loaded Data")).toBeInTheDocument(); // FAILS - element 
 ### Best Practices Checklist
 
 **MANDATORY for all test files**:
-- ✅ Import order: React → Testing Library → jest-dom → Intl → Component → Utils → Messages
+
+- ✅ Import order: React → Testing Library → jest-dom → Intl → Component → Utils
+  → Messages
 - ✅ Mock utilities BEFORE imports that use them
 - ✅ Use `renderWithIntl` helper for all components
 - ✅ Use `beforeEach` to clear mocks
@@ -1660,34 +1786,42 @@ expect(screen.getByText("Loaded Data")).toBeInTheDocument(); // FAILS - element 
 - ✅ Clear mocks in `beforeEach`
 - ✅ Use `setupApiMocks` helper for complex API mocking scenarios
 
-**Reference**: 
+**Reference**:
+
 - Test Template: `frontend/src/components/storage/__tests__/TEST_TEMPLATE.jsx`
 - Canonical Example: `frontend/src/components/storage/StorageDashboard.test.jsx`
-- React Testing Library Docs: https://testing-library.com/docs/react-testing-library/intro/
+- React Testing Library Docs:
+  https://testing-library.com/docs/react-testing-library/intro/
 
 ---
 
 ## 11. SampleItem Entity Structure and Storage Integration
 
 **Feature**: SampleItem-level storage tracking  
-**Purpose**: Document SampleItem entity structure and its relationship to Sample entity for storage management integration
+**Purpose**: Document SampleItem entity structure and its relationship to Sample
+entity for storage management integration
 
 ### Research Questions
 
 #### Q1: What is the SampleItem entity structure?
 
-**Decision**: SampleItem represents physical specimens collected from patients, linked to a parent Sample (order).
+**Decision**: SampleItem represents physical specimens collected from patients,
+linked to a parent Sample (order).
 
 **Entity Structure** (`org.openelisglobal.sampleitem.valueholder.SampleItem`):
 
 **Key Fields**:
-- `id` (String) - Primary key, generated via `StringSequenceGenerator` (sequence: `sample_item_seq`)
+
+- `id` (String) - Primary key, generated via `StringSequenceGenerator`
+  (sequence: `sample_item_seq`)
 - `fhirUuid` (UUID) - FHIR resource identifier for Specimen mapping
-- `sample` (Many-to-One → Sample) - Parent Sample (order) relationship via `SAMP_ID` foreign key
+- `sample` (Many-to-One → Sample) - Parent Sample (order) relationship via
+  `SAMP_ID` foreign key
 - `sampleItemId` (String) - External identifier for the physical specimen
 - `externalId` (String) - Additional external identifier
 - `sortOrder` (String) - Ordering within parent Sample
-- `typeOfSample` (Many-to-One → TypeOfSample) - Specimen type (blood, urine, etc.)
+- `typeOfSample` (Many-to-One → TypeOfSample) - Specimen type (blood, urine,
+  etc.)
 - `sourceOfSample` (Many-to-One → SourceOfSample) - Collection source
 - `quantity` (Double) - Specimen quantity
 - `unitOfMeasure` (Many-to-One → UnitOfMeasure) - Quantity unit
@@ -1701,6 +1835,7 @@ expect(screen.getByText("Loaded Data")).toBeInTheDocument(); // FAILS - element 
 - `lastupdated` (Timestamp) - Optimistic locking version field
 
 **Hibernate Mapping** (`SampleItem.hbm.xml`):
+
 - Table: `SAMPLE_ITEM`
 - ID generation: `StringSequenceGenerator` with `sample_item_seq`
 - Optimistic locking: `version` on `lastupdated` column
@@ -1709,24 +1844,31 @@ expect(screen.getByText("Loaded Data")).toBeInTheDocument(); // FAILS - element 
 - Many-to-One to SourceOfSample: `SOURCE_ID` foreign key
 - Many-to-One to UnitOfMeasure: `UOM_ID` foreign key
 
-**Reference**: `src/main/java/org/openelisglobal/sampleitem/valueholder/SampleItem.java`, `src/main/resources/hibernate/hbm/SampleItem.hbm.xml`
+**Reference**:
+`src/main/java/org/openelisglobal/sampleitem/valueholder/SampleItem.java`,
+`src/main/resources/hibernate/hbm/SampleItem.hbm.xml`
 
 #### Q2: What is the relationship between Sample and SampleItem?
 
-**Decision**: One-to-Many relationship: One Sample (order) can have multiple SampleItems (physical specimens).
+**Decision**: One-to-Many relationship: One Sample (order) can have multiple
+SampleItems (physical specimens).
 
 **Sample Entity** (`org.openelisglobal.sample.valueholder.Sample`):
+
 - Represents a **laboratory order** (accession)
 - Key fields: `id`, `accessionNumber`, `collectionDate`, `status`, `fhirUuid`
-- One Sample can have multiple SampleItems (e.g., blood draw with multiple tubes)
+- One Sample can have multiple SampleItems (e.g., blood draw with multiple
+  tubes)
 
 **SampleItem Entity**:
+
 - Represents a **physical specimen** collected from a patient
 - Each SampleItem belongs to exactly one Sample (via `SAMP_ID` foreign key)
 - Multiple SampleItems can belong to the same Sample
 - Each SampleItem can be stored independently
 
 **Relationship Pattern**:
+
 ```
 Sample (Order)
 ├── SampleItem 1 (Blood Tube 1) → Can be stored in Location A
@@ -1735,6 +1877,7 @@ Sample (Order)
 ```
 
 **Query Pattern**:
+
 ```java
 // Get all SampleItems for a Sample
 List<SampleItem> items = sampleItemService.getSampleItemsBySampleId(sampleId);
@@ -1744,19 +1887,26 @@ Sample parentSample = sampleItem.getSample();
 String accessionNumber = parentSample.getAccessionNumber();
 ```
 
-**Reference**: `src/main/java/org/openelisglobal/sample/valueholder/Sample.java`, `src/main/java/org/openelisglobal/sampleitem/service/SampleItemServiceImpl.java`
+**Reference**:
+`src/main/java/org/openelisglobal/sample/valueholder/Sample.java`,
+`src/main/java/org/openelisglobal/sampleitem/service/SampleItemServiceImpl.java`
 
 #### Q3: How does storage assignment integrate with SampleItem?
 
-**Decision**: Storage tracking operates at SampleItem level via `SampleStorageAssignment` junction table.
+**Decision**: Storage tracking operates at SampleItem level via
+`SampleStorageAssignment` junction table.
 
 **Storage Assignment Entity** (`SampleStorageAssignment`):
-- **Foreign Key**: `sample_item_id` → `SampleItem.id` (NOT `sample_id` → `Sample.id`)
+
+- **Foreign Key**: `sample_item_id` → `SampleItem.id` (NOT `sample_id` →
+  `Sample.id`)
 - **Polymorphic Location**: `location_id` + `location_type` (device/shelf/rack)
-- **Optional Position**: `position_coordinate` (text field for specific position)
+- **Optional Position**: `position_coordinate` (text field for specific
+  position)
 - **Unique Constraint**: One assignment per SampleItem (one current location)
 
 **Data Model**:
+
 ```sql
 CREATE TABLE sample_storage_assignment (
     id VARCHAR(36) PRIMARY KEY,
@@ -1772,6 +1922,7 @@ CREATE TABLE sample_storage_assignment (
 ```
 
 **Query Patterns**:
+
 ```java
 // Get storage location for a SampleItem
 SampleStorageAssignment assignment = assignmentDAO.getBySampleItemId(sampleItemId);
@@ -1794,20 +1945,27 @@ for (SampleItem item : items) {
 }
 ```
 
-**Reference**: `specs/001-sample-storage/data-model.md`, `specs/001-sample-storage/plan.md` (SampleItem Entity Integration section)
+**Reference**: `specs/001-sample-storage/data-model.md`,
+`specs/001-sample-storage/plan.md` (SampleItem Entity Integration section)
 
 #### Q4: How should the dashboard display SampleItem information?
 
-**Decision**: Dashboard displays SampleItem as primary entity with parent Sample context for grouping/sorting.
+**Decision**: Dashboard displays SampleItem as primary entity with parent Sample
+context for grouping/sorting.
 
 **Display Pattern**:
+
 - **Primary Identifier**: SampleItem ID or External ID (if available)
 - **Secondary Context**: Parent Sample accession number (for grouping/sorting)
-- **Table Columns**: SampleItem ID, Parent Sample Accession, Type, Status, Location, Actions
-- **Sortable By**: SampleItem ID, Parent Sample Accession, Type, Status, Location
-- **Grouping**: Optional grouping by parent Sample (all SampleItems from same Sample together)
+- **Table Columns**: SampleItem ID, Parent Sample Accession, Type, Status,
+  Location, Actions
+- **Sortable By**: SampleItem ID, Parent Sample Accession, Type, Status,
+  Location
+- **Grouping**: Optional grouping by parent Sample (all SampleItems from same
+  Sample together)
 
 **Frontend Data Structure**:
+
 ```javascript
 {
   sampleItemId: "12345",
@@ -1830,101 +1988,132 @@ for (SampleItem item : items) {
 ```
 
 **Search Support**:
+
 - Search by SampleItem ID
 - Search by SampleItem External ID
-- Search by parent Sample accession number (returns all SampleItems for that Sample)
+- Search by parent Sample accession number (returns all SampleItems for that
+  Sample)
 
-**Reference**: `specs/001-sample-storage/spec.md` (Storage Granularity section, FR-033b, FR-064)
+**Reference**: `specs/001-sample-storage/spec.md` (Storage Granularity section,
+FR-033b, FR-064)
 
 #### Q5: How does FHIR integration work with SampleItem storage?
 
-**Decision**: SampleItem storage location maps to FHIR Specimen resource `container` reference.
+**Decision**: SampleItem storage location maps to FHIR Specimen resource
+`container` reference.
 
 **FHIR Specimen Resource Mapping**:
+
 - Each SampleItem has a corresponding FHIR Specimen resource (via `fhirUuid`)
-- Storage location stored in `Specimen.container.extension[storage-location]` reference
+- Storage location stored in `Specimen.container.extension[storage-location]`
+  reference
 - Container identifier contains hierarchical path for human readability
 
 **FHIR Resource Structure**:
+
 ```json
 {
   "resourceType": "Specimen",
   "id": "{sampleItem.fhirUuid}",
-  "container": [{
-    "identifier": {
-      "value": "Main Laboratory > Freezer Unit 1 > Shelf-A > Rack R1 > Position A5"
-    },
-    "extension": [{
-      "url": "http://openelis.org/fhir/extension/storage-location",
-      "valueReference": {
-        "reference": "Location/{storage_location_fhir_uuid}"
-      }
-    }, {
-      "url": "http://openelis.org/fhir/extension/storage-position-coordinate",
-      "valueString": "A5"
-    }]
-  }],
-  "extension": [{
-    "url": "http://openelis.org/fhir/extension/storage-assigned-date",
-    "valueDateTime": "2025-11-15T10:30:00Z"
-  }]
+  "container": [
+    {
+      "identifier": {
+        "value": "Main Laboratory > Freezer Unit 1 > Shelf-A > Rack R1 > Position A5"
+      },
+      "extension": [
+        {
+          "url": "http://openelis.org/fhir/extension/storage-location",
+          "valueReference": {
+            "reference": "Location/{storage_location_fhir_uuid}"
+          }
+        },
+        {
+          "url": "http://openelis.org/fhir/extension/storage-position-coordinate",
+          "valueString": "A5"
+        }
+      ]
+    }
+  ],
+  "extension": [
+    {
+      "url": "http://openelis.org/fhir/extension/storage-assigned-date",
+      "valueDateTime": "2025-11-15T10:30:00Z"
+    }
+  ]
 }
 ```
 
 **Sync Strategy**:
-- On SampleStorageAssignment create/update: Update corresponding Specimen resource `container` extension
-- Use existing `FhirTransformService` and `FhirPersistanceService` patterns
-- Specimen resource already exists (created during sample entry), only update container extension
 
-**Reference**: `specs/001-sample-storage/plan.md` (SampleItem Entity Integration section), `specs/001-sample-storage/contracts/fhir-mappings.md`
+- On SampleStorageAssignment create/update: Update corresponding Specimen
+  resource `container` extension
+- Use existing `FhirTransformService` and `FhirPersistanceService` patterns
+- Specimen resource already exists (created during sample entry), only update
+  container extension
+
+**Reference**: `specs/001-sample-storage/plan.md` (SampleItem Entity Integration
+section), `specs/001-sample-storage/contracts/fhir-mappings.md`
 
 ### Technical Decisions Summary
 
-| Decision | Choice | Rationale |
-|----------|--------|-----------|
-| Storage Granularity | SampleItem level (not Sample level) | Physical specimens are stored, not orders |
-| Assignment Entity | `SampleStorageAssignment.sample_item_id` → `SampleItem.id` | Direct link to physical specimen |
-| Dashboard Display | SampleItem primary, Sample context secondary | Users need to see individual specimens with order context |
-| Search Support | SampleItem ID/External ID OR Sample accession | Flexible search for both specimen and order identifiers |
-| FHIR Integration | Specimen.container extension | Standard FHIR pattern for specimen storage location |
+| Decision            | Choice                                                     | Rationale                                                 |
+| ------------------- | ---------------------------------------------------------- | --------------------------------------------------------- |
+| Storage Granularity | SampleItem level (not Sample level)                        | Physical specimens are stored, not orders                 |
+| Assignment Entity   | `SampleStorageAssignment.sample_item_id` → `SampleItem.id` | Direct link to physical specimen                          |
+| Dashboard Display   | SampleItem primary, Sample context secondary               | Users need to see individual specimens with order context |
+| Search Support      | SampleItem ID/External ID OR Sample accession              | Flexible search for both specimen and order identifiers   |
+| FHIR Integration    | Specimen.container extension                               | Standard FHIR pattern for specimen storage location       |
 
 ### Dependencies
 
 - **SampleItem Entity**: Existing entity, no modifications required
 - **Sample Entity**: Existing entity, no modifications required
-- **SampleStorageAssignment Entity**: Must reference `SampleItem.id` (not `Sample.id`)
-- **FHIR Specimen Resource**: Existing resource, update `container` extension on assignment
+- **SampleStorageAssignment Entity**: Must reference `SampleItem.id` (not
+  `Sample.id`)
+- **FHIR Specimen Resource**: Existing resource, update `container` extension on
+  assignment
 
 ### Implementation Notes
 
 1. **Backend Changes**:
-   - `SampleStorageAssignment` entity: Change foreign key from `sample_id` to `sample_item_id`
+
+   - `SampleStorageAssignment` entity: Change foreign key from `sample_id` to
+     `sample_item_id`
    - Service methods: Update to accept `sampleItemId` instead of `sampleId`
    - DAO queries: Update to join on `SampleItem` instead of `Sample`
    - FHIR sync: Update Specimen `container` extension on assignment
 
 2. **Frontend Changes**:
+
    - Dashboard: Display SampleItem ID/External ID as primary identifier
    - Dashboard: Include parent Sample accession number for context
    - Search: Support both SampleItem ID/External ID and Sample accession number
    - Assignment modal: Accept SampleItem ID (not Sample ID)
 
 3. **Database Changes**:
-   - `SampleStorageAssignment` table: Change `sample_id` column to `sample_item_id`
+
+   - `SampleStorageAssignment` table: Change `sample_id` column to
+     `sample_item_id`
    - Update foreign key constraint: `sample_item_id` → `sample_item(id)`
-   - Update unique constraint: `UNIQUE (sample_item_id)` (one location per SampleItem)
+   - Update unique constraint: `UNIQUE (sample_item_id)` (one location per
+     SampleItem)
 
 4. **Testing**:
    - Unit tests: Verify SampleItem-level assignment logic
-   - Integration tests: Verify multiple SampleItems from same Sample can have different locations
+   - Integration tests: Verify multiple SampleItems from same Sample can have
+     different locations
    - E2E tests: Verify dashboard displays SampleItem with parent Sample context
 
-**Reference**: 
-- Entity: `src/main/java/org/openelisglobal/sampleitem/valueholder/SampleItem.java`
+**Reference**:
+
+- Entity:
+  `src/main/java/org/openelisglobal/sampleitem/valueholder/SampleItem.java`
 - Hibernate Mapping: `src/main/resources/hibernate/hbm/SampleItem.hbm.xml`
-- Service: `src/main/java/org/openelisglobal/sampleitem/service/SampleItemServiceImpl.java`
+- Service:
+  `src/main/java/org/openelisglobal/sampleitem/service/SampleItemServiceImpl.java`
 - Spec: `specs/001-sample-storage/spec.md` (Storage Granularity section)
-- Plan: `specs/001-sample-storage/plan.md` (SampleItem Entity Integration section)
+- Plan: `specs/001-sample-storage/plan.md` (SampleItem Entity Integration
+  section)
 
 ---
 

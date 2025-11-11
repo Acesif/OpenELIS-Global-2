@@ -13,8 +13,8 @@ tracking** for biological sample items (blood tubes, serum aliquots, tissue
 sections, etc.). This causes:
 
 - **Sample loss**: 2-5 sample items per month cannot be located
-- **Retrieval delays**: Lab technicians spend 15-30 minutes searching for
-  sample items
+- **Retrieval delays**: Lab technicians spend 15-30 minutes searching for sample
+  items
 - **Audit failures**: Cannot prove chain-of-custody for stored sample items
   (SLIPTA/ISO accreditation requirement)
 - **No capacity visibility**: Cannot monitor freezer/refrigerator utilization
@@ -37,10 +37,10 @@ managers
 - Achieve 95% SLIPTA compliance for storage documentation
 - Enable data-driven storage capacity planning
 
-**Storage Granularity**: Storage locations are tracked at the **SampleItem level**
-(physical specimens), not at the Sample level (orders). This allows different
-SampleItems from the same Sample to be stored in different locations when
-needed (e.g., blood tube in freezer, serum aliquot in refrigerator). The
+**Storage Granularity**: Storage locations are tracked at the **SampleItem
+level** (physical specimens), not at the Sample level (orders). This allows
+different SampleItems from the same Sample to be stored in different locations
+when needed (e.g., blood tube in freezer, serum aliquot in refrigerator). The
 dashboard and assignment workflows are SampleItem-specific, with parent Sample
 information displayed for context and sorting/grouping capabilities.
 
@@ -115,12 +115,26 @@ information displayed for context and sorting/grouping capabilities.
 
 ### Session 2025-11-05
 
-- Q: When a Device or Shelf has no capacity_limit set and cannot calculate capacity from children (because some children lack defined capacities), how should the occupancy be displayed in the dashboard? → A: Show "N/A" or "Unlimited" with a tooltip explaining why capacity cannot be determined
-- Q: When a Sample has multiple SampleItems (e.g., blood tube + serum aliquot), can they be stored in different storage locations? → A: Yes, each SampleItem can be stored independently in different locations
-- Q: When assigning storage location, how should users identify which SampleItem to assign? → A: Hybrid approach - dashboard and assignment are SampleItem-specific, with parent Sample info displayed and sortable by Sample to easily see sample items together
-- Q: In the Storage Dashboard "Samples" tab, what should be displayed as the primary identifier for each row? → A: SampleItem ID/External ID (with Sample accession number as secondary info)
-- Q: When searching for storage locations, should users search by SampleItem ID/External ID, Sample accession number, or both? → A: Both (search matches either SampleItem ID/External ID or Sample accession number)
-- Q: For FHIR Specimen resource mapping, should the Specimen.container reference point to the SampleItem's storage location? → A: Yes, each SampleItem's storage location maps to its Specimen.container reference
+- Q: When a Device or Shelf has no capacity_limit set and cannot calculate
+  capacity from children (because some children lack defined capacities), how
+  should the occupancy be displayed in the dashboard? → A: Show "N/A" or
+  "Unlimited" with a tooltip explaining why capacity cannot be determined
+- Q: When a Sample has multiple SampleItems (e.g., blood tube + serum aliquot),
+  can they be stored in different storage locations? → A: Yes, each SampleItem
+  can be stored independently in different locations
+- Q: When assigning storage location, how should users identify which SampleItem
+  to assign? → A: Hybrid approach - dashboard and assignment are
+  SampleItem-specific, with parent Sample info displayed and sortable by Sample
+  to easily see sample items together
+- Q: In the Storage Dashboard "Samples" tab, what should be displayed as the
+  primary identifier for each row? → A: SampleItem ID/External ID (with Sample
+  accession number as secondary info)
+- Q: When searching for storage locations, should users search by SampleItem
+  ID/External ID, Sample accession number, or both? → A: Both (search matches
+  either SampleItem ID/External ID or Sample accession number)
+- Q: For FHIR Specimen resource mapping, should the Specimen.container reference
+  point to the SampleItem's storage location? → A: Yes, each SampleItem's
+  storage location maps to its Specimen.container reference
 
 ### Session 2025-11-05
 
@@ -197,93 +211,279 @@ information displayed for context and sorting/grouping capabilities.
 
 ### Session 2025-11-06
 
-- Q: What action menu structure should location tabs (Rooms, Devices, Shelves, Racks) have? → A: Full CRUD overflow menu: Edit, Delete, View Details (similar to Samples tab pattern)
-- Q: How should the Edit operation UI work for location entities? → A: Modal dialog with full form (all fields editable in modal, similar to View Storage modal pattern)
-- Q: What validation and confirmation should occur for Delete operations on locations? → A: Validation with confirmation dialog: Check for child locations and active samples, show warning/error if constraints exist, require confirmation dialog before deletion
-- Q: What should the View Details operation display? → A: View Details option should not be included - all important details should be visible in the table columns
-- Q: Which fields should be editable vs read-only in the Edit modal? → A: Code and Parent are read-only (only name/description/attributes editable, prevents structural changes)
+- Q: What action menu structure should location tabs (Rooms, Devices, Shelves,
+  Racks) have? → A: Full CRUD overflow menu: Edit, Delete, View Details (similar
+  to Samples tab pattern)
+- Q: How should the Edit operation UI work for location entities? → A: Modal
+  dialog with full form (all fields editable in modal, similar to View Storage
+  modal pattern)
+- Q: What validation and confirmation should occur for Delete operations on
+  locations? → A: Validation with confirmation dialog: Check for child locations
+  and active samples, show warning/error if constraints exist, require
+  confirmation dialog before deletion
+- Q: What should the View Details operation display? → A: View Details option
+  should not be included - all important details should be visible in the table
+  columns
+- Q: Which fields should be editable vs read-only in the Edit modal? → A: Code
+  and Parent are read-only (only name/description/attributes editable, prevents
+  structural changes)
 
 ### Session 2025-11-06
 
-- Q: How should the Move and View Storage menu items be consolidated? → A: Replace both "Move" and "View Storage" with a single "Manage Location" menu item that opens the consolidated modal
-- Q: What wording should be used for the consolidated modal title and button? → A: Dynamic wording based on location existence: If no location assigned → "Assign Storage Location" (title) / "Assign" (button). If location exists → "Move Sample" (title) / "Confirm Move" (button) - keep movement terminology when location exists
-- Q: When should the "Reason for Move" field appear and be required? → A: Show "Reason for Move" field only when sample has existing location AND user selects a different location. Field is optional (not required)
-- Q: What sample details should be displayed in the consolidated modal? → A: Show Sample ID, Type, Status, plus additional fields like Date Collected, Patient ID, Test Orders (comprehensive details beyond basic ID/Type/Status)
-- Q: What does "dashboard sample table options" refer to that needs clarification? → A: "Options" refers to action menu items (overflow menu) - addressed by consolidating Move/View Storage into single menu item
+- Q: How should the Move and View Storage menu items be consolidated? → A:
+  Replace both "Move" and "View Storage" with a single "Manage Location" menu
+  item that opens the consolidated modal
+- Q: What wording should be used for the consolidated modal title and button? →
+  A: Dynamic wording based on location existence: If no location assigned →
+  "Assign Storage Location" (title) / "Assign" (button). If location exists →
+  "Move Sample" (title) / "Confirm Move" (button) - keep movement terminology
+  when location exists
+- Q: When should the "Reason for Move" field appear and be required? → A: Show
+  "Reason for Move" field only when sample has existing location AND user
+  selects a different location. Field is optional (not required)
+- Q: What sample details should be displayed in the consolidated modal? → A:
+  Show Sample ID, Type, Status, plus additional fields like Date Collected,
+  Patient ID, Test Orders (comprehensive details beyond basic ID/Type/Status)
+- Q: What does "dashboard sample table options" refer to that needs
+  clarification? → A: "Options" refers to action menu items (overflow menu) -
+  addressed by consolidating Move/View Storage into single menu item
 
 ### Session 2025-11-07
 
-- Q: What UI pattern should be used for expanding location table rows to view additional fields? → A: Expandable row with inline content below the row (Carbon DataTable expandable row pattern)
-- Q: How should row expansion be triggered? → A: Click chevron/expand icon in a dedicated column (Carbon DataTable standard)
-- Q: What content should be displayed in the expanded row? → A: All entity fields not visible in table columns, formatted as key-value pairs
-- Q: Can multiple rows be expanded simultaneously? → A: Only one row can be expanded at a time (expanding another collapses the previous)
-- Q: Should the expanded view allow editing fields directly? → A: Read-only display (Edit action remains in overflow menu)
+- Q: What UI pattern should be used for expanding location table rows to view
+  additional fields? → A: Expandable row with inline content below the row
+  (Carbon DataTable expandable row pattern)
+- Q: How should row expansion be triggered? → A: Click chevron/expand icon in a
+  dedicated column (Carbon DataTable standard)
+- Q: What content should be displayed in the expanded row? → A: All entity
+  fields not visible in table columns, formatted as key-value pairs
+- Q: Can multiple rows be expanded simultaneously? → A: Only one row can be
+  expanded at a time (expanding another collapses the previous)
+- Q: Should the expanded view allow editing fields directly? → A: Read-only
+  display (Edit action remains in overflow menu)
 
 ### Session 2025-11-06 (Barcode Workflows)
 
-- Q: What barcode formats/standards should be supported for storage location scanning? → A: Support industry-standard 1D barcodes (Code 128, Code 39, EAN-13) and 2D barcodes (QR Code, Data Matrix). Code 128 is the primary format for storage location labels due to high data density and alphanumeric support, barcode settings are inherited from the barcode setup in system administration. System should auto-detect format.
+- Q: What barcode formats/standards should be supported for storage location
+  scanning? → A: Support industry-standard 1D barcodes (Code 128, Code 39,
+  EAN-13) and 2D barcodes (QR Code, Data Matrix). Code 128 is the primary format
+  for storage location labels due to high data density and alphanumeric support,
+  barcode settings are inherited from the barcode setup in system
+  administration. System should auto-detect format.
 
-- Q: What is the expected barcode data structure for location labels? → A: Hierarchical path encoded with delimiters. Format: `{ROOM_CODE}-{DEVICE_CODE}-{SHELF_CODE}-{RACK_CODE}` (e.g., "MAIN-FRZ01-SHA-RKR1"). Position is NOT encoded in barcode - user enters manually after scan. Use hyphen (-) as delimiter for easy parsing.
+- Q: What is the expected barcode data structure for location labels? → A:
+  Hierarchical path encoded with delimiters. Format:
+  `{ROOM_CODE}-{DEVICE_CODE}-{SHELF_CODE}-{RACK_CODE}` (e.g.,
+  "MAIN-FRZ01-SHA-RKR1"). Position is NOT encoded in barcode - user enters
+  manually after scan. Use hyphen (-) as delimiter for easy parsing.
 
-- Q: What hardware requirements should be specified for barcode scanners? → A: Support standard USB HID barcode scanners (keyboard wedge mode) - most common in lab settings. Scanner input should be processed as keyboard input with automatic Enter/Return at end. No special drivers or software required. Bluetooth scanners acceptable if they support HID profile.
+- Q: What hardware requirements should be specified for barcode scanners? → A:
+  Support standard USB HID barcode scanners (keyboard wedge mode) - most common
+  in lab settings. Scanner input should be processed as keyboard input with
+  automatic Enter/Return at end. No special drivers or software required.
+  Bluetooth scanners acceptable if they support HID profile.
 
-- Q: How should the barcode input field behave and provide feedback? → A: Dedicated barcode input field with icon indicator. On focus, show "Ready to scan" state with animation/pulse. On successful scan, show green checkmark with decoded path preview. On error, show red X with error message. Field should auto-clear after successful population of location fields.
+- Q: How should the barcode input field behave and provide feedback? → A:
+  Dedicated barcode input field with icon indicator. On focus, show "Ready to
+  scan" state with animation/pulse. On successful scan, show green checkmark
+  with decoded path preview. On error, show red X with error message. Field
+  should auto-clear after successful population of location fields.
 
-- Q: What validation should occur when a barcode is scanned? → A: (1) Verify barcode format is valid and parseable, (2) Verify all encoded location codes exist in database, (3) Verify location hierarchy is correct (e.g., Shelf-A is actually child of Freezer Unit 1), (4) Verify location is active (not decommissioned), (5) Show clear error messages for each failure type.
+- Q: What validation should occur when a barcode is scanned? → A: (1) Verify
+  barcode format is valid and parseable, (2) Verify all encoded location codes
+  exist in database, (3) Verify location hierarchy is correct (e.g., Shelf-A is
+  actually child of Freezer Unit 1), (4) Verify location is active (not
+  decommissioned), (5) Show clear error messages for each failure type.
 
-- Q: What should happen if a scanned barcode contains invalid or non-existent location codes? → A: Display error message specifying which component failed validation (e.g., "Rack 'RKR1' not found in Shelf 'SHA'"). Allow user to either rescan correct barcode OR switch to manual selection mode to correct the error. Do not partially populate fields with invalid data.
+- Q: What should happen if a scanned barcode contains invalid or non-existent
+  location codes? → A: Display error message specifying which component failed
+  validation (e.g., "Rack 'RKR1' not found in Shelf 'SHA'"). Allow user to
+  either rescan correct barcode OR switch to manual selection mode to correct
+  the error. Do not partially populate fields with invalid data.
 
-- Q: How should barcode scanning integrate with the existing cascading dropdown and type-ahead modes? → A: Provide mode toggle buttons/tabs: "Manual Select" (cascading dropdowns) or the user can also use a "Enter / Scan" field that will allow a type ahead search or scan, the format will be the same for either entry. Both types of entry should be visible at the same time, though the user can fill either one.
+- Q: How should barcode scanning integrate with the existing cascading dropdown
+  and type-ahead modes? → A: Provide mode toggle buttons/tabs: "Manual Select"
+  (cascading dropdowns) or the user can also use a "Enter / Scan" field that
+  will allow a type ahead search or scan, the format will be the same for either
+  entry. Both types of entry should be visible at the same time, though the user
+  can fill either one.
 
-- Q: Should barcode scanning support sample barcodes in addition to location barcodes? → A: Yes - support dual barcode types with auto-detection. Sample barcodes (format: accession number like "S-2025-001") trigger sample lookup and load sample details. Location barcodes populate location hierarchy. System distinguishes by format pattern matching. If sample barcode scanned, pre-fill sample context; if location barcode scanned, populate location selectors.
+- Q: Should barcode scanning support sample barcodes in addition to location
+  barcodes? → A: Yes - support dual barcode types with auto-detection. Sample
+  barcodes (format: accession number like "S-2025-001") trigger sample lookup
+  and load sample details. Location barcodes populate location hierarchy. System
+  distinguishes by format pattern matching. If sample barcode scanned, pre-fill
+  sample context; if location barcode scanned, populate location selectors.
 
-- Q: What audio/visual feedback should occur on successful vs failed barcode scans? → A: Successful scan: Green flash + smooth transition to populated fields. Failed scan: Red flash + error message with retry instruction.
+- Q: What audio/visual feedback should occur on successful vs failed barcode
+  scans? → A: Successful scan: Green flash + smooth transition to populated
+  fields. Failed scan: Red flash + error message with retry instruction.
 
-- Q: How should the barcode scanner handle rapid successive scans or accidental double-scans? → A: Implement debouncing with 500ms cooldown period after each scan. If duplicate barcode scanned within cooldown, ignore silently (no error). If different barcode scanned within cooldown, show warning "Please wait before next scan" and ignore input. Prevents accidental double-entry.
+- Q: How should the barcode scanner handle rapid successive scans or accidental
+  double-scans? → A: Implement debouncing with 500ms cooldown period after each
+  scan. If duplicate barcode scanned within cooldown, ignore silently (no
+  error). If different barcode scanned within cooldown, show warning "Please
+  wait before next scan" and ignore input. Prevents accidental double-entry.
 
-- Q: What should happen when a user manually edits location fields after a successful barcode scan? → A: They will be separate but be on the screen at the same time, so if the user scans a barcode, it should run that search, it should update the drop downs to reflect what was scanned, and can be modified by the user, e.g., if the user is moving a sample to a different box on the same rack, they might scan the wrong rack, then fix it in the dropdown and save. User can rescan to overwrite manual changes.
+- Q: What should happen when a user manually edits location fields after a
+  successful barcode scan? → A: They will be separate but be on the screen at
+  the same time, so if the user scans a barcode, it should run that search, it
+  should update the drop downs to reflect what was scanned, and can be modified
+  by the user, e.g., if the user is moving a sample to a different box on the
+  same rack, they might scan the wrong rack, then fix it in the dropdown and
+  save. User can rescan to overwrite manual changes.
 
-- Q: Should barcode functionality be available in all location assignment contexts (Order Entry, Results, Move, Dashboard)? → A: Yes - barcode scanning should be available consistently across all workflows where location assignment occurs: Order Entry widget, Results workflow, Move Sample modal, Manage Location modal, and Dashboard Add/Edit Location forms. Same barcode input component and behavior in all contexts.
+- Q: Should barcode functionality be available in all location assignment
+  contexts (Order Entry, Results, Move, Dashboard)? → A: Yes - barcode scanning
+  should be available consistently across all workflows where location
+  assignment occurs: Order Entry widget, Results workflow, Move Sample modal,
+  Manage Location modal, and Dashboard Add/Edit Location forms. Same barcode
+  input component and behavior in all contexts.
 
-- Q: What error recovery options should be provided when barcode scanning fails? → A: Provide two recovery paths: (1) prompt user to scan again, stay in the same text input to allow a second scan without intervention, (2) allow the user to enter manually using the cascading dropdown mode with scanned code visible for reference, or to use the type-ahead search, which is the same as the barcode field. Show last scanned code in error message to help user identify issue.
+- Q: What error recovery options should be provided when barcode scanning fails?
+  → A: Provide two recovery paths: (1) prompt user to scan again, stay in the
+  same text input to allow a second scan without intervention, (2) allow the
+  user to enter manually using the cascading dropdown mode with scanned code
+  visible for reference, or to use the type-ahead search, which is the same as
+  the barcode field. Show last scanned code in error message to help user
+  identify issue.
 
-- Q: How should barcode printing/generation be addressed for new storage locations? → A: When clicking the action button on devices, shelves, and racks, it should say label management, and show a modal with 2 fields: short code - which must be unique within its context, e.g., one shelf1 in the same device - and print label, which will allow the user to print a label for that shelf. It will be the same label type and size as is specified in the system administration, barcode configuration. It will give a warning before changing the short code that alerts the user that changing the short code will invalidate any already printed labels, and those will need to be re-generated for any labels that belong to this level or lower.
+- Q: How should barcode printing/generation be addressed for new storage
+  locations? → A: When clicking the action button on devices, shelves, and
+  racks, it should say label management, and show a modal with 2 fields: short
+  code - which must be unique within its context, e.g., one shelf1 in the same
+  device - and print label, which will allow the user to print a label for that
+  shelf. It will be the same label type and size as is specified in the system
+  administration, barcode configuration. It will give a warning before changing
+  the short code that alerts the user that changing the short code will
+  invalidate any already printed labels, and those will need to be re-generated
+  for any labels that belong to this level or lower.
 
 ### Session 2025-11-06 (Barcode Implementation Details)
 
-- Q: When a user clicks "Label Management" on a device/shelf/rack, how should the system handle the "Print Label" action? → A: Send directly to the configured default barcode printer from system administration settings. If no default printer is configured, show printer selection dialog. Generate label using the barcode format and size specified in system admin settings. Show the preview of the PDF label in a new tab.
+- Q: When a user clicks "Label Management" on a device/shelf/rack, how should
+  the system handle the "Print Label" action? → A: Send directly to the
+  configured default barcode printer from system administration settings. If no
+  default printer is configured, show printer selection dialog. Generate label
+  using the barcode format and size specified in system admin settings. Show the
+  preview of the PDF label in a new tab.
 
-- Q: What should the short code format/validation be? → A: Maximum 10 characters. Alphanumeric only (A-Z, 0-9, no special characters except hyphen and underscore). Auto-uppercase all input for consistency. Manual entry only (no auto-generate). Must start with a letter or number (not hyphen/underscore).
+- Q: What should the short code format/validation be? → A: Maximum 10
+  characters. Alphanumeric only (A-Z, 0-9, no special characters except hyphen
+  and underscore). Auto-uppercase all input for consistency. Manual entry only
+  (no auto-generate). Must start with a letter or number (not
+  hyphen/underscore).
 
-- Q: For the warning about invalidating printed labels when changing short codes, what user actions should be available? → A: Show blocking confirmation dialog with two options: (1) "Cancel" - abort the change and keep existing short code, (2) "Proceed" - save the new short code with warning acknowledged. After proceeding, display informational message listing all affected location levels that need label reprinting (e.g., "Labels need reprinting for: Shelf-A, Rack R1, Rack R2, Position A1-A10"). No automatic re-print trigger.
+- Q: For the warning about invalidating printed labels when changing short
+  codes, what user actions should be available? → A: Show blocking confirmation
+  dialog with two options: (1) "Cancel" - abort the change and keep existing
+  short code, (2) "Proceed" - save the new short code with warning acknowledged.
+  After proceeding, display informational message listing all affected location
+  levels that need label reprinting (e.g., "Labels need reprinting for: Shelf-A,
+  Rack R1, Rack R2, Position A1-A10"). No automatic re-print trigger.
 
-- Q: How should the system handle barcode scans that include Position level data (even though spec says Position NOT encoded)? → A: Accept and parse all levels including Position if present in barcode. If 5th level detected, auto-populate Position field. This provides flexibility for labs that choose to encode full 5-level hierarchy despite recommendation. System validates the parsed position exists and is valid for that rack.
+- Q: How should the system handle barcode scans that include Position level data
+  (even though spec says Position NOT encoded)? → A: Accept and parse all levels
+  including Position if present in barcode. If 5th level detected, auto-populate
+  Position field. This provides flexibility for labs that choose to encode full
+  5-level hierarchy despite recommendation. System validates the parsed position
+  exists and is valid for that rack.
 
-- Q: What happens if a scanned barcode has ONLY 2 levels (e.g., "MAIN-FRZ01") instead of the expected 4? → A: Valid - accept 2-level barcodes since Room+Device is the minimum requirement. Auto-populate only Room and Device fields, leave Shelf, Rack, Position empty for user to optionally fill manually. This supports device-level storage assignments where shelves/racks aren't used.
+- Q: What happens if a scanned barcode has ONLY 2 levels (e.g., "MAIN-FRZ01")
+  instead of the expected 4? → A: Valid - accept 2-level barcodes since
+  Room+Device is the minimum requirement. Auto-populate only Room and Device
+  fields, leave Shelf, Rack, Position empty for user to optionally fill
+  manually. This supports device-level storage assignments where shelves/racks
+  aren't used.
 
-- Q: Should the delimiter be configurable or always hyphen? → A: Fixed as hyphen (-) for consistency and simplicity. All location barcodes must use hyphen delimiter. This ensures predictable parsing and reduces configuration complexity. If system admin settings include delimiter configuration, it applies to other barcode types (samples, specimens) but location barcodes always use hyphen.
+- Q: Should the delimiter be configurable or always hyphen? → A: Fixed as hyphen
+  (-) for consistency and simplicity. All location barcodes must use hyphen
+  delimiter. This ensures predictable parsing and reduces configuration
+  complexity. If system admin settings include delimiter configuration, it
+  applies to other barcode types (samples, specimens) but location barcodes
+  always use hyphen.
 
-- Q: How should the system distinguish between a barcode scanner input vs manual typing in the "Enter / Scan" field? → A: No distinction needed - treat equally. Field accepts both scanner input (fast keyboard wedge entry with automatic Enter) and manual typing. Validation occurs on Enter key or field blur. If input matches location barcode format (contains hyphens, valid codes), parse as barcode. If input matches location name/code without delimiters, treat as type-ahead search query. Format-based logic, not input-method detection.
+- Q: How should the system distinguish between a barcode scanner input vs manual
+  typing in the "Enter / Scan" field? → A: No distinction needed - treat
+  equally. Field accepts both scanner input (fast keyboard wedge entry with
+  automatic Enter) and manual typing. Validation occurs on Enter key or field
+  blur. If input matches location barcode format (contains hyphens, valid
+  codes), parse as barcode. If input matches location name/code without
+  delimiters, treat as type-ahead search query. Format-based logic, not
+  input-method detection.
 
-- Q: When both "Manual Select" dropdowns and "Enter / Scan" field are visible, what happens if user fills BOTH? → A: Last-modified wins. If user selects from dropdowns then scans/types in Enter field, the scan/type overwrites dropdown selections. If user scans/types then uses dropdowns, dropdown selections overwrite the scan/type values. Provide visual feedback showing which method is currently active (highlight border or icon). No error - seamless switching between methods.
+- Q: When both "Manual Select" dropdowns and "Enter / Scan" field are visible,
+  what happens if user fills BOTH? → A: Last-modified wins. If user selects from
+  dropdowns then scans/types in Enter field, the scan/type overwrites dropdown
+  selections. If user scans/types then uses dropdowns, dropdown selections
+  overwrite the scan/type values. Provide visual feedback showing which method
+  is currently active (highlight border or icon). No error - seamless switching
+  between methods.
 
-- Q: What is the exact format pattern matching logic to distinguish sample barcodes from location barcodes? → A: If the format matches a lab accession number (like defined in the admin section), it will be treated as a lab/sample number, but there are no fields where there are both location barcodes and sample barcodes both being scanned. The search can look for strings that match either, if the search can be for a sample or a location.
+- Q: What is the exact format pattern matching logic to distinguish sample
+  barcodes from location barcodes? → A: If the format matches a lab accession
+  number (like defined in the admin section), it will be treated as a lab/sample
+  number, but there are no fields where there are both location barcodes and
+  sample barcodes both being scanned. The search can look for strings that match
+  either, if the search can be for a sample or a location.
 
-- Q: If auto-detection fails (ambiguous barcode), how should the system respond? → A: Display error message "Unable to identify barcode type. Please verify the barcode format." Show the scanned value and provide option to manually enter using cascading dropdowns or type-ahead search. Log ambiguous barcode for admin review. This should be rare given clear format patterns defined in admin settings.
+- Q: If auto-detection fails (ambiguous barcode), how should the system respond?
+  → A: Display error message "Unable to identify barcode type. Please verify the
+  barcode format." Show the scanned value and provide option to manually enter
+  using cascading dropdowns or type-ahead search. Log ambiguous barcode for
+  admin review. This should be rare given clear format patterns defined in admin
+  settings.
 
-- Q: When showing "last scanned code in error message," should it show the raw barcode string or the parsed/interpreted components? → A: Show both for maximum clarity. Format: "Scanned code: MAIN-FRZ01-SHA-RKR1 (Room: MAIN, Device: FRZ01, Shelf: SHA, Rack: RKR1)" with the specific error below (e.g., "Rack 'RKR1' not found in Shelf 'SHA'"). If parsing fails completely, show only raw string.
+- Q: When showing "last scanned code in error message," should it show the raw
+  barcode string or the parsed/interpreted components? → A: Show both for
+  maximum clarity. Format: "Scanned code: MAIN-FRZ01-SHA-RKR1 (Room: MAIN,
+  Device: FRZ01, Shelf: SHA, Rack: RKR1)" with the specific error below (e.g.,
+  "Rack 'RKR1' not found in Shelf 'SHA'"). If parsing fails completely, show
+  only raw string.
 
-- Q: When a scan fails and user switches to cascading dropdown mode, should the failed barcode components be pre-populated in the dropdowns (if some components were valid)? → A: Yes - pre-fill valid components automatically. If Room code "MAIN" is valid but Device code "FRZ01" doesn't exist, pre-select Room="Main Laboratory" in dropdown and leave Device dropdown ready for manual selection. Show informational message: "Room pre-filled from scan. Please select Device." This reduces re-entry work and guides user to fix only the problematic component.
+- Q: When a scan fails and user switches to cascading dropdown mode, should the
+  failed barcode components be pre-populated in the dropdowns (if some
+  components were valid)? → A: Yes - pre-fill valid components automatically. If
+  Room code "MAIN" is valid but Device code "FRZ01" doesn't exist, pre-select
+  Room="Main Laboratory" in dropdown and leave Device dropdown ready for manual
+  selection. Show informational message: "Room pre-filled from scan. Please
+  select Device." This reduces re-entry work and guides user to fix only the
+  problematic component.
 
-- Q: Should "Label Management" be a separate menu item or integrated into the existing "Edit" modal for devices/shelves/racks? → A: Separate menu item in the overflow menu. Menu items for devices/shelves/racks: Edit, Delete, Label Management. This keeps the Edit modal focused on entity properties (name, description, attributes) while Label Management handles barcode-specific operations (short code, printing). Clear separation of concerns.
+- Q: Should "Label Management" be a separate menu item or integrated into the
+  existing "Edit" modal for devices/shelves/racks? → A: Separate menu item in
+  the overflow menu. Menu items for devices/shelves/racks: Edit, Delete, Label
+  Management. This keeps the Edit modal focused on entity properties (name,
+  description, attributes) while Label Management handles barcode-specific
+  operations (short code, printing). Clear separation of concerns.
 
-- Q: After printing a label, should the system track print history? → A: Yes - record basic print audit trail: who printed, when (timestamp), for which location entity. Store in audit/history table. Display print history in Label Management modal as read-only list showing "Last printed: 2025-11-06 14:32 by John Smith" with optional "View History" link for full print log. Useful for compliance and troubleshooting label issues.
+- Q: After printing a label, should the system track print history? → A: Yes -
+  record basic print audit trail: who printed, when (timestamp), for which
+  location entity. Store in audit/history table. Display print history in Label
+  Management modal as read-only list showing "Last printed: 2025-11-06 14:32 by
+  John Smith" with optional "View History" link for full print log. Useful for
+  compliance and troubleshooting label issues.
 
-- Q: Can users print labels in bulk (e.g., select multiple racks and print all labels)? → A: Future enhancement - defer to post-POC. For POC, support one-at-a-time printing only through Label Management modal. Document requirement for bulk printing in future phase: select multiple devices/shelves/racks from dashboard table, right-click or bulk actions menu → "Print Labels", generate PDF with all labels for batch printing.
+- Q: Can users print labels in bulk (e.g., select multiple racks and print all
+  labels)? → A: Future enhancement - defer to post-POC. For POC, support
+  one-at-a-time printing only through Label Management modal. Document
+  requirement for bulk printing in future phase: select multiple
+  devices/shelves/racks from dashboard table, right-click or bulk actions menu →
+  "Print Labels", generate PDF with all labels for batch printing.
 
-- Q: What specific settings are "inherited from the barcode setup in system administration"? → A: All of the above: (1) Label size/dimensions (e.g., 2"x1", 4"x2"), (2) Barcode format preference (Code 128, Code 39, QR Code - Code 128 default for locations), (3) Label template layout (barcode position, text size, margins). System admin defines these globally; Label Management inherits and applies them to generated labels.
+- Q: What specific settings are "inherited from the barcode setup in system
+  administration"? → A: All of the above: (1) Label size/dimensions (e.g.,
+  2"x1", 4"x2"), (2) Barcode format preference (Code 128, Code 39, QR Code -
+  Code 128 default for locations), (3) Label template layout (barcode position,
+  text size, margins). System admin defines these globally; Label Management
+  inherits and applies them to generated labels.
 
-- Q: Can users override inherited settings at print time, or are they fixed? → A: Fixed from system admin - no override at print time. This ensures consistency across all printed labels in the lab. If users need different label formats, system admin must create multiple barcode configurations and users select which configuration to use. Simplifies user workflow and maintains standardization for compliance.
+- Q: Can users override inherited settings at print time, or are they fixed? →
+  A: Fixed from system admin - no override at print time. This ensures
+  consistency across all printed labels in the lab. If users need different
+  label formats, system admin must create multiple barcode configurations and
+  users select which configuration to use. Simplifies user workflow and
+  maintains standardization for compliance.
 
 ## POC Scope
 
@@ -329,6 +529,7 @@ for storage entities and ensures external interoperability from the start.
 ### User Story 4 (P4) POC Scope Breakdown
 
 **Included in POC**:
+
 - ✅ Metrics cards (Total Samples, Active, Disposed counts)
 - ✅ Storage Locations metric card (breakdown by type with color-coding)
 - ✅ 5 tabs (Rooms, Devices, Shelves, Racks, Samples)
@@ -337,12 +538,16 @@ for storage entities and ensures external interoperability from the start.
 - ✅ Expandable rows (per Constitution V.7 amendment)
 
 **Deferred to Post-POC**:
+
 - ⏸️ Drill-down navigation (clicking location name to filter child levels)
 - ⏸️ CSV export functionality
 - ⏸️ Advanced occupancy color-coding (green/yellow/red)
 - ⏸️ Visual grid view for racks/positions
 
-**Rationale**: POC includes basic dashboard to validate that location data is captured correctly and can be displayed for management review. Advanced features (drill-down, export, visualization) deferred to ensure POC focuses on core tracking workflows.
+**Rationale**: POC includes basic dashboard to validate that location data is
+captured correctly and can be displayed for management review. Advanced features
+(drill-down, export, visualization) deferred to ensure POC focuses on core
+tracking workflows.
 
 ## User Scenarios & Testing
 
@@ -492,12 +697,13 @@ refrigerator for viral load testing preparation.
 2. He clicks the Actions overflow menu (⋮) → selects "Manage Location"
 3. Location management modal opens (titled "Move Sample" since location exists)
    showing:
-   - **Sample information**: Sample ID, Type, Status, Date Collected, Patient ID,
-     Test Orders
+   - **Sample information**: Sample ID, Type, Status, Date Collected, Patient
+     ID, Test Orders
    - **Current location**:
      `Main Laboratory > Freezer Unit 1 > Shelf-A > Rack R1 > Position A5`
-   - **Location selector widget**: Same widget as assignment (cascading dropdowns /
-     autocomplete / barcode scan) with Room, Device, Shelf, Rack, Position fields
+   - **Location selector widget**: Same widget as assignment (cascading
+     dropdowns / autocomplete / barcode scan) with Room, Device, Shelf, Rack,
+     Position fields
    - **Condition Notes** field (optional)
 4. David selects new location:
    `Main Laboratory > Refrigerator 2 > Shelf-1 > Rack R3 > Position C8`
@@ -649,41 +855,43 @@ procurement of additional storage equipment.
 
    **Rooms Tab**:
 
-   - Shows: [Expand] | Name | Code | Devices (count) | Sample Items (count) | Status | Actions
-   - Example row: [▶] | "Main Laboratory" | MAIN | 8 devices | 1,234 sample items | Active
-     | [⋮]
-   - Expandable row: Clicking expand icon (▶) reveals additional fields below row:
-     Description, Created Date, Created By, Last Modified Date, Last Modified By
-     (formatted as key-value pairs, read-only)
+   - Shows: [Expand] | Name | Code | Devices (count) | Sample Items (count) |
+     Status | Actions
+   - Example row: [▶] | "Main Laboratory" | MAIN | 8 devices | 1,234 sample
+     items | Active | [⋮]
+   - Expandable row: Clicking expand icon (▶) reveals additional fields below
+     row: Description, Created Date, Created By, Last Modified Date, Last
+     Modified By (formatted as key-value pairs, read-only)
 
    **Devices Tab**:
 
-   - Shows: [Expand] | Name | Code | Room | Type (badge) | Occupancy | Status | Actions
+   - Shows: [Expand] | Name | Code | Room | Type (badge) | Occupancy | Status |
+     Actions
    - Example row: [▶] | "Freezer Unit 1" | FRZ01 | Main Laboratory | [freezer] |
      287/500 (57%) [progress bar] | Active | [⋮]
    - Type badges: "freezer", "fridge", "cabinet" (visual indicators)
    - Expandable row: Clicking expand icon reveals additional fields: Temperature
-     Setting, Capacity Limit, Description, Created Date, Created By, Last Modified
-     Date, Last Modified By (formatted as key-value pairs, read-only)
+     Setting, Capacity Limit, Description, Created Date, Created By, Last
+     Modified Date, Last Modified By (formatted as key-value pairs, read-only)
 
    **Shelves Tab**:
 
    - Shows: [Expand] | Label | Device | Room | Occupancy | Status | Actions
-   - Example row: [▶] | "Shelf-A" | Freezer Unit 1 | Main Laboratory | 23/81 (28%)
-     [progress bar] | Active | [⋮]
+   - Example row: [▶] | "Shelf-A" | Freezer Unit 1 | Main Laboratory | 23/81
+     (28%) [progress bar] | Active | [⋮]
    - Expandable row: Clicking expand icon reveals additional fields: Capacity
      Limit, Description, Created Date, Created By, Last Modified Date, Last
      Modified By (formatted as key-value pairs, read-only)
 
    **Racks Tab**:
 
-   - Shows: [Expand] | Label | Shelf | Device | Room | Dimensions | Occupancy | Status |
-     Actions
-   - Example row: [▶] | "Rack R1" | Shelf-A | Freezer Unit 1 | Main Laboratory | 9 × 9
-     | 23/81 (28%) [progress bar] | Active | [⋮]
+   - Shows: [Expand] | Label | Shelf | Device | Room | Dimensions | Occupancy |
+     Status | Actions
+   - Example row: [▶] | "Rack R1" | Shelf-A | Freezer Unit 1 | Main Laboratory |
+     9 × 9 | 23/81 (28%) [progress bar] | Active | [⋮]
    - Expandable row: Clicking expand icon reveals additional fields: Position
-     Schema Hint, Description, Created Date, Created By, Last Modified Date, Last
-     Modified By (formatted as key-value pairs, read-only)
+     Schema Hint, Description, Created Date, Created By, Last Modified Date,
+     Last Modified By (formatted as key-value pairs, read-only)
 
    **Samples Tab**:
 
@@ -815,9 +1023,12 @@ samples are assigned/moved/disposed.
 
 ## E2E Test Requirements
 
-**Purpose**: E2E tests validate complete user workflows end-to-end. Tests focus on happy path user journeys, NOT edge cases or validation errors (those are unit/integration tests).
+**Purpose**: E2E tests validate complete user workflows end-to-end. Tests focus
+on happy path user journeys, NOT edge cases or validation errors (those are
+unit/integration tests).
 
-**Execution**: Per Constitution V.5, run tests individually during development (max 5-10 per execution). Full suite only in CI/CD.
+**Execution**: Per Constitution V.5, run tests individually during development
+(max 5-10 per execution). Full suite only in CI/CD.
 
 ### User Story P1 - Basic Storage Assignment (3 tests)
 
@@ -826,10 +1037,12 @@ samples are assigned/moved/disposed.
 - **E2E Test**: "Should assign sample via barcode scan" (happy path)
 
 **Edge Cases** (unit/integration tests, NOT E2E):
+
 - Inline location creation → unit test in StorageLocationServiceTest
 - Capacity warnings → unit test for capacity calculation logic
 - Position occupied errors → unit test in SampleStorageServiceTest
-- Inactive location errors → integration test in StorageLocationRestControllerTest
+- Inactive location errors → integration test in
+  StorageLocationRestControllerTest
 - Validation errors → unit tests for each validation rule
 
 ### User Story P2A - Sample Search and Retrieval (2 tests)
@@ -838,6 +1051,7 @@ samples are assigned/moved/disposed.
 - **E2E Test**: "Should filter samples by storage location" (happy path)
 
 **Edge Cases** (unit/integration tests, NOT E2E):
+
 - Search performance with 100k+ samples → integration test with database seeding
 - Empty search results → unit test
 - Multiple filter criteria → unit test for filter composition logic
@@ -846,9 +1060,11 @@ samples are assigned/moved/disposed.
 ### User Story P2B - Sample Movement (2 tests)
 
 - **E2E Test**: "Should move single sample between locations" (happy path)
-- **E2E Test**: "Should move multiple samples with auto-assigned positions" (happy path)
+- **E2E Test**: "Should move multiple samples with auto-assigned positions"
+  (happy path)
 
 **Edge Cases** (unit/integration tests, NOT E2E):
+
 - Concurrent access conflicts → integration test with transaction isolation
 - Occupied position errors → unit test in SampleStorageServiceTest
 - Disposed sample movement → unit test in SampleStorageServiceTest
@@ -856,6 +1072,7 @@ samples are assigned/moved/disposed.
 - Manual position editing during bulk move → unit test for UI validation logic
 
 **Execution Command** (development):
+
 ```bash
 # Run individual test file
 npm run cy:run -- --spec "cypress/e2e/storageAssignment.cy.js"
@@ -972,7 +1189,9 @@ npm run cy:run
   sample information section, current location display, visual separator, full
   assignment form (barcode scan input, Room/Device/Shelf/Rack/Position
   selectors, condition notes), Cancel and "Assign Storage Location" buttons
-- **FR-018j**: Barcode scanning functionality in expanded modal view MUST follow same specifications as FR-021, FR-021a, FR-021b, FR-021c (unified input field supporting scan/type-ahead with manual dropdown fallback)
+- **FR-018j**: Barcode scanning functionality in expanded modal view MUST follow
+  same specifications as FR-021, FR-021a, FR-021b, FR-021c (unified input field
+  supporting scan/type-ahead with manual dropdown fallback)
 
 #### Multi-Mode Location Selection
 
@@ -986,42 +1205,147 @@ npm run cy:run
 - **FR-021**: System MUST provide **barcode scanning** workflow: Scan
   pre-printed barcode label → auto-populate hierarchy fields → focus Position
   field for manual entry
-- **FR-021a**: System MUST provide unified input field that supports both barcode scanning and type-ahead search. The same field accepts either scanned barcode input or manual type-ahead text entry. Format is the same for either entry method.
-- **FR-021b**: System MUST display both input modes simultaneously: "Manual Select" mode (cascading dropdowns) and "Enter / Scan" field (unified barcode/type-ahead input). Both types of entry MUST be visible at the same time, though the user can fill either one. User can switch between modes or use both.
-- **FR-021c**: System MUST allow manual dropdown fallback: If barcode scan fails or user prefers manual selection, user can enter manually using the cascading dropdown mode. Scanned code (if any) remains visible for reference. User can rescan to overwrite manual changes.
+- **FR-021a**: System MUST provide unified input field that supports both
+  barcode scanning and type-ahead search. The same field accepts either scanned
+  barcode input or manual type-ahead text entry. Format is the same for either
+  entry method.
+- **FR-021b**: System MUST display both input modes simultaneously: "Manual
+  Select" mode (cascading dropdowns) and "Enter / Scan" field (unified
+  barcode/type-ahead input). Both types of entry MUST be visible at the same
+  time, though the user can fill either one. User can switch between modes or
+  use both.
+- **FR-021c**: System MUST allow manual dropdown fallback: If barcode scan fails
+  or user prefers manual selection, user can enter manually using the cascading
+  dropdown mode. Scanned code (if any) remains visible for reference. User can
+  rescan to overwrite manual changes.
 - **FR-022**: System MUST display current selection as hierarchical path below
   selector: `Room > Device > Shelf > Rack > Position`
 
 #### Barcode Format and Handling
 
-- **FR-023**: System MUST support hierarchical barcode format (see FR-023c for detailed data structure):
+- **FR-023**: System MUST support hierarchical barcode format (see FR-023c for
+  detailed data structure):
   - Device: `{room}-{device}` (e.g., "MAIN-FRZ01")
   - Shelf: `{room}-{device}-{shelf}` (e.g., "MAIN-FRZ01-SHA")
   - Rack: `{room}-{device}-{shelf}-{rack}` (e.g., "MAIN-FRZ01-SHA-RKR1")
-- **FR-023a**: System MUST support USB HID barcode scanners operating in keyboard wedge mode (see Session 2025-11-06 for hardware requirements). Scanners emit rapid keyboard events (typically 30-50ms between characters) that are captured as standard keyboard input. No special hardware drivers or browser extensions required.
-- **FR-023b**: System MUST support multiple barcode formats: Code 128, Code 39, EAN-13, QR codes, and Data Matrix (see Session 2025-11-06 for format details). Format detection is automatic based on scanned data structure and pattern matching.
-- **FR-023c**: Location barcodes MUST use hierarchical path with delimiter format: Device format `{room}-{device}`, Shelf format `{room}-{device}-{shelf}`, Rack format `{room}-{device}-{shelf}-{rack}`. Delimiters are fixed as hyphens (-) for all location barcodes (not configurable). System MUST accept 2-level barcodes (Room+Device minimum) and 5-level barcodes (including Position if encoded). Sample barcodes use accession number format (e.g., "S-2025-001"). System MUST parse barcode format and extract hierarchical components automatically (see FR-024a for validation process, Session 2025-11-06 for delimiter and level flexibility details).
+- **FR-023a**: System MUST support USB HID barcode scanners operating in
+  keyboard wedge mode (see Session 2025-11-06 for hardware requirements).
+  Scanners emit rapid keyboard events (typically 30-50ms between characters)
+  that are captured as standard keyboard input. No special hardware drivers or
+  browser extensions required.
+- **FR-023b**: System MUST support multiple barcode formats: Code 128, Code 39,
+  EAN-13, QR codes, and Data Matrix (see Session 2025-11-06 for format details).
+  Format detection is automatic based on scanned data structure and pattern
+  matching.
+- **FR-023c**: Location barcodes MUST use hierarchical path with delimiter
+  format: Device format `{room}-{device}`, Shelf format
+  `{room}-{device}-{shelf}`, Rack format `{room}-{device}-{shelf}-{rack}`.
+  Delimiters are fixed as hyphens (-) for all location barcodes (not
+  configurable). System MUST accept 2-level barcodes (Room+Device minimum) and
+  5-level barcodes (including Position if encoded). Sample barcodes use
+  accession number format (e.g., "S-2025-001"). System MUST parse barcode format
+  and extract hierarchical components automatically (see FR-024a for validation
+  process, Session 2025-11-06 for delimiter and level flexibility details).
 - **FR-024**: Scanning rack barcode MUST auto-populate Room, Device, Shelf, Rack
-  fields and focus Position field for manual entry (see FR-024a for validation process, FR-024b for dual barcode support, FR-024c for debouncing, FR-024d for visual feedback)
-- **FR-024a**: System MUST implement 5-step validation process when barcode is scanned (see Session 2025-11-06 for validation details): (1) Parse barcode format and extract hierarchical components, (2) Validate barcode structure matches expected pattern (location or sample), (3) Lookup location/sample in database, (4) Verify location is active and accessible, (5) Check for conflicts (e.g., occupied position). Each step MUST provide specific error messages if validation fails.
-- **FR-024b**: System MUST support dual barcode types with auto-detection (see Session 2025-11-06 for auto-detection details): Sample barcodes (format: accession number like "S-2025-001") trigger sample lookup and load sample details. Location barcodes populate location hierarchy. System distinguishes by format pattern matching. If sample barcode scanned, pre-fill sample context; if location barcode scanned, populate location selectors.
-- **FR-024c**: System MUST implement debouncing with 500ms cooldown period after each scan (see Session 2025-11-06 for debouncing details). If duplicate barcode scanned within cooldown, ignore silently (no error). If different barcode scanned within cooldown, show warning "Please wait before next scan" and ignore input. Prevents accidental double-entry.
-- **FR-024d**: System MUST provide visual feedback for barcode scans (see Session 2025-11-06 for feedback details): Dedicated barcode input field with icon indicator. On focus, show "Ready to scan" state with animation/pulse. Successful scan displays green checkmark with decoded path preview + smooth transition to populated fields. Failed scan displays red X with error message. Field MUST auto-clear after successful population of location fields. No audio feedback (visual only).
-- **FR-024e**: System MUST handle input method detection: No distinction between barcode scanner input vs manual typing in "Enter / Scan" field - treat equally. Field accepts both scanner input (fast keyboard wedge entry with automatic Enter) and manual typing. Validation occurs on Enter key or field blur. If input matches location barcode format (contains hyphens, valid codes), parse as barcode. If input matches location name/code without delimiters, treat as type-ahead search query. Format-based logic, not input-method detection (see Session 2025-11-06 for input handling details).
-- **FR-024f**: System MUST implement "last-modified wins" behavior when both "Manual Select" dropdowns and "Enter / Scan" field are visible: If user selects from dropdowns then scans/types in Enter field, the scan/type overwrites dropdown selections. If user scans/types then uses dropdowns, dropdown selections overwrite the scan/type values. Provide visual feedback showing which method is currently active (highlight border or icon). No error - seamless switching between methods (see Session 2025-11-06 for mode interaction details).
-- **FR-024g**: System MUST display error messages with both raw barcode string and parsed components: Format "Scanned code: MAIN-FRZ01-SHA-RKR1 (Room: MAIN, Device: FRZ01, Shelf: SHA, Rack: RKR1)" with the specific error below (e.g., "Rack 'RKR1' not found in Shelf 'SHA'"). If parsing fails completely, show only raw string (see Session 2025-11-06 for error message format details).
-- **FR-024h**: System MUST pre-fill valid components automatically when scan fails and user switches to cascading dropdown mode: If Room code "MAIN" is valid but Device code "FRZ01" doesn't exist, pre-select Room="Main Laboratory" in dropdown and leave Device dropdown ready for manual selection. Show informational message: "Room pre-filled from scan. Please select Device." This reduces re-entry work and guides user to fix only the problematic component (see Session 2025-11-06 for pre-population details).
+  fields and focus Position field for manual entry (see FR-024a for validation
+  process, FR-024b for dual barcode support, FR-024c for debouncing, FR-024d for
+  visual feedback)
+- **FR-024a**: System MUST implement 5-step validation process when barcode is
+  scanned (see Session 2025-11-06 for validation details): (1) Parse barcode
+  format and extract hierarchical components, (2) Validate barcode structure
+  matches expected pattern (location or sample), (3) Lookup location/sample in
+  database, (4) Verify location is active and accessible, (5) Check for
+  conflicts (e.g., occupied position). Each step MUST provide specific error
+  messages if validation fails.
+- **FR-024b**: System MUST support dual barcode types with auto-detection (see
+  Session 2025-11-06 for auto-detection details): Sample barcodes (format:
+  accession number like "S-2025-001") trigger sample lookup and load sample
+  details. Location barcodes populate location hierarchy. System distinguishes
+  by format pattern matching. If sample barcode scanned, pre-fill sample
+  context; if location barcode scanned, populate location selectors.
+- **FR-024c**: System MUST implement debouncing with 500ms cooldown period after
+  each scan (see Session 2025-11-06 for debouncing details). If duplicate
+  barcode scanned within cooldown, ignore silently (no error). If different
+  barcode scanned within cooldown, show warning "Please wait before next scan"
+  and ignore input. Prevents accidental double-entry.
+- **FR-024d**: System MUST provide visual feedback for barcode scans (see
+  Session 2025-11-06 for feedback details): Dedicated barcode input field with
+  icon indicator. On focus, show "Ready to scan" state with animation/pulse.
+  Successful scan displays green checkmark with decoded path preview + smooth
+  transition to populated fields. Failed scan displays red X with error message.
+  Field MUST auto-clear after successful population of location fields. No audio
+  feedback (visual only).
+- **FR-024e**: System MUST handle input method detection: No distinction between
+  barcode scanner input vs manual typing in "Enter / Scan" field - treat
+  equally. Field accepts both scanner input (fast keyboard wedge entry with
+  automatic Enter) and manual typing. Validation occurs on Enter key or field
+  blur. If input matches location barcode format (contains hyphens, valid
+  codes), parse as barcode. If input matches location name/code without
+  delimiters, treat as type-ahead search query. Format-based logic, not
+  input-method detection (see Session 2025-11-06 for input handling details).
+- **FR-024f**: System MUST implement "last-modified wins" behavior when both
+  "Manual Select" dropdowns and "Enter / Scan" field are visible: If user
+  selects from dropdowns then scans/types in Enter field, the scan/type
+  overwrites dropdown selections. If user scans/types then uses dropdowns,
+  dropdown selections overwrite the scan/type values. Provide visual feedback
+  showing which method is currently active (highlight border or icon). No
+  error - seamless switching between methods (see Session 2025-11-06 for mode
+  interaction details).
+- **FR-024g**: System MUST display error messages with both raw barcode string
+  and parsed components: Format "Scanned code: MAIN-FRZ01-SHA-RKR1 (Room: MAIN,
+  Device: FRZ01, Shelf: SHA, Rack: RKR1)" with the specific error below (e.g.,
+  "Rack 'RKR1' not found in Shelf 'SHA'"). If parsing fails completely, show
+  only raw string (see Session 2025-11-06 for error message format details).
+- **FR-024h**: System MUST pre-fill valid components automatically when scan
+  fails and user switches to cascading dropdown mode: If Room code "MAIN" is
+  valid but Device code "FRZ01" doesn't exist, pre-select Room="Main Laboratory"
+  in dropdown and leave Device dropdown ready for manual selection. Show
+  informational message: "Room pre-filled from scan. Please select Device." This
+  reduces re-entry work and guides user to fix only the problematic component
+  (see Session 2025-11-06 for pre-population details).
 - **FR-025**: System MUST handle duplicate barcode labels with disambiguation
   dialog (e.g., two racks labeled "R1" in different devices)
 - **FR-026**: System MUST generate printable labels for Device, Shelf, Rack
   levels including human-readable text and barcode
 - **FR-027**: System MUST support printing individual or batch labels
-- **FR-027a**: System MUST provide label management modal accessible as separate menu item in overflow menu for Devices, Shelves, and Racks (see Session 2025-11-06 for menu structure). Modal MUST be titled "Label Management" and display two fields: Short Code (text input) and Print Label (button/action).
-- **FR-027b**: Short Code field MUST be unique within its context (e.g., one "shelf1" per device). System MUST validate uniqueness before allowing save. Short code format MUST be: maximum 10 characters, alphanumeric only (A-Z, 0-9, hyphen and underscore allowed), auto-uppercase all input for consistency, manual entry only (no auto-generate), must start with a letter or number (not hyphen/underscore). Short code is used in barcode generation and MUST follow same format constraints as location codes (see Session 2025-11-06 for format details).
-- **FR-027c**: Print Label functionality MUST send directly to configured default barcode printer from system administration settings. If no default printer is configured, show printer selection dialog. Generate label using barcode format and size specified in system admin settings (inherited: label size/dimensions, barcode format preference with Code 128 default for locations, label template layout). Labels MUST include human-readable text and barcode encoding of the hierarchical path (or short code if configured). Show preview of PDF label in new tab. Settings are fixed from system admin - no override at print time (see Session 2025-11-06 for inheritance details).
-- **FR-027d**: System MUST display blocking confirmation dialog before allowing short code changes with two options: (1) "Cancel" - abort the change and keep existing short code, (2) "Proceed" - save the new short code with warning acknowledged. After proceeding, display informational message listing all affected location levels that need label reprinting (e.g., "Labels need reprinting for: Shelf-A, Rack R1, Rack R2, Position A1-A10"). No automatic re-print trigger (see Session 2025-11-06 for dialog details).
-- **FR-027e**: System MUST track print history: record basic print audit trail (who printed, when/timestamp, for which location entity) in audit/history table. Display print history in Label Management modal as read-only list showing "Last printed: [date] [time] by [user]" with optional "View History" link for full print log (see Session 2025-11-06 for audit trail details).
-- **FR-027f**: Bulk label printing MUST be deferred to post-POC. For POC, support one-at-a-time printing only through Label Management modal. Future requirement: select multiple devices/shelves/racks from dashboard table, bulk actions menu → "Print Labels", generate PDF with all labels for batch printing (see Session 2025-11-06 for bulk printing details).
+- **FR-027a**: System MUST provide label management modal accessible as separate
+  menu item in overflow menu for Devices, Shelves, and Racks (see Session
+  2025-11-06 for menu structure). Modal MUST be titled "Label Management" and
+  display two fields: Short Code (text input) and Print Label (button/action).
+- **FR-027b**: Short Code field MUST be unique within its context (e.g., one
+  "shelf1" per device). System MUST validate uniqueness before allowing save.
+  Short code format MUST be: maximum 10 characters, alphanumeric only (A-Z, 0-9,
+  hyphen and underscore allowed), auto-uppercase all input for consistency,
+  manual entry only (no auto-generate), must start with a letter or number (not
+  hyphen/underscore). Short code is used in barcode generation and MUST follow
+  same format constraints as location codes (see Session 2025-11-06 for format
+  details).
+- **FR-027c**: Print Label functionality MUST send directly to configured
+  default barcode printer from system administration settings. If no default
+  printer is configured, show printer selection dialog. Generate label using
+  barcode format and size specified in system admin settings (inherited: label
+  size/dimensions, barcode format preference with Code 128 default for
+  locations, label template layout). Labels MUST include human-readable text and
+  barcode encoding of the hierarchical path (or short code if configured). Show
+  preview of PDF label in new tab. Settings are fixed from system admin - no
+  override at print time (see Session 2025-11-06 for inheritance details).
+- **FR-027d**: System MUST display blocking confirmation dialog before allowing
+  short code changes with two options: (1) "Cancel" - abort the change and keep
+  existing short code, (2) "Proceed" - save the new short code with warning
+  acknowledged. After proceeding, display informational message listing all
+  affected location levels that need label reprinting (e.g., "Labels need
+  reprinting for: Shelf-A, Rack R1, Rack R2, Position A1-A10"). No automatic
+  re-print trigger (see Session 2025-11-06 for dialog details).
+- **FR-027e**: System MUST track print history: record basic print audit trail
+  (who printed, when/timestamp, for which location entity) in audit/history
+  table. Display print history in Label Management modal as read-only list
+  showing "Last printed: [date] [time] by [user]" with optional "View History"
+  link for full print log (see Session 2025-11-06 for audit trail details).
+- **FR-027f**: Bulk label printing MUST be deferred to post-POC. For POC,
+  support one-at-a-time printing only through Label Management modal. Future
+  requirement: select multiple devices/shelves/racks from dashboard table, bulk
+  actions menu → "Print Labels", generate PDF with all labels for batch printing
+  (see Session 2025-11-06 for bulk printing details).
 
 #### Inline Location Creation (Widget-Based)
 
@@ -1072,8 +1396,8 @@ operations.
   (room/device/shelf/rack/position), Assigned By (user ID), Timestamp, Optional
   notes. Storage tracking operates at SampleItem level (physical specimens), not
   Sample level (orders).
-- **FR-033a**: System MUST require that a valid location for a sample item has at
-  least 2 levels set: Room and Device MUST be selected. Shelf, Rack, and
+- **FR-033a**: System MUST require that a valid location for a sample item has
+  at least 2 levels set: Room and Device MUST be selected. Shelf, Rack, and
   Position levels are optional (shelf/rack/position may be left blank). A
   position can have at most 5 levels (Room → Device → Shelf → Rack → Position)
   but at least 2 levels (Room → Device). A sample item is associated with a
@@ -1094,8 +1418,8 @@ operations.
   90%, and 100% capacity with message "[Location] is [percentage]% full.
   Consider using alternative storage." System MUST allow assignment even at or
   above 100% capacity (no hard block). Capacity warnings apply to both manual
-  `capacity_limit` values and calculated capacities (per FR-062a). Warnings
-  MUST NOT be displayed when capacity cannot be determined (per FR-062b)
+  `capacity_limit` values and calculated capacities (per FR-062a). Warnings MUST
+  NOT be displayed when capacity cannot be determined (per FR-062b)
 - **FR-037**: System MUST allow assignment at shelf/rack level without
   specifying position (position field blank)
 
@@ -1106,8 +1430,8 @@ operations.
   (physical specimen), with parent Sample information displayed as secondary
   context.
 - **FR-037b**: Overflow menu MUST display three menu items: Manage Location,
-  Dispose, View Audit (placeholder). "Manage Location" consolidates the
-  previous "Move" and "View Storage" functionality into a single unified modal
+  Dispose, View Audit (placeholder). "Manage Location" consolidates the previous
+  "Move" and "View Storage" functionality into a single unified modal
 - **FR-037c**: Overflow menu MUST use Carbon Design System OverflowMenu
   component
 - **FR-037d**: Menu items MUST be accessible via keyboard navigation and screen
@@ -1122,7 +1446,8 @@ operations.
 - **FR-037g**: Overflow menu MUST display two menu items: Edit, Delete (all
   important details are visible in table columns, no separate View Details
   needed)
-- **FR-037h**: Overflow menu MUST use Carbon Design System OverflowMenu component
+- **FR-037h**: Overflow menu MUST use Carbon Design System OverflowMenu
+  component
 - **FR-037i**: Menu items MUST be accessible via keyboard navigation and screen
   readers
 
@@ -1132,9 +1457,10 @@ operations.
   full form for editing all location entity fields
 - **FR-037k**: Edit modal MUST use Carbon Design System Modal component with
   proper accessibility attributes
-- **FR-037l**: Edit modal MUST display all editable fields for the location type:
-  - **Room**: Name (editable), Code (read-only), Description (optional, editable),
-    Active/Inactive status (editable)
+- **FR-037l**: Edit modal MUST display all editable fields for the location
+  type:
+  - **Room**: Name (editable), Code (read-only), Description (optional,
+    editable), Active/Inactive status (editable)
   - **Device**: Name (editable), Code (read-only), Type (editable), Temperature
     setting (optional, editable), Capacity limit (optional, editable),
     Active/Inactive status (editable), Parent Room (read-only)
@@ -1157,9 +1483,9 @@ operations.
 
 - **FR-037p**: Selecting "Delete" from overflow menu MUST validate constraints
   before allowing deletion
-- **FR-037q**: System MUST prevent deletion if location has child locations (e.g.,
-  cannot delete Room with Devices, cannot delete Device with Shelves, cannot
-  delete Shelf with Racks)
+- **FR-037q**: System MUST prevent deletion if location has child locations
+  (e.g., cannot delete Room with Devices, cannot delete Device with Shelves,
+  cannot delete Shelf with Racks)
 - **FR-037r**: System MUST prevent deletion if location has active samples
   assigned (samples currently stored at that location or any child location)
 - **FR-037s**: System MUST display error message if deletion is blocked due to
@@ -1179,8 +1505,8 @@ operations.
 - **FR-038**: Users MUST be able to initiate location management from dashboard
   or sample detail view via overflow menu "Manage Location" action (consolidates
   previous "Move" and "View Storage" functionality)
-- **FR-039**: Location management modal MUST use same location selector widget as
-  initial assignment (dropdown/autocomplete/scan)
+- **FR-039**: Location management modal MUST use same location selector widget
+  as initial assignment (dropdown/autocomplete/scan)
 - **FR-040**: Location management modal MUST show current location (if assigned)
   and location selector widget for new location selection
 - **FR-040a**: Location management modal title and button wording MUST be
@@ -1188,12 +1514,12 @@ operations.
   - **If no location assigned**: Modal title "Assign Storage Location", button
     text "Assign"
   - **If location exists**: Modal title "Move Sample Item" with subtitle "Move
-    sample item [SampleItem ID] (Sample: [Sample ID]) to a new storage location",
-    button text "Confirm Move"
+    sample item [SampleItem ID] (Sample: [Sample ID]) to a new storage
+    location", button text "Confirm Move"
 - **FR-040b**: Location management modal MUST display comprehensive sample item
-  information section showing: SampleItem ID/External ID, Sample ID (parent Sample
-  accession number), Type, Status, Date Collected, Patient ID, Test Orders in a
-  highlighted/background box
+  information section showing: SampleItem ID/External ID, Sample ID (parent
+  Sample accession number), Type, Status, Date Collected, Patient ID, Test
+  Orders in a highlighted/background box
 - **FR-040c**: Location management modal MUST display "Current Location" section
   (if location exists) showing full hierarchical path (Room > Device > Shelf >
   Rack > Position) in a highlighted gray background box. If no location exists,
@@ -1201,17 +1527,19 @@ operations.
 - **FR-040d**: Location management modal MUST display a visual separator
   (downward-pointing arrow icon if location exists, or horizontal line if no
   location) between current location and location selection form
-- **FR-040e**: Location management modal MUST display location selection form in a
-  bordered box containing:
-  - Barcode scan input field (Quick Assign) - MUST follow specifications in FR-021, FR-021a, FR-021b, FR-021c (unified input field supporting scan/type-ahead with manual dropdown fallback)
+- **FR-040e**: Location management modal MUST display location selection form in
+  a bordered box containing:
+  - Barcode scan input field (Quick Assign) - MUST follow specifications in
+    FR-021, FR-021a, FR-021b, FR-021c (unified input field supporting
+    scan/type-ahead with manual dropdown fallback)
   - Room dropdown selector (required, marked with \*)
   - Device dropdown selector
   - Shelf dropdown selector
   - Rack/Box dropdown selector
   - Position text input field (optional, with format hint)
   - Condition Notes textarea (optional)
-- **FR-040f**: Location management modal MUST display "Selected Location" preview
-  section showing the selected hierarchical path in gray background box
+- **FR-040f**: Location management modal MUST display "Selected Location"
+  preview section showing the selected hierarchical path in gray background box
   (displays "Not selected" until location is chosen)
 - **FR-040g**: Location management modal MUST display "Reason for Move" textarea
   field ONLY when: (1) sample has existing location AND (2) user selects a
@@ -1225,12 +1553,12 @@ operations.
   component with proper accessibility attributes
 - **FR-041**: System MUST validate: Target location is active, target position
   is not occupied, target has available capacity
-- **FR-042**: System MUST update sample item's current location to new location and
-  free previous position (mark as available) when location is changed
+- **FR-042**: System MUST update sample item's current location to new location
+  and free previous position (mark as available) when location is changed
 - **FR-043**: System MUST record audit trail with: Previous location (if
   existed), New location, User, Timestamp, Reason (if provided when moving)
-- **FR-044**: Dashboard MUST update immediately after location assignment or move
-  completes
+- **FR-044**: Dashboard MUST update immediately after location assignment or
+  move completes
 
 #### Bulk Sample Movement
 
@@ -1263,9 +1591,9 @@ operations.
 - **FR-051b**: Disposal modal MUST display a red warning alert box at the top
   stating "This action cannot be undone. The sample will be marked as disposed
   and removed from storage." (uses warning/error styling with icon)
-- **FR-051c**: Disposal modal MUST display sample item information section in gray
-  background box showing: SampleItem ID/External ID, Sample ID (parent Sample),
-  Type, and Status
+- **FR-051c**: Disposal modal MUST display sample item information section in
+  gray background box showing: SampleItem ID/External ID, Sample ID (parent
+  Sample), Type, and Status
 - **FR-051d**: Disposal modal MUST display "Current Storage Location" section
   with location pin icon showing:
   - Full hierarchical path in gray background box
@@ -1307,43 +1635,44 @@ operations.
 
 #### Dashboard and Reporting
 
-- **FR-057**: Dashboard MUST display 4 metric cards: Total SampleItems (count of all
-  sample items with locations), Active (currently stored), Disposed (disposed
-  sample items), Storage Locations (formatted text list showing breakdown by type:
-  "X rooms, Y devices, Z shelves, W racks" with counts for each active hierarchy
-  level, color-coded using Carbon Design System tokens: blue-70 for rooms,
-  teal-70 for devices, purple-70 for shelves, orange-70 for racks)
+- **FR-057**: Dashboard MUST display 4 metric cards: Total SampleItems (count of
+  all sample items with locations), Active (currently stored), Disposed
+  (disposed sample items), Storage Locations (formatted text list showing
+  breakdown by type: "X rooms, Y devices, Z shelves, W racks" with counts for
+  each active hierarchy level, color-coded using Carbon Design System tokens:
+  blue-70 for rooms, teal-70 for devices, purple-70 for shelves, orange-70 for
+  racks)
 - **FR-057a**: Storage Locations metric card text MUST be color-coded with
   matching subtle accent colors applied to corresponding tab labels/backgrounds
   (Rooms tab has blue accent, Devices tab has teal accent, Shelves tab has
   purple accent, Racks tab has orange accent) - tab coloring must be very subtle
-- **FR-058**: Dashboard MUST provide 5 tabs: SampleItems | Rooms | Devices | Shelves
-  | Racks. SampleItems tab displays SampleItem-level data (physical specimens),
-  with parent Sample information displayed as secondary context and sortable by
-  Sample to easily see sample items together.
+- **FR-058**: Dashboard MUST provide 5 tabs: SampleItems | Rooms | Devices |
+  Shelves | Racks. SampleItems tab displays SampleItem-level data (physical
+  specimens), with parent Sample information displayed as secondary context and
+  sortable by Sample to easily see sample items together.
 - **FR-059**: Each tab MUST show data table appropriate for that entity level
-   with relevant columns
+  with relevant columns
 - **FR-059a**: Location tables (Rooms, Devices, Shelves, Racks) MUST support
-   expandable rows using Carbon DataTable expandable row pattern
+  expandable rows using Carbon DataTable expandable row pattern
 - **FR-059b**: Expandable rows MUST be triggered by clicking chevron/expand icon
-   in a dedicated column (first column, Carbon DataTable standard)
-- **FR-059c**: Expanded row content MUST display all entity fields not visible in
-   table columns, formatted as key-value pairs in read-only format
+  in a dedicated column (first column, Carbon DataTable standard)
+- **FR-059c**: Expanded row content MUST display all entity fields not visible
+  in table columns, formatted as key-value pairs in read-only format
 - **FR-059d**: Only one row can be expanded at a time (expanding another row
-   automatically collapses the previously expanded row)
+  automatically collapses the previously expanded row)
 - **FR-059e**: Expanded row content MUST be read-only (Edit action remains in
-   overflow menu, no inline editing in expanded view)
+  overflow menu, no inline editing in expanded view)
 - **FR-059f**: Expanded row MUST show entity-specific additional fields:
-   - **Rooms**: Description, Created Date, Created By, Last Modified Date, Last
-     Modified By
-   - **Devices**: Temperature Setting, Capacity Limit, Description, Created Date,
-     Created By, Last Modified Date, Last Modified By
-   - **Shelves**: Capacity Limit, Description, Created Date, Created By, Last
-     Modified Date, Last Modified By
-   - **Racks**: Position Schema Hint, Description, Created Date, Created By, Last
-     Modified Date, Last Modified By
+  - **Rooms**: Description, Created Date, Created By, Last Modified Date, Last
+    Modified By
+  - **Devices**: Temperature Setting, Capacity Limit, Description, Created Date,
+    Created By, Last Modified Date, Last Modified By
+  - **Shelves**: Capacity Limit, Description, Created Date, Created By, Last
+    Modified Date, Last Modified By
+  - **Racks**: Position Schema Hint, Description, Created Date, Created By, Last
+    Modified Date, Last Modified By
 - **FR-060**: Tab selection state MUST be visually distinct (active tab
-   highlighted)
+  highlighted)
 - **FR-060a**: Dashboard MUST provide action buttons positioned to the right of
   the tabs: "Add Location" button (navigates to location management form page)
   and "Export" button (exports current filtered table data to CSV), both visible
@@ -1367,17 +1696,16 @@ operations.
     locations per FR-062b
 - **FR-062b**: When `capacity_limit` is NULL for a Device or Shelf, capacity
   MUST be calculated from child locations using the following logic:
-  - If ALL child locations (shelves for devices, racks for shelves) have
-    defined capacities (either static `capacity_limit` set OR calculated
-    capacity from their own children), sum those capacities to determine parent
-    capacity
+  - If ALL child locations (shelves for devices, racks for shelves) have defined
+    capacities (either static `capacity_limit` set OR calculated capacity from
+    their own children), sum those capacities to determine parent capacity
   - If ANY child location lacks a defined capacity (no `capacity_limit` set AND
     cannot calculate from its children), parent capacity cannot be determined
     and occupancy MUST display "N/A" or "Unlimited" per FR-061
   - Racks always have defined capacity (rows × columns), so they can always be
     summed into parent capacity if needed
-- **FR-062c**: UI MUST visually distinguish between manual/static capacity limits
-  and calculated capacities (e.g., badge, tooltip, or icon) to help users
+- **FR-062c**: UI MUST visually distinguish between manual/static capacity
+  limits and calculated capacities (e.g., badge, tooltip, or icon) to help users
   understand whether capacity is user-defined or system-calculated
 - **FR-063**: Visual progress bar MUST show proportional fill (e.g., 57% filled
   bar for 287/500). If capacity cannot be determined, progress bar MUST be
@@ -1386,11 +1714,12 @@ operations.
 #### Filters and Search
 
 - **FR-064**: Dashboard MUST provide tab-specific search functionality:
-  - **SampleItems tab**: Live search (debounced 300-500ms) by SampleItem ID/External
-    ID, Sample accession number (parent Sample), and assigned location (full
-    hierarchical path string). Search matches any of these fields (OR logic) using
-    case-insensitive partial/substring matching. Primary identifier is SampleItem
-    ID/External ID, with Sample accession number displayed as secondary context.
+  - **SampleItems tab**: Live search (debounced 300-500ms) by SampleItem
+    ID/External ID, Sample accession number (parent Sample), and assigned
+    location (full hierarchical path string). Search matches any of these fields
+    (OR logic) using case-insensitive partial/substring matching. Primary
+    identifier is SampleItem ID/External ID, with Sample accession number
+    displayed as secondary context.
   - **Rooms tab**: Search by name and code using case-insensitive
     partial/substring matching
   - **Devices tab**: Search by name, code, and type using case-insensitive
@@ -1608,9 +1937,9 @@ functional design:_
   Attributes: SampleItem ID (reference to existing SampleItem entity), Sample ID
   (reference to parent Sample for context), Location reference
   (room/device/shelf/rack/position), Assigned by (user ID), Assignment
-  timestamp, Optional notes. Represents current location of sample item (physical
-  specimen). Each SampleItem can be stored independently, even when multiple
-  SampleItems belong to the same parent Sample.
+  timestamp, Optional notes. Represents current location of sample item
+  (physical specimen). Each SampleItem can be stored independently, even when
+  multiple SampleItems belong to the same parent Sample.
 
 - **SampleItem Movement**: Audit record of sample item relocation. Attributes:
   SampleItem ID, Sample ID (parent Sample reference), Previous location (full
@@ -1668,10 +1997,11 @@ functional design:_
   - Widget structure: Two-tier design:
     - **Compact inline view**: Displays selected location path (or "Not
       assigned") with "Expand"/"Edit" button
-    - **Expanded modal view**: Full location assignment form matching Consolidated
-      Location Management Modal structure (comprehensive sample info, current
-      location if exists, barcode scan, Room/Device/Shelf/Rack/Position
-      selectors, condition notes, reason for move when applicable)
+    - **Expanded modal view**: Full location assignment form matching
+      Consolidated Location Management Modal structure (comprehensive sample
+      info, current location if exists, barcode scan,
+      Room/Device/Shelf/Rack/Position selectors, condition notes, reason for
+      move when applicable)
   - Modes: Compact inline, Expanded modal
   - Features:
     - Compact view: Quick location path display, expand button
@@ -1714,8 +2044,8 @@ functional design:_
 
 - **INT-006**: Leverage existing **UI/UX patterns**
   - Tab navigation (Carbon Tabs component, used in multiple screens)
-  - Data tables (Carbon DataTable with pagination, sorting, filtering, expandable
-    rows)
+  - Data tables (Carbon DataTable with pagination, sorting, filtering,
+    expandable rows)
   - Modal dialogs (Carbon Modal for confirmations, forms)
   - Overflow menu (Carbon OverflowMenu for row actions)
   - Form validation (existing validation utilities)
@@ -1759,20 +2089,21 @@ post-POC iterations.
 
 **In-Scope for POC (User Stories P1, P2A, P2B)**:
 
-- **SC-001**: **Storage Assignment Workflow** - User can assign a sample item to a
-  storage location using any of three methods (cascading dropdowns, type-ahead
+- **SC-001**: **Storage Assignment Workflow** - User can assign a sample item to
+  a storage location using any of three methods (cascading dropdowns, type-ahead
   search, barcode scan), and assignment is saved with correct location path,
-  user ID, and timestamp. Storage tracking operates at SampleItem level (physical
-  specimens), with parent Sample information displayed for context.
+  user ID, and timestamp. Storage tracking operates at SampleItem level
+  (physical specimens), with parent Sample information displayed for context.
 
 - **SC-002**: **SampleItem Search and Retrieval** - User can search for a sample
   item by SampleItem ID/External ID or Sample accession number, and system
-  displays the complete hierarchical storage location path (Room > Device > Shelf >
-  Rack > Position). Search matches either identifier.
+  displays the complete hierarchical storage location path (Room > Device >
+  Shelf > Rack > Position). Search matches either identifier.
 
 - **SC-003**: **SampleItem Movement** - User can move a sample item from one
   storage location to another, previous location is freed, new location is
-  recorded, and audit trail captures the movement with user, timestamp, and reason
+  recorded, and audit trail captures the movement with user, timestamp, and
+  reason
 
 - **SC-004**: **Bulk Movement** - User can select multiple sample items and move
   them together, system auto-assigns sequential positions with option to modify,

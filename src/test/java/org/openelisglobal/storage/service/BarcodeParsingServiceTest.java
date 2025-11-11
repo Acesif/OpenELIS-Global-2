@@ -7,12 +7,10 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.junit.MockitoJUnitRunner;
-import org.openelisglobal.common.exception.LIMSRuntimeException;
 
 /**
- * Unit tests for BarcodeParsingService
- * Following TDD: Write tests BEFORE implementation
- * Tests barcode parsing functionality per FR-023 through FR-027
+ * Unit tests for BarcodeParsingService Following TDD: Write tests BEFORE
+ * implementation Tests barcode parsing functionality per FR-023 through FR-027
  */
 @RunWith(MockitoJUnitRunner.class)
 public class BarcodeParsingServiceTest {
@@ -25,8 +23,8 @@ public class BarcodeParsingServiceTest {
     }
 
     /**
-     * Test parsing a 2-level barcode: ROOM-DEVICE
-     * Expected: Returns ParsedBarcode with 2 components
+     * Test parsing a 2-level barcode: ROOM-DEVICE Expected: Returns ParsedBarcode
+     * with 2 components
      */
     @Test
     public void testParse2LevelBarcode() {
@@ -48,8 +46,8 @@ public class BarcodeParsingServiceTest {
     }
 
     /**
-     * Test parsing a 3-level barcode: ROOM-DEVICE-SHELF
-     * Expected: Returns ParsedBarcode with 3 components
+     * Test parsing a 3-level barcode: ROOM-DEVICE-SHELF Expected: Returns
+     * ParsedBarcode with 3 components
      */
     @Test
     public void testParse3LevelBarcode() {
@@ -71,8 +69,8 @@ public class BarcodeParsingServiceTest {
     }
 
     /**
-     * Test parsing a 4-level barcode: ROOM-DEVICE-SHELF-RACK
-     * Expected: Returns ParsedBarcode with 4 components
+     * Test parsing a 4-level barcode: ROOM-DEVICE-SHELF-RACK Expected: Returns
+     * ParsedBarcode with 4 components
      */
     @Test
     public void testParse4LevelBarcode() {
@@ -94,8 +92,8 @@ public class BarcodeParsingServiceTest {
     }
 
     /**
-     * Test parsing a 5-level barcode: ROOM-DEVICE-SHELF-RACK-POSITION
-     * Expected: Returns ParsedBarcode with 5 components
+     * Test parsing a 5-level barcode: ROOM-DEVICE-SHELF-RACK-POSITION Expected:
+     * Returns ParsedBarcode with 5 components
      */
     @Test
     public void testParse5LevelBarcode() {
@@ -117,8 +115,8 @@ public class BarcodeParsingServiceTest {
     }
 
     /**
-     * Test parsing with hyphen delimiter (standard delimiter)
-     * Expected: Accepts hyphen as delimiter
+     * Test parsing with hyphen delimiter (standard delimiter) Expected: Accepts
+     * hyphen as delimiter
      */
     @Test
     public void testParseWithHyphenDelimiter() {
@@ -135,8 +133,8 @@ public class BarcodeParsingServiceTest {
     }
 
     /**
-     * Test rejecting invalid delimiter (e.g., underscore, dot, slash)
-     * Expected: Returns invalid ParsedBarcode with error message
+     * Test rejecting invalid delimiter (e.g., underscore, dot, slash) Expected:
+     * Returns invalid ParsedBarcode with error message
      */
     @Test
     public void testRejectInvalidDelimiter() {
@@ -162,8 +160,8 @@ public class BarcodeParsingServiceTest {
     }
 
     /**
-     * Test handling empty barcode string
-     * Expected: Returns invalid ParsedBarcode with error message
+     * Test handling empty barcode string Expected: Returns invalid ParsedBarcode
+     * with error message
      */
     @Test
     public void testHandleEmptyBarcode() {
@@ -178,12 +176,12 @@ public class BarcodeParsingServiceTest {
         assertFalse("Empty barcode should be invalid", result.isValid());
         assertNotNull("Should have error message", result.getErrorMessage());
         assertTrue("Error message should mention empty barcode",
-            result.getErrorMessage().toLowerCase().contains("empty"));
+                result.getErrorMessage().toLowerCase().contains("empty"));
     }
 
     /**
-     * Test handling null barcode string
-     * Expected: Returns invalid ParsedBarcode with error message
+     * Test handling null barcode string Expected: Returns invalid ParsedBarcode
+     * with error message
      */
     @Test
     public void testHandleNullBarcode() {
@@ -198,40 +196,32 @@ public class BarcodeParsingServiceTest {
         assertFalse("Null barcode should be invalid", result.isValid());
         assertNotNull("Should have error message", result.getErrorMessage());
         assertTrue("Error message should mention null or empty barcode",
-            result.getErrorMessage().toLowerCase().contains("null") ||
-            result.getErrorMessage().toLowerCase().contains("empty"));
+                result.getErrorMessage().toLowerCase().contains("null")
+                        || result.getErrorMessage().toLowerCase().contains("empty"));
     }
 
     /**
-     * Test validateFormat method
-     * Expected: Returns true for valid format, false for invalid
+     * Test validateFormat method Expected: Returns true for valid format, false for
+     * invalid
      */
     @Test
     public void testValidateFormat() {
         // Valid formats
-        assertTrue("Should validate 2-level barcode",
-            barcodeParsingService.validateFormat("MAIN-FRZ01"));
-        assertTrue("Should validate 3-level barcode",
-            barcodeParsingService.validateFormat("MAIN-FRZ01-SHA"));
-        assertTrue("Should validate 4-level barcode",
-            barcodeParsingService.validateFormat("MAIN-FRZ01-SHA-RKR1"));
-        assertTrue("Should validate 5-level barcode",
-            barcodeParsingService.validateFormat("MAIN-FRZ01-SHA-RKR1-A5"));
+        assertTrue("Should validate 2-level barcode", barcodeParsingService.validateFormat("MAIN-FRZ01"));
+        assertTrue("Should validate 3-level barcode", barcodeParsingService.validateFormat("MAIN-FRZ01-SHA"));
+        assertTrue("Should validate 4-level barcode", barcodeParsingService.validateFormat("MAIN-FRZ01-SHA-RKR1"));
+        assertTrue("Should validate 5-level barcode", barcodeParsingService.validateFormat("MAIN-FRZ01-SHA-RKR1-A5"));
 
         // Invalid formats
-        assertFalse("Should reject single component",
-            barcodeParsingService.validateFormat("MAIN"));
+        assertFalse("Should reject single component", barcodeParsingService.validateFormat("MAIN"));
         assertFalse("Should reject more than 5 levels",
-            barcodeParsingService.validateFormat("MAIN-FRZ01-SHA-RKR1-A5-EXTRA"));
-        assertFalse("Should reject empty string",
-            barcodeParsingService.validateFormat(""));
-        assertFalse("Should reject null",
-            barcodeParsingService.validateFormat(null));
+                barcodeParsingService.validateFormat("MAIN-FRZ01-SHA-RKR1-A5-EXTRA"));
+        assertFalse("Should reject empty string", barcodeParsingService.validateFormat(""));
+        assertFalse("Should reject null", barcodeParsingService.validateFormat(null));
     }
 
     /**
-     * Test extractComponents method
-     * Expected: Returns list of string components
+     * Test extractComponents method Expected: Returns list of string components
      */
     @Test
     public void testExtractComponents() {
@@ -251,8 +241,8 @@ public class BarcodeParsingServiceTest {
     }
 
     /**
-     * Test extractComponents with invalid barcode
-     * Expected: Returns empty list or throws exception
+     * Test extractComponents with invalid barcode Expected: Returns empty list or
+     * throws exception
      */
     @Test
     public void testExtractComponentsInvalidBarcode() {

@@ -109,74 +109,77 @@ Cypress.Commands.add("setupStorageIntercepts", () => {
  * Navigate to sample entry step in order entry workflow
  * Optimized helper to avoid repeating navigation in each test
  * Usage: cy.navigateToSampleEntryStep(homePage)
- * 
+ *
  * This command:
  * 1. Navigates to order entry page
  * 2. Searches and selects test patient (John Smith)
  * 3. Selects program (Cytology or first available)
  * 4. Navigates to sample entry step where StorageLocationSelector is visible
- * 
+ *
  * Returns: { orderEntityPage, patientEntryPage }
  */
 Cypress.Commands.add("navigateToSampleEntryStep", (homePage) => {
   const OrderEntityPage = require("../pages/OrderEntityPage").default;
   const PatientEntryPage = require("../pages/PatientEntryPage").default;
-  
+
   const orderEntityPage = homePage.goToOrderPage();
-  
+
   // Wait for page to be ready
   cy.url().should("satisfy", (url) => {
     return url.includes("/AddOrder") || url.includes("/SamplePatientEntry");
   });
 
   const patientEntryPage = orderEntityPage.getPatientPage();
-  
+
   // Wait for patient entry form
-  cy.get('[data-cy="searchPatientTabButton"]', { timeout: 10000 })
-    .should("be.visible");
+  cy.get('[data-cy="searchPatientTabButton"]', { timeout: 10000 }).should(
+    "be.visible",
+  );
 
   // Search and select E2E test patient
   patientEntryPage.searchPatientByFirstAndLastName("John", "Smith");
   patientEntryPage.clickSearchPatientButton();
-  
+
   // Wait for search results
-  cy.get("table", { timeout: 10000 })
-    .should("be.visible");
-  
+  cy.get("table", { timeout: 10000 }).should("be.visible");
+
   patientEntryPage.selectPatientFromSearchResults();
   patientEntryPage.getFirstName().should("have.value", "John");
-  
+
   // Proceed to program selection
   orderEntityPage.clickNextButton();
-  
+
   // Wait for program selection
-  cy.get('#additionalQuestionsSelect', { timeout: 10000 })
-    .should("be.visible");
-  
+  cy.get("#additionalQuestionsSelect", { timeout: 10000 }).should("be.visible");
+
   // Wait for programs to load
   cy.wait("@getPrograms", { timeout: 10000 });
-  
+
   // Wait for dropdown to be populated
-  cy.get('#additionalQuestionsSelect option', { timeout: 10000 })
-    .should("have.length.greaterThan", 1);
-  
+  cy.get("#additionalQuestionsSelect option", { timeout: 10000 }).should(
+    "have.length.greaterThan",
+    1,
+  );
+
   // Select program (Cytology or first available)
-  cy.get('#additionalQuestionsSelect').then(($select) => {
-    const options = $select.find('option');
-    const cytologyOption = Array.from(options).find(opt => opt.textContent.includes('Cytology'));
+  cy.get("#additionalQuestionsSelect").then(($select) => {
+    const options = $select.find("option");
+    const cytologyOption = Array.from(options).find((opt) =>
+      opt.textContent.includes("Cytology"),
+    );
     if (cytologyOption) {
       orderEntityPage.selectCytology();
     } else {
-      cy.get('#additionalQuestionsSelect').select(1);
+      cy.get("#additionalQuestionsSelect").select(1);
     }
   });
-  
+
   orderEntityPage.clickNextButton();
-  
+
   // Wait for sample entry step where StorageLocationSelector is visible
   cy.get('[data-testid="storage-location-selector"]', { timeout: 20000 })
     .scrollIntoView()
     .should("be.visible");
-  
+
   return cy.wrap({ orderEntityPage, patientEntryPage });
 });
