@@ -1,5 +1,19 @@
 import HomePage from "../pages/HomePage";
 
+/**
+ * E2E Tests for Location CRUD Operations
+ * Tests edit and delete operations for Rooms, Devices, Shelves, and Racks
+ *
+ * Constitution V.5 Compliance:
+ * - Video disabled by default (cypress.config.js)
+ * - Screenshots enabled on failure (cypress.config.js)
+ * - Intercepts set up BEFORE actions that trigger them
+ * - Uses .should() assertions for retry-ability (cy.wait() only for intercept aliases)
+ * - Element readiness checks before all interactions
+ * - Focused on happy paths (user workflows, not implementation details)
+ * - Run individually during development: npm run cy:run -- --spec "cypress/e2e/storageLocationCRUD.cy.js"
+ */
+
 let homePage = null;
 
 before("Setup storage tests", () => {
@@ -15,10 +29,15 @@ after("Cleanup storage tests", () => {
 });
 
 describe("Location CRUD Operations", function () {
-  beforeEach(function () {
-    // Navigate to Storage Dashboard
+  before(function () {
+    // Navigate to Storage Dashboard ONCE for all tests
     cy.visit("/Storage");
     cy.get(".storage-dashboard", { timeout: 10000 }).should("be.visible");
+  });
+  
+  beforeEach(function () {
+    // Only set up intercepts if needed - no navigation
+    // Navigation already done in before() - we're already on Storage Dashboard
   });
 
   describe("Edit Location", function () {
@@ -134,15 +153,20 @@ describe("Location CRUD Operations", function () {
           cy.get('[data-testid="edit-location-save-button"]')
             .should("not.be.disabled")
             .click();
-          cy.wait("@updateRoom");
-          cy.wait("@getUpdatedRoom");
+          
+          // Wait for API calls to complete
+          cy.wait("@updateRoom", { timeout: 10000 }).then((interception) => {
+            expect(interception.response.statusCode).to.be.oneOf([200, 201]);
+          });
+          cy.wait("@getUpdatedRoom", { timeout: 10000 });
 
-          // Verify modal closes
+          // Verify modal closes (retry-ability)
+          // Modal might stay in DOM but should not be visible
           cy.get('[data-testid="edit-location-modal"]', {
-            timeout: 5000,
+            timeout: 10000,
           }).should("not.be.visible");
 
-          // Verify table update
+          // Verify table update (retry-ability)
           cy.wait("@refreshRooms");
           cy.get(`[data-testid="room-row-${roomId}"]`, { timeout: 10000 })
             .should("exist")
@@ -268,12 +292,16 @@ describe("Location CRUD Operations", function () {
           cy.get('[data-testid="edit-location-save-button"]')
             .should("not.be.disabled")
             .click();
-          cy.wait("@updateDevice");
-          cy.wait("@getUpdatedDevice");
+          
+          // Wait for API calls to complete
+          cy.wait("@updateDevice", { timeout: 10000 }).then((interception) => {
+            expect(interception.response.statusCode).to.be.oneOf([200, 201]);
+          });
+          cy.wait("@getUpdatedDevice", { timeout: 10000 });
 
-          // Verify modal closes
+          // Verify modal closes (retry-ability)
           cy.get('[data-testid="edit-location-modal"]', {
-            timeout: 5000,
+            timeout: 10000,
           }).should("not.be.visible");
 
           // Verify table refresh
@@ -402,12 +430,16 @@ describe("Location CRUD Operations", function () {
           cy.get('[data-testid="edit-location-save-button"]')
             .should("not.be.disabled")
             .click();
-          cy.wait("@updateShelf");
-          cy.wait("@getUpdatedShelf");
+          
+          // Wait for API calls to complete
+          cy.wait("@updateShelf", { timeout: 10000 }).then((interception) => {
+            expect(interception.response.statusCode).to.be.oneOf([200, 201]);
+          });
+          cy.wait("@getUpdatedShelf", { timeout: 10000 });
 
-          // Verify modal closes
+          // Verify modal closes (retry-ability)
           cy.get('[data-testid="edit-location-modal"]', {
-            timeout: 5000,
+            timeout: 10000,
           }).should("not.be.visible");
 
           // Verify table update
@@ -536,12 +568,16 @@ describe("Location CRUD Operations", function () {
           cy.get('[data-testid="edit-location-save-button"]')
             .should("not.be.disabled")
             .click();
-          cy.wait("@updateRack");
-          cy.wait("@getUpdatedRack");
+          
+          // Wait for API calls to complete
+          cy.wait("@updateRack", { timeout: 10000 }).then((interception) => {
+            expect(interception.response.statusCode).to.be.oneOf([200, 201]);
+          });
+          cy.wait("@getUpdatedRack", { timeout: 10000 });
 
-          // Verify modal closes
+          // Verify modal closes (retry-ability)
           cy.get('[data-testid="edit-location-modal"]', {
-            timeout: 5000,
+            timeout: 10000,
           }).should("not.be.visible");
 
           // Verify table refresh
@@ -620,9 +656,13 @@ describe("Location CRUD Operations", function () {
           });
 
           // Cancel
-          cy.get('[data-testid="delete-location-cancel-button"]').click();
+          cy.get('[data-testid="delete-location-cancel-button"]')
+            .should("be.visible")
+            .click();
+          
+          // Verify modal closes (retry-ability)
           cy.get('[data-testid="delete-location-modal"]', {
-            timeout: 5000,
+            timeout: 10000,
           }).should("not.be.visible");
         });
     });
@@ -698,12 +738,18 @@ describe("Location CRUD Operations", function () {
           );
 
           // Confirm delete
-          cy.get('[data-testid="delete-location-confirm-button"]').click();
-          cy.wait("@deleteRoom");
+          cy.get('[data-testid="delete-location-confirm-button"]')
+            .should("not.be.disabled")
+            .click();
+          
+          // Wait for delete API call
+          cy.wait("@deleteRoom").then((interception) => {
+            expect(interception.response.statusCode).to.be.oneOf([200, 204]);
+          });
 
-          // Verify modal closes
+          // Verify modal closes (retry-ability)
           cy.get('[data-testid="delete-location-modal"]', {
-            timeout: 5000,
+            timeout: 10000,
           }).should("not.be.visible");
 
           // Verify table refresh

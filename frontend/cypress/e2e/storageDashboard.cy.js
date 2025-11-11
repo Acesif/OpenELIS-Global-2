@@ -1,5 +1,19 @@
 import HomePage from "../pages/HomePage";
 
+/**
+ * E2E Tests for Storage Dashboard
+ * Tests dashboard loading, metric cards, tabs, and basic functionality
+ *
+ * Constitution V.5 Compliance:
+ * - Video disabled by default (cypress.config.js)
+ * - Screenshots enabled on failure (cypress.config.js)
+ * - Intercepts set up BEFORE actions that trigger them
+ * - Uses .should() assertions for retry-ability (no arbitrary cy.wait())
+ * - Element readiness checks before all interactions
+ * - Focused on happy paths (user workflows, not implementation details)
+ * - Run individually during development: npm run cy:run -- --spec "cypress/e2e/storageDashboard.cy.js"
+ */
+
 let homePage = null;
 
 before("Setup storage tests", () => {
@@ -14,15 +28,18 @@ after("Cleanup storage tests", () => {
 
 describe("Storage Dashboard", function () {
   it("Should navigate to Storage Dashboard and verify it loads with translated labels", function () {
+    // Set up intercepts BEFORE navigation
+    cy.intercept("GET", "**/rest/storage/dashboard/metrics**").as("getMetrics");
+    cy.intercept("GET", "**/rest/storage/samples**").as("getSamples");
+    
     // Navigate directly to Storage page (more reliable than menu navigation)
     cy.visit("/Storage");
-    cy.wait(3000);
+    
+    // Wait for dashboard to load (retry-ability)
+    cy.get(".storage-dashboard", { timeout: 10000 }).should("be.visible");
 
     // Verify we're on the Storage page
     cy.url().should("include", "/Storage");
-
-    // Verify dashboard container is visible
-    cy.get(".storage-dashboard", { timeout: 10000 }).should("be.visible");
 
     // Verify metric cards are visible (check for Tile components)
     cy.get(".cds--tile", { timeout: 10000 }).should("have.length.at.least", 4);

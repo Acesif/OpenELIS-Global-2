@@ -9,6 +9,15 @@ import LoginPage from "../pages/LoginPage";
  * - Devices tab: Filter by type, room, and status
  * - Shelves tab: Filter by device, room, and status
  * - Racks tab: Filter by room, shelf, device, and status
+ *
+ * Constitution V.5 Compliance:
+ * - Video disabled by default (cypress.config.js)
+ * - Screenshots enabled on failure (cypress.config.js)
+ * - Intercepts set up BEFORE actions that trigger them
+ * - Uses .should() assertions for retry-ability (no arbitrary cy.wait())
+ * - Element readiness checks before all interactions
+ * - Focused on happy paths (user workflows, not implementation details)
+ * - Run individually during development: npm run cy:run -- --spec "cypress/e2e/storageFilters.cy.js"
  */
 
 let homePage = null;
@@ -24,18 +33,28 @@ after("Cleanup storage tests", () => {
 });
 
 describe("Storage Dashboard Filtering - Samples Tab", function () {
-  beforeEach(() => {
-    // Navigate to Samples tab before each test
+  before(() => {
+    // Set up intercepts BEFORE navigation
+    cy.intercept("GET", "**/rest/storage/samples**").as("getSamples");
+    
+    // Navigate to Samples tab ONCE for all tests in this describe block
     cy.visit("/Storage/samples");
-    cy.wait(3000); // Wait for API calls to complete
-
-    // Verify dashboard is loaded
+    
+    // Verify dashboard is loaded (retry-ability)
     cy.get(".storage-dashboard", { timeout: 10000 }).should("be.visible");
+    
+    // Wait for initial API call
+    cy.wait("@getSamples", { timeout: 10000 });
 
     // Verify we're on the Samples tab
     cy.get('button[role="tab"]')
       .contains("Samples")
       .should("have.attr", "aria-selected", "true");
+  });
+  
+  beforeEach(() => {
+    // Only set up intercepts if needed - no navigation
+    // Navigation already done in before() - we're already on Samples tab
   });
 
   it("Should filter samples by location (room)", function () {
@@ -53,7 +72,8 @@ describe("Storage Dashboard Filtering - Samples Tab", function () {
           if ($dropdown.length > 0) {
             // Open dropdown and select first non-empty option
             cy.get("#filter-room").click();
-            cy.wait(500);
+            // Wait for dropdown menu to appear (retry-ability)
+            cy.get(".cds--list-box__menu-item", { timeout: 5000 }).should("be.visible");
 
             // Select first room option (skip "All")
             cy.get(".cds--list-box__menu-item")
@@ -64,7 +84,8 @@ describe("Storage Dashboard Filtering - Samples Tab", function () {
                 cy.log(`Selecting room filter: ${roomName}`);
 
                 cy.wrap($item).click();
-                cy.wait(2000); // Wait for API call and table update
+                // Wait for API call and table update (retry-ability)
+            cy.wait("@getSamples", { timeout: 10000 });
 
                 // Verify API was called with location filter
                 cy.wait("@getSamples").then((interception) => {
@@ -112,9 +133,11 @@ describe("Storage Dashboard Filtering - Samples Tab", function () {
 
     // Select "Active" status filter
     cy.get("#filter-status").click();
-    cy.wait(500);
+    // Wait for dropdown menu to appear (retry-ability)
+    cy.get(".cds--list-box__menu-item", { timeout: 5000 }).should("be.visible");
     cy.get(".cds--list-box__menu-item").contains("Active").click();
-    cy.wait(2000);
+            // Wait for API call and table update (retry-ability)
+            cy.wait("@getShelves", { timeout: 10000 });
 
     // Verify API was called with status filter
     cy.wait("@getSamples").then((interception) => {
@@ -137,18 +160,28 @@ describe("Storage Dashboard Filtering - Samples Tab", function () {
 });
 
 describe("Storage Dashboard Filtering - Rooms Tab", function () {
-  beforeEach(() => {
-    // Navigate to Rooms tab before each test
+  before(() => {
+    // Set up intercepts BEFORE navigation
+    cy.intercept("GET", "**/rest/storage/rooms**").as("getRooms");
+    
+    // Navigate to Rooms tab ONCE for all tests in this describe block
     cy.visit("/Storage/rooms");
-    cy.wait(3000);
-
-    // Verify dashboard is loaded
+    
+    // Verify dashboard is loaded (retry-ability)
     cy.get(".storage-dashboard", { timeout: 10000 }).should("be.visible");
+    
+    // Wait for initial API call
+    cy.wait("@getRooms", { timeout: 10000 });
 
     // Verify we're on the Rooms tab
     cy.get('button[role="tab"]')
       .contains("Rooms")
       .should("have.attr", "aria-selected", "true");
+  });
+  
+  beforeEach(() => {
+    // Only set up intercepts if needed - no navigation
+    // Navigation already done in before() - we're already on Rooms tab
   });
 
   it("Should filter rooms by status (active)", function () {
@@ -163,9 +196,11 @@ describe("Storage Dashboard Filtering - Rooms Tab", function () {
 
         // Select "Active" status filter
         cy.get("#filter-status").click();
-        cy.wait(500);
+        // Wait for dropdown menu to appear (retry-ability)
+    cy.get(".cds--list-box__menu-item", { timeout: 5000 }).should("be.visible");
         cy.get(".cds--list-box__menu-item").contains("Active").click();
-        cy.wait(2000);
+            // Wait for API call and table update (retry-ability)
+            cy.wait("@getShelves", { timeout: 10000 });
 
         // Verify API was called with status filter
         cy.wait("@getRooms").then((interception) => {
@@ -193,9 +228,11 @@ describe("Storage Dashboard Filtering - Rooms Tab", function () {
 
     // Select "Inactive" status filter
     cy.get("#filter-status").click();
-    cy.wait(500);
+    // Wait for dropdown menu to appear (retry-ability)
+    cy.get(".cds--list-box__menu-item", { timeout: 5000 }).should("be.visible");
     cy.get(".cds--list-box__menu-item").contains("Inactive").click();
-    cy.wait(2000);
+            // Wait for API call and table update (retry-ability)
+            cy.wait("@getShelves", { timeout: 10000 });
 
     // Verify API was called with status filter
     cy.wait("@getRooms").then((interception) => {
@@ -214,18 +251,28 @@ describe("Storage Dashboard Filtering - Rooms Tab", function () {
 });
 
 describe("Storage Dashboard Filtering - Devices Tab", function () {
-  beforeEach(() => {
-    // Navigate to Devices tab before each test
+  before(() => {
+    // Set up intercepts BEFORE navigation
+    cy.intercept("GET", "**/rest/storage/devices**").as("getDevices");
+    
+    // Navigate to Devices tab ONCE for all tests in this describe block
     cy.visit("/Storage/devices");
-    cy.wait(3000);
-
-    // Verify dashboard is loaded
+    
+    // Verify dashboard is loaded (retry-ability)
     cy.get(".storage-dashboard", { timeout: 10000 }).should("be.visible");
+    
+    // Wait for initial API call
+    cy.wait("@getDevices", { timeout: 10000 });
 
     // Verify we're on the Devices tab
     cy.get('button[role="tab"]')
       .contains("Devices")
       .should("have.attr", "aria-selected", "true");
+  });
+  
+  beforeEach(() => {
+    // Only set up intercepts if needed - no navigation
+    // Navigation already done in before() - we're already on Devices tab
   });
 
   it("Should filter devices by room", function () {
@@ -236,14 +283,16 @@ describe("Storage Dashboard Filtering - Devices Tab", function () {
     cy.get("#filter-room").then(($dropdown) => {
       if ($dropdown.length > 0) {
         cy.get("#filter-room").click();
-        cy.wait(500);
+        // Wait for dropdown menu to appear (retry-ability)
+    cy.get(".cds--list-box__menu-item", { timeout: 5000 }).should("be.visible");
         cy.get(".cds--list-box__menu-item")
           .not(':contains("All")')
           .first()
           .then(($item) => {
             const roomName = $item.text().trim();
             cy.wrap($item).click();
-            cy.wait(2000);
+            // Wait for API call and table update (retry-ability)
+            cy.wait("@getDevices", { timeout: 10000 });
 
             // Verify API was called with roomId filter
             cy.wait("@getDevices").then((interception) => {
@@ -272,9 +321,11 @@ describe("Storage Dashboard Filtering - Devices Tab", function () {
 
     // Select "Active" status filter
     cy.get("#filter-status").click();
-    cy.wait(500);
+    // Wait for dropdown menu to appear (retry-ability)
+    cy.get(".cds--list-box__menu-item", { timeout: 5000 }).should("be.visible");
     cy.get(".cds--list-box__menu-item").contains("Active").click();
-    cy.wait(2000);
+            // Wait for API call and table update (retry-ability)
+            cy.wait("@getShelves", { timeout: 10000 });
 
     // Verify API was called with status filter
     cy.wait("@getDevices").then((interception) => {
@@ -293,18 +344,28 @@ describe("Storage Dashboard Filtering - Devices Tab", function () {
 });
 
 describe("Storage Dashboard Filtering - Shelves Tab", function () {
-  beforeEach(() => {
-    // Navigate to Shelves tab before each test
+  before(() => {
+    // Set up intercepts BEFORE navigation
+    cy.intercept("GET", "**/rest/storage/shelves**").as("getShelves");
+    
+    // Navigate to Shelves tab ONCE for all tests in this describe block
     cy.visit("/Storage/shelves");
-    cy.wait(3000);
-
-    // Verify dashboard is loaded
+    
+    // Verify dashboard is loaded (retry-ability)
     cy.get(".storage-dashboard", { timeout: 10000 }).should("be.visible");
+    
+    // Wait for initial API call
+    cy.wait("@getShelves", { timeout: 10000 });
 
     // Verify we're on the Shelves tab
     cy.get('button[role="tab"]')
       .contains("Shelves")
       .should("have.attr", "aria-selected", "true");
+  });
+  
+  beforeEach(() => {
+    // Only set up intercepts if needed - no navigation
+    // Navigation already done in before() - we're already on Shelves tab
   });
 
   it("Should filter shelves by device", function () {
@@ -315,13 +376,15 @@ describe("Storage Dashboard Filtering - Shelves Tab", function () {
     cy.get("#filter-device").then(($dropdown) => {
       if ($dropdown.length > 0) {
         cy.get("#filter-device").click();
-        cy.wait(500);
+        // Wait for dropdown menu to appear (retry-ability)
+    cy.get(".cds--list-box__menu-item", { timeout: 5000 }).should("be.visible");
         cy.get(".cds--list-box__menu-item")
           .not(':contains("All")')
           .first()
           .then(($item) => {
             cy.wrap($item).click();
-            cy.wait(2000);
+            // Wait for API call and table update (retry-ability)
+            cy.wait("@getDevices", { timeout: 10000 });
 
             // Verify API was called with deviceId filter
             cy.wait("@getShelves").then((interception) => {
@@ -345,13 +408,15 @@ describe("Storage Dashboard Filtering - Shelves Tab", function () {
     cy.get("#filter-room").then(($dropdown) => {
       if ($dropdown.length > 0) {
         cy.get("#filter-room").click();
-        cy.wait(500);
+        // Wait for dropdown menu to appear (retry-ability)
+    cy.get(".cds--list-box__menu-item", { timeout: 5000 }).should("be.visible");
         cy.get(".cds--list-box__menu-item")
           .not(':contains("All")')
           .first()
           .then(($item) => {
             cy.wrap($item).click();
-            cy.wait(2000);
+            // Wait for API call and table update (retry-ability)
+            cy.wait("@getDevices", { timeout: 10000 });
 
             // Verify API was called with roomId filter
             cy.wait("@getShelves").then((interception) => {
@@ -371,9 +436,11 @@ describe("Storage Dashboard Filtering - Shelves Tab", function () {
 
     // Select "Active" status filter
     cy.get("#filter-status").click();
-    cy.wait(500);
+    // Wait for dropdown menu to appear (retry-ability)
+    cy.get(".cds--list-box__menu-item", { timeout: 5000 }).should("be.visible");
     cy.get(".cds--list-box__menu-item").contains("Active").click();
-    cy.wait(2000);
+            // Wait for API call and table update (retry-ability)
+            cy.wait("@getShelves", { timeout: 10000 });
 
     // Verify API was called with status filter
     cy.wait("@getShelves").then((interception) => {
@@ -392,18 +459,28 @@ describe("Storage Dashboard Filtering - Shelves Tab", function () {
 });
 
 describe("Storage Dashboard Filtering - Racks Tab", function () {
-  beforeEach(() => {
-    // Navigate to Racks tab before each test
+  before(() => {
+    // Set up intercepts BEFORE navigation
+    cy.intercept("GET", "**/rest/storage/racks**").as("getRacks");
+    
+    // Navigate to Racks tab ONCE for all tests in this describe block
     cy.visit("/Storage/racks");
-    cy.wait(3000);
-
-    // Verify dashboard is loaded
+    
+    // Verify dashboard is loaded (retry-ability)
     cy.get(".storage-dashboard", { timeout: 10000 }).should("be.visible");
+    
+    // Wait for initial API call
+    cy.wait("@getRacks", { timeout: 10000 });
 
     // Verify we're on the Racks tab
     cy.get('button[role="tab"]')
       .contains("Racks")
       .should("have.attr", "aria-selected", "true");
+  });
+  
+  beforeEach(() => {
+    // Only set up intercepts if needed - no navigation
+    // Navigation already done in before() - we're already on Racks tab
   });
 
   it("Should filter racks by room", function () {
@@ -414,13 +491,15 @@ describe("Storage Dashboard Filtering - Racks Tab", function () {
     cy.get("#filter-room").then(($dropdown) => {
       if ($dropdown.length > 0) {
         cy.get("#filter-room").click();
-        cy.wait(500);
+        // Wait for dropdown menu to appear (retry-ability)
+    cy.get(".cds--list-box__menu-item", { timeout: 5000 }).should("be.visible");
         cy.get(".cds--list-box__menu-item")
           .not(':contains("All")')
           .first()
           .then(($item) => {
             cy.wrap($item).click();
-            cy.wait(2000);
+            // Wait for API call and table update (retry-ability)
+            cy.wait("@getDevices", { timeout: 10000 });
 
             // Verify API was called with roomId filter
             cy.wait("@getRacks").then((interception) => {
@@ -450,13 +529,15 @@ describe("Storage Dashboard Filtering - Racks Tab", function () {
     cy.get("#filter-device").then(($dropdown) => {
       if ($dropdown.length > 0) {
         cy.get("#filter-device").click();
-        cy.wait(500);
+        // Wait for dropdown menu to appear (retry-ability)
+    cy.get(".cds--list-box__menu-item", { timeout: 5000 }).should("be.visible");
         cy.get(".cds--list-box__menu-item")
           .not(':contains("All")')
           .first()
           .then(($item) => {
             cy.wrap($item).click();
-            cy.wait(2000);
+            // Wait for API call and table update (retry-ability)
+            cy.wait("@getDevices", { timeout: 10000 });
 
             // Verify API was called with deviceId filter
             cy.wait("@getRacks").then((interception) => {
@@ -478,9 +559,11 @@ describe("Storage Dashboard Filtering - Racks Tab", function () {
 
     // Select "Active" status filter
     cy.get("#filter-status").click();
-    cy.wait(500);
+    // Wait for dropdown menu to appear (retry-ability)
+    cy.get(".cds--list-box__menu-item", { timeout: 5000 }).should("be.visible");
     cy.get(".cds--list-box__menu-item").contains("Active").click();
-    cy.wait(2000);
+            // Wait for API call and table update (retry-ability)
+            cy.wait("@getShelves", { timeout: 10000 });
 
     // Verify API was called with status filter
     cy.wait("@getRacks").then((interception) => {
