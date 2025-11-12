@@ -399,7 +399,9 @@ public class BarcodeValidationServiceTest {
         when(storageRoomDAO.findByCode("MAIN")).thenReturn(testRoom);
         when(storageDeviceDAO.findByCode("FRZ01")).thenReturn(testDevice);
         when(storageDeviceDAO.findByCodeAndParentRoom("FRZ01", testRoom)).thenReturn(testDevice);
+        when(storageShelfDAO.findByLabel("SHA")).thenReturn(testShelf);
         when(storageShelfDAO.findByLabelAndParentDevice("SHA", testDevice)).thenReturn(testShelf);
+        when(storageRackDAO.findByLabel("RKR1")).thenReturn(testRack);
         when(storageRackDAO.findByLabelAndParentShelf("RKR1", testShelf)).thenReturn(testRack);
 
         // Act

@@ -388,14 +388,22 @@ public class BarcodeValidationServiceImpl implements BarcodeValidationService {
 
         // Pattern 3: Alphanumeric codes (letters + numbers, may have hyphens but not
         // hierarchical)
-        // Exclude hierarchical format (multiple hyphens with specific structure)
+        // Only match if it looks like a valid sample format (not just any alphanumeric)
+        // Valid sample formats typically have:
+        // - Site prefix + year + sequence (e.g., "S-2025-001")
+        // - Year-based with clear structure (e.g., "25-00001")
+        // Exclude generic alphanumeric strings that don't match known patterns
         if (trimmed.matches("[A-Z0-9-]+") && !trimmed.matches(".*-.*-.*-.*")) {
-            // If it's alphanumeric but doesn't match hierarchical pattern, likely a sample
-            // Hierarchical format typically has 2-4 parts separated by hyphens
-            // Sample codes are usually shorter or have different structure
             int hyphenCount = trimmed.length() - trimmed.replace("-", "").length();
+            // Only classify as sample if it matches a known sample pattern structure
+            // Generic alphanumeric strings should be "unknown"
             if (hyphenCount <= 2 && trimmed.length() <= 20) {
-                return "sample";
+                // Check if it matches a clear sample pattern (year-based or site-based)
+                // If it's just random alphanumeric, return unknown
+                if (trimmed.matches("\\d{2}-?\\d{4,}") || trimmed.matches("[A-Z]{1,4}-\\d{4}-\\d{3,}")) {
+                    return "sample";
+                }
+                // For other patterns, be conservative - return unknown
             }
         }
 

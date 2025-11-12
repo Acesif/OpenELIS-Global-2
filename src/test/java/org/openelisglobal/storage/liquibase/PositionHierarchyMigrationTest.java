@@ -163,10 +163,12 @@ public class PositionHierarchyMigrationTest extends BaseWebContextSensitiveTest 
                                                                                                                         // KEY
                 "    AND conkey::text LIKE '%parent_device_id%'";
 
-        var result = jdbcTemplate.queryForMap(sql);
+        var results = jdbcTemplate.queryForList(sql);
 
         // Then: Foreign key should exist and reference storage_device
-        assertNotNull("parent_device_id foreign key should exist", result);
+        assertNotNull("parent_device_id foreign key should exist", results);
+        assertFalse("Should have at least one foreign key constraint", results.isEmpty());
+        var result = results.get(0);
         assertEquals("storage_device", result.get("referenced_table").toString());
     }
 }

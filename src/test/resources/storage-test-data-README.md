@@ -179,8 +179,13 @@ LIMIT 20;
 To remove all test data:
 
 ```sql
-DELETE FROM sample_storage_movement WHERE sample_id IN (SELECT id FROM sample WHERE accession_number LIKE 'TEST-%');
-DELETE FROM sample_storage_assignment WHERE sample_id IN (SELECT id FROM sample WHERE accession_number LIKE 'TEST-%');
+DELETE FROM result WHERE analysis_id IN (SELECT id FROM analysis WHERE sampitem_id IN (SELECT id FROM sample_item WHERE samp_id IN (SELECT id FROM sample WHERE accession_number LIKE 'E2E-%' OR accession_number LIKE 'TEST-%')));
+DELETE FROM analysis WHERE sampitem_id IN (SELECT id FROM sample_item WHERE samp_id IN (SELECT id FROM sample WHERE accession_number LIKE 'E2E-%' OR accession_number LIKE 'TEST-%'));
+DELETE FROM sample_storage_movement WHERE sample_item_id IN (SELECT id FROM sample_item WHERE samp_id IN (SELECT id FROM sample WHERE accession_number LIKE 'E2E-%' OR accession_number LIKE 'TEST-%'));
+DELETE FROM sample_storage_assignment WHERE sample_item_id IN (SELECT id FROM sample_item WHERE samp_id IN (SELECT id FROM sample WHERE accession_number LIKE 'E2E-%' OR accession_number LIKE 'TEST-%'));
+DELETE FROM sample_item WHERE samp_id IN (SELECT id FROM sample WHERE accession_number LIKE 'E2E-%' OR accession_number LIKE 'TEST-%');
+DELETE FROM sample_human WHERE samp_id IN (SELECT id FROM sample WHERE accession_number LIKE 'E2E-%' OR accession_number LIKE 'TEST-%');
+DELETE FROM sample WHERE accession_number LIKE 'E2E-%' OR accession_number LIKE 'TEST-%';
 DELETE FROM storage_position WHERE id BETWEEN 100 AND 10000;
 DELETE FROM storage_rack WHERE id BETWEEN 30 AND 100;
 DELETE FROM storage_shelf WHERE id BETWEEN 20 AND 100;
@@ -245,13 +250,32 @@ npm run cy:run -- --spec "cypress/e2e/storageAssignment.cy.js"
 **Test Samples:**
 
 - **E2E-001**: Assigned to MAIN > FRZ01 > Shelf-A > Rack R1 > A1
+  - SampleItem 10001 has 2 analyses: 1 finalized (with result "Positive"), 1 not
+    started
 - **E2E-002**: Assigned to MAIN > FRZ01 > Shelf-A > Rack R1 > A2
+  - SampleItem 10011 has 1 analysis: Technical acceptance
 - **E2E-003**: Assigned to MAIN > FRZ01 > Shelf-A > Rack R1 > A4
+  - SampleItem 10021 has 1 analysis: Canceled
 - **E2E-004**: **Unassigned** (for testing assignment workflow)
 - **E2E-005**: Assigned to MAIN > FRZ01 > Shelf-A > Rack R1 > A5
+  - SampleItem 10041 has 1 analysis: Finalized (with result "125.5")
+
+**Test Analyses (Orders):**
+
+- **Analysis 20001**: SampleItem 10001 (E2E-001) - Finalized status, has result
+- **Analysis 20002**: SampleItem 10001 (E2E-001) - Not started status, no result
+- **Analysis 20003**: SampleItem 10011 (E2E-002) - Technical acceptance status
+- **Analysis 20004**: SampleItem 10021 (E2E-003) - Canceled status
+- **Analysis 20005**: SampleItem 10041 (E2E-005) - Finalized status, has result
+
+**Test Results:**
+
+- **Result 30001**: Analysis 20001 - Dictionary type result "Positive"
+- **Result 30002**: Analysis 20005 - Numeric type result "125.5"
 
 These samples appear in the Storage Dashboard and can be searched/filtered by
-the tests.
+the tests. The analyses and results enable testing of order entry, result entry,
+and storage integration workflows.
 
 ## Troubleshooting
 

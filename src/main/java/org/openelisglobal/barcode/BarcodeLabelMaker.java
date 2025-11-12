@@ -98,10 +98,41 @@ public class BarcodeLabelMaker {
     private BarcodeLabelInfoService barcodeLabelService = SpringContext.getBean(BarcodeLabelInfoService.class);
 
     private static final Set<Integer> ENTERED_STATUS_SAMPLE_LIST = new HashSet<>();
+    private static volatile boolean initialized = false;
 
-    static {
-        ENTERED_STATUS_SAMPLE_LIST
-                .add(Integer.parseInt(SpringContext.getBean(IStatusService.class).getStatusID(SampleStatus.Entered)));
+    /**
+     * Lazy initialization of ENTERED_STATUS_SAMPLE_LIST.
+     * Initializes on first use to ensure SpringContext is ready.
+     * Thread-safe using double-checked locking pattern.
+     * 
+     * @return Set containing the status ID for SampleStatus.Entered, or empty set if initialization fails
+     */
+    private static Set<Integer> getEnteredStatusSampleList() {
+        if (!initialized) {
+            synchronized (ENTERED_STATUS_SAMPLE_LIST) {
+                if (!initialized) {
+                    try {
+                        IStatusService statusService = SpringContext.getBean(IStatusService.class);
+                        String statusId = statusService.getStatusID(SampleStatus.Entered);
+                        
+                        if (statusId != null && !statusId.equals("-1") && !statusId.trim().isEmpty()) {
+                            ENTERED_STATUS_SAMPLE_LIST.add(Integer.parseInt(statusId));
+                            initialized = true;
+                        } else {
+                            LogEvent.logError("BarcodeLabelMaker", "getEnteredStatusSampleList",
+                                    "SampleStatus.Entered not found in database. Status ID: " + statusId);
+                        }
+                    } catch (NumberFormatException e) {
+                        LogEvent.logError("BarcodeLabelMaker", "getEnteredStatusSampleList",
+                                "Failed to parse status ID: " + e.getMessage());
+                    } catch (Exception e) {
+                        LogEvent.logError("BarcodeLabelMaker", "getEnteredStatusSampleList",
+                                "Failed to initialize ENTERED_STATUS_SAMPLE_LIST: " + e.getMessage());
+                    }
+                }
+            }
+        }
+        return ENTERED_STATUS_SAMPLE_LIST;
     }
 
     public BarcodeLabelMaker() {
@@ -208,7 +239,7 @@ public class BarcodeLabelMaker {
 
             // 1 specimen label per sampleitem
             List<SampleItem> sampleItemList = sampleItemService.getSampleItemsBySampleIdAndStatus(sample.getId(),
-                    ENTERED_STATUS_SAMPLE_LIST);
+                    getEnteredStatusSampleList());
             for (SampleItem sampleItem : sampleItemList) {
                 SpecimenLabel specLabel = new SpecimenLabel(sampleService.getPatient(sample), sample, sampleItem,
                         labNo);
@@ -239,7 +270,7 @@ public class BarcodeLabelMaker {
             labNo = labNo.substring(0, labNo.lastIndexOf("."));
             Sample sample = sampleService.getSampleByAccessionNumber(labNo);
             List<SampleItem> sampleItemList = sampleItemService.getSampleItemsBySampleIdAndStatus(sample.getId(),
-                    ENTERED_STATUS_SAMPLE_LIST);
+                    getEnteredStatusSampleList());
             for (SampleItem sampleItem : sampleItemList) {
                 // get only the sample item matching the specimen number
                 if (sampleItem.getSortOrder().equals(specimenNumber)) {

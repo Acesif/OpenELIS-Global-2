@@ -5,6 +5,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import java.util.List;
 import java.util.Map;
 import javax.sql.DataSource;
 import org.junit.After;
@@ -80,11 +81,33 @@ public class SampleStorageRestControllerFlexibleAssignmentTest extends BaseWebCo
         // Use numeric ID (sample_item.id is numeric in DB, but Hibernate treats it as
         // String)
         int sampleItemId = 50000 + (int) (timestamp % 10000);
-        // Get default status_id and typeosamp_id from database
-        Integer statusId = jdbcTemplate.queryForObject("SELECT id FROM status_of_sample ORDER BY id LIMIT 1",
+        // Get default status_id and typeosamp_id from database (create if needed)
+        Integer statusId;
+        List<Integer> statusIds = jdbcTemplate.queryForList("SELECT id FROM status_of_sample ORDER BY id LIMIT 1",
                 Integer.class);
-        Integer typeOfSampleId = jdbcTemplate.queryForObject("SELECT id FROM type_of_sample ORDER BY id LIMIT 1",
+        if (statusIds == null || statusIds.isEmpty()) {
+            // Create a default status if none exists
+            jdbcTemplate.update(
+                    "INSERT INTO status_of_sample (id, description, code, status_type, lastupdated) VALUES (1, 'Test Status', 1, 'S', CURRENT_TIMESTAMP) ON CONFLICT (id) DO NOTHING");
+            statusId = 1;
+        } else {
+            statusId = statusIds.get(0);
+        }
+
+        Integer typeOfSampleId;
+        List<Integer> typeOfSampleIds = jdbcTemplate.queryForList("SELECT id FROM type_of_sample ORDER BY id LIMIT 1",
                 Integer.class);
+        if (typeOfSampleIds == null || typeOfSampleIds.isEmpty()) {
+            // Create a default localization if none exists (required for type_of_sample)
+            jdbcTemplate.update(
+                    "INSERT INTO localization (id, english, french, lastupdated) VALUES (1, 'Test Sample Type', 'Type d''échantillon de test', CURRENT_TIMESTAMP) ON CONFLICT (id) DO NOTHING");
+            // Create a default type_of_sample if none exists
+            jdbcTemplate.update(
+                    "INSERT INTO type_of_sample (id, description, domain, name_localization_id, lastupdated) VALUES (1, 'Test Sample Type', 'H', 1, CURRENT_TIMESTAMP) ON CONFLICT (id) DO NOTHING");
+            typeOfSampleId = 1;
+        } else {
+            typeOfSampleId = typeOfSampleIds.get(0);
+        }
         jdbcTemplate.update(
                 "INSERT INTO sample_item (id, samp_id, sort_order, sampitem_id, external_id, typeosamp_id, status_id, lastupdated) VALUES (?, ?, 1, NULL, ?, ?, ?, CURRENT_TIMESTAMP)",
                 sampleItemId, sampleId, "TEST-SAMPLE-" + timestamp + "-TUBE-1", typeOfSampleId, statusId);

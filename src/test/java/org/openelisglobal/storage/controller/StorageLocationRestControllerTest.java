@@ -1182,16 +1182,25 @@ public class StorageLocationRestControllerTest extends BaseWebContextSensitiveTe
                             + "VALUES (?, 'TEST-SAMPLE-' || ?, gen_random_uuid(), 'H', 1, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, false) "
                             + "ON CONFLICT (id) DO NOTHING",
                     sampleId, i);
-            String sampleItemId = "SI-" + sampleId;
+            Integer sampleItemId = 20000 + sampleId; // Use numeric ID
+            // Ensure status_of_sample and type_of_sample exist
             jdbcTemplate.update(
-                    "INSERT INTO sample_item (id, sample_id, sys_user_id, last_updated) VALUES (?, ?, '1', CURRENT_TIMESTAMP) "
+                    "INSERT INTO status_of_sample (id, description, code, status_type, lastupdated) VALUES (1, 'Test Status', 1, 'S', CURRENT_TIMESTAMP) ON CONFLICT (id) DO NOTHING");
+            jdbcTemplate.update(
+                    "INSERT INTO localization (id, english, french, lastupdated) VALUES (1, 'Test Sample Type', 'Type d''échantillon de test', CURRENT_TIMESTAMP) ON CONFLICT (id) DO NOTHING");
+            jdbcTemplate.update(
+                    "INSERT INTO type_of_sample (id, description, domain, name_localization_id, lastupdated) VALUES (1, 'Test Sample Type', 'H', 1, CURRENT_TIMESTAMP) ON CONFLICT (id) DO NOTHING");
+
+            jdbcTemplate.update(
+                    "INSERT INTO sample_item (id, samp_id, sort_order, status_id, typeosamp_id, lastupdated) VALUES (?, ?, 1, 1, 1, CURRENT_TIMESTAMP) "
                             + "ON CONFLICT (id) DO NOTHING",
                     sampleItemId, sampleId);
+            String positionCoord = "A" + i;
             jdbcTemplate.update(
                     "INSERT INTO sample_storage_assignment (id, sample_item_id, location_id, location_type, position_coordinate, assigned_date, assigned_by_user_id, notes, last_updated) "
-                            + "VALUES (?, ?, ?::integer, 'rack', 'A' || ?, CURRENT_TIMESTAMP, 1, 'Test assignment', CURRENT_TIMESTAMP) "
+                            + "VALUES (?, ?, ?, 'rack', ?, CURRENT_TIMESTAMP, 1, 'Test assignment', CURRENT_TIMESTAMP) "
                             + "ON CONFLICT (id) DO UPDATE SET location_id = EXCLUDED.location_id",
-                    1000 + i, sampleItemId, rack1Id, i);
+                    1000 + i, sampleItemId, rack1Id, positionCoord);
         }
 
         // Create 4 sample assignments to rack 2
@@ -1202,16 +1211,25 @@ public class StorageLocationRestControllerTest extends BaseWebContextSensitiveTe
                             + "VALUES (?, 'TEST-SAMPLE-' || ?, gen_random_uuid(), 'H', 1, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, false) "
                             + "ON CONFLICT (id) DO NOTHING",
                     sampleId, 5 + i);
-            String sampleItemId = "SI-" + sampleId;
+            Integer sampleItemId = 20000 + sampleId; // Use numeric ID
+            // Ensure status_of_sample and type_of_sample exist
             jdbcTemplate.update(
-                    "INSERT INTO sample_item (id, sample_id, sys_user_id, last_updated) VALUES (?, ?, '1', CURRENT_TIMESTAMP) "
+                    "INSERT INTO status_of_sample (id, description, code, status_type, lastupdated) VALUES (1, 'Test Status', 1, 'S', CURRENT_TIMESTAMP) ON CONFLICT (id) DO NOTHING");
+            jdbcTemplate.update(
+                    "INSERT INTO localization (id, english, french, lastupdated) VALUES (1, 'Test Sample Type', 'Type d''échantillon de test', CURRENT_TIMESTAMP) ON CONFLICT (id) DO NOTHING");
+            jdbcTemplate.update(
+                    "INSERT INTO type_of_sample (id, description, domain, name_localization_id, lastupdated) VALUES (1, 'Test Sample Type', 'H', 1, CURRENT_TIMESTAMP) ON CONFLICT (id) DO NOTHING");
+
+            jdbcTemplate.update(
+                    "INSERT INTO sample_item (id, samp_id, sort_order, status_id, typeosamp_id, lastupdated) VALUES (?, ?, 1, 1, 1, CURRENT_TIMESTAMP) "
                             + "ON CONFLICT (id) DO NOTHING",
                     sampleItemId, sampleId);
+            String positionCoord2 = "1-" + i;
             jdbcTemplate.update(
                     "INSERT INTO sample_storage_assignment (id, sample_item_id, location_id, location_type, position_coordinate, assigned_date, assigned_by_user_id, notes, last_updated) "
-                            + "VALUES (?, ?, ?::integer, 'rack', '1-' || ?, CURRENT_TIMESTAMP, 1, 'Test assignment', CURRENT_TIMESTAMP) "
+                            + "VALUES (?, ?, ?, 'rack', ?, CURRENT_TIMESTAMP, 1, 'Test assignment', CURRENT_TIMESTAMP) "
                             + "ON CONFLICT (id) DO UPDATE SET location_id = EXCLUDED.location_id",
-                    1005 + i, sampleItemId, rack2Id, i);
+                    1005 + i, sampleItemId, rack2Id, positionCoord2);
         }
 
         // When: Get shelves for API (which includes occupiedCount)

@@ -3,7 +3,19 @@
 -- Usage: psql -U clinlims -d clinlims -f storage-test-data.sql
 
 -- Clean up existing test data (if any)
--- Clean up E2E test data (patients, samples, sample items, assignments)
+-- Clean up E2E test data (patients, samples, sample items, assignments, analyses, results)
+DELETE FROM result WHERE analysis_id IN (
+  SELECT id FROM analysis WHERE sampitem_id IN (
+    SELECT id FROM sample_item WHERE samp_id IN (
+      SELECT id FROM sample WHERE accession_number LIKE 'E2E-%' OR accession_number LIKE 'TEST-%'
+    )
+  )
+);
+DELETE FROM analysis WHERE sampitem_id IN (
+  SELECT id FROM sample_item WHERE samp_id IN (
+    SELECT id FROM sample WHERE accession_number LIKE 'E2E-%' OR accession_number LIKE 'TEST-%'
+  )
+);
 DELETE FROM sample_storage_movement WHERE sample_item_id IN (
   SELECT id FROM sample_item WHERE samp_id IN (
     SELECT id FROM sample WHERE accession_number LIKE 'E2E-%' OR accession_number LIKE 'TEST-%'
@@ -228,6 +240,14 @@ DECLARE
   urine_type_id INTEGER;
   blood_type_id INTEGER;
   status_id_val INTEGER;
+  -- Variables for analysis and result creation
+  test_id_val INTEGER;
+  test_section_id_val INTEGER;
+  not_started_status_id INTEGER;
+  finalized_status_id INTEGER;
+  tech_accept_status_id INTEGER;
+  canceled_status_id INTEGER;
+  test_result_id_val INTEGER;
 BEGIN
   -- Try to get sample types (adjust these based on your actual data)
   SELECT id INTO serum_type_id FROM type_of_sample WHERE description = 'Serum' LIMIT 1;
@@ -670,6 +690,121 @@ BEGIN
     new_position_coordinate = EXCLUDED.new_position_coordinate,
     last_updated = CURRENT_TIMESTAMP;
 
+  -- ============================================================================
+  -- Analysis and Result Test Fixtures
+  -- ============================================================================
+  -- Create analysis records (test orders) for E2E sample items
+  -- Create result records (test results) for finalized analyses
+  -- ============================================================================
+
+  -- Get test and test section IDs (dynamic lookup)
+  SELECT id INTO test_id_val FROM test WHERE is_active = 'Y' ORDER BY id LIMIT 1;
+  
+  -- Get first available active test section (optional, can be NULL)
+  SELECT id INTO test_section_id_val FROM test_section WHERE is_active = 'Y' ORDER BY id LIMIT 1;
+  
+  -- Get analysis status IDs from status_of_sample table
+  SELECT id INTO not_started_status_id FROM status_of_sample WHERE name = 'Not Tested' AND status_type = 'ANALYSIS' LIMIT 1;
+  SELECT id INTO finalized_status_id FROM status_of_sample WHERE name = 'Finalized' AND status_type = 'ANALYSIS' LIMIT 1;
+  SELECT id INTO tech_accept_status_id FROM status_of_sample WHERE name = 'Technical Acceptance' AND status_type = 'ANALYSIS' LIMIT 1;
+  SELECT id INTO canceled_status_id FROM status_of_sample WHERE name = 'Test Canceled' AND status_type = 'ANALYSIS' LIMIT 1;
+  
+  -- Get first available test_result for dictionary type (optional, can be NULL)
+  SELECT id INTO test_result_id_val FROM test_result WHERE tst_rslt_type = 'D' AND is_active = true LIMIT 1;
+  
+  -- Only create analyses if we have a test
+  IF test_id_val IS NOT NULL THEN
+    -- Create analyses for E2E sample items
+    -- E2E-001 SampleItem 10001: Finalized analysis (with result)
+    INSERT INTO analysis (id, sampitem_id, test_id, test_sect_id, status_id, status, 
+                          analysis_type, entry_date, started_date, completed_date, 
+                          is_reportable, lastupdated)
+    VALUES
+    (20001, 10001, test_id_val, test_section_id_val, finalized_status_id, '1',
+     'MANUAL', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP - INTERVAL '2 days',
+     CURRENT_TIMESTAMP - INTERVAL '1 day', 'Y', CURRENT_TIMESTAMP)
+    ON CONFLICT (id) DO UPDATE SET
+      status_id = EXCLUDED.status_id,
+      lastupdated = CURRENT_TIMESTAMP;
+    
+    -- E2E-001 SampleItem 10001: Not started analysis (no result)
+    INSERT INTO analysis (id, sampitem_id, test_id, test_sect_id, status_id, status, 
+                          analysis_type, entry_date, started_date, completed_date, 
+                          is_reportable, lastupdated)
+    VALUES
+    (20002, 10001, test_id_val, test_section_id_val, not_started_status_id, '1',
+     'MANUAL', CURRENT_TIMESTAMP, NULL, NULL, 'Y', CURRENT_TIMESTAMP)
+    ON CONFLICT (id) DO UPDATE SET
+      status_id = EXCLUDED.status_id,
+      lastupdated = CURRENT_TIMESTAMP;
+    
+    -- E2E-002 SampleItem 10011: Technical acceptance analysis
+    INSERT INTO analysis (id, sampitem_id, test_id, test_sect_id, status_id, status, 
+                          analysis_type, entry_date, started_date, completed_date, 
+                          is_reportable, lastupdated)
+    VALUES
+    (20003, 10011, test_id_val, test_section_id_val, tech_accept_status_id, '1',
+     'MANUAL', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP - INTERVAL '1 day',
+     CURRENT_TIMESTAMP - INTERVAL '12 hours', 'Y', CURRENT_TIMESTAMP)
+    ON CONFLICT (id) DO UPDATE SET
+      status_id = EXCLUDED.status_id,
+      lastupdated = CURRENT_TIMESTAMP;
+    
+    -- E2E-003 SampleItem 10021: Canceled analysis
+    INSERT INTO analysis (id, sampitem_id, test_id, test_sect_id, status_id, status, 
+                          analysis_type, entry_date, started_date, completed_date, 
+                          is_reportable, lastupdated)
+    VALUES
+    (20004, 10021, test_id_val, test_section_id_val, canceled_status_id, '1',
+     'MANUAL', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP - INTERVAL '3 days',
+     NULL, 'N', CURRENT_TIMESTAMP)
+    ON CONFLICT (id) DO UPDATE SET
+      status_id = EXCLUDED.status_id,
+      lastupdated = CURRENT_TIMESTAMP;
+    
+    -- E2E-005 SampleItem 10041: Finalized analysis (with result)
+    INSERT INTO analysis (id, sampitem_id, test_id, test_sect_id, status_id, status, 
+                          analysis_type, entry_date, started_date, completed_date, 
+                          is_reportable, lastupdated)
+    VALUES
+    (20005, 10041, test_id_val, test_section_id_val, finalized_status_id, '1',
+     'MANUAL', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP - INTERVAL '1 day',
+     CURRENT_TIMESTAMP - INTERVAL '6 hours', 'Y', CURRENT_TIMESTAMP)
+    ON CONFLICT (id) DO UPDATE SET
+      status_id = EXCLUDED.status_id,
+      lastupdated = CURRENT_TIMESTAMP;
+    
+    -- Create results for finalized analyses only
+    -- Result for analysis 20001 (finalized) - Dictionary type
+    IF test_result_id_val IS NOT NULL THEN
+      INSERT INTO result (id, analysis_id, test_result_id, value, result_type, 
+                          is_reportable, sort_order, lastupdated)
+      VALUES
+      (30001, 20001, test_result_id_val, 'Positive', 'D', 'Y', 1, CURRENT_TIMESTAMP)
+      ON CONFLICT (id) DO UPDATE SET
+        value = EXCLUDED.value,
+        lastupdated = CURRENT_TIMESTAMP;
+    ELSE
+      -- Fallback: Create text result if no dictionary test_result available
+      INSERT INTO result (id, analysis_id, value, result_type, 
+                          is_reportable, sort_order, lastupdated)
+      VALUES
+      (30001, 20001, 'Positive', 'T', 'Y', 1, CURRENT_TIMESTAMP)
+      ON CONFLICT (id) DO UPDATE SET
+        value = EXCLUDED.value,
+        lastupdated = CURRENT_TIMESTAMP;
+    END IF;
+    
+    -- Result for analysis 20005 (finalized) - Numeric type
+    INSERT INTO result (id, analysis_id, value, result_type, 
+                        is_reportable, sort_order, lastupdated)
+    VALUES
+    (30002, 20005, '125.5', 'N', 'Y', 1, CURRENT_TIMESTAMP)
+    ON CONFLICT (id) DO UPDATE SET
+      value = EXCLUDED.value,
+      lastupdated = CURRENT_TIMESTAMP;
+  END IF;
+
 END $$;
 
 -- Update sequences to avoid conflicts with test data
@@ -678,6 +813,8 @@ SELECT setval('patient_seq', 2000, false);
 SELECT setval('sample_seq', 2000, false);
 SELECT setval('sample_human_seq', 2000, false);
 SELECT setval('sample_item_seq', 10100, false);
+SELECT setval('analysis_seq', 20000, false);
+SELECT setval('result_seq', 30000, false);
 
 \echo ''
 \echo 'E2E Test Fixtures Summary:'
@@ -689,7 +826,11 @@ SELECT 'SampleItems', COUNT(*) FROM sample_item WHERE id BETWEEN 10000 AND 20000
 UNION ALL
 SELECT 'Storage Assignments', COUNT(*) FROM sample_storage_assignment WHERE id >= 1000
 UNION ALL
-SELECT 'Storage Movements', COUNT(*) FROM sample_storage_movement WHERE id >= 1000;
+SELECT 'Storage Movements', COUNT(*) FROM sample_storage_movement WHERE id >= 1000
+UNION ALL
+SELECT 'Analyses', COUNT(*) FROM analysis WHERE id BETWEEN 20000 AND 30000
+UNION ALL
+SELECT 'Results', COUNT(*) FROM result WHERE id BETWEEN 30000 AND 40000;
 
 \echo ''
 \echo 'Sample Assignments:'
@@ -747,6 +888,8 @@ ORDER BY s.accession_number, si.sort_order;
 \echo '   - 20+ test SampleItems (multiple items per sample, various types)'
 \echo '   - 15+ SampleItems with storage assignments'
 \echo '   - 1 unassigned SampleItem (ID: 10031 from E2E-004) for testing assignment workflow'
+\echo '   - 5 test analyses (orders) for E2E sample items'
+\echo '   - 2 test results for finalized analyses'
 \echo ''
 \echo 'Test patients can be searched by:'
 \echo '   - Name: Smith, Jones, or Williams'

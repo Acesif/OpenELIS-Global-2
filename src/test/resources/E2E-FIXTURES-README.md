@@ -7,8 +7,11 @@ including:
 
 - Storage hierarchy (rooms, devices, shelves, racks, positions)
 - Test patients (3 patients)
-- Test samples (5 samples)
-- Storage assignments (4 samples with locations)
+- Test samples (10 samples)
+- Test sample items (20+ items)
+- Storage assignments (15+ assignments)
+- Test analyses (5 orders for E2E sample items)
+- Test results (2 results for finalized analyses)
 
 ## Quick Load
 
@@ -40,10 +43,15 @@ Cypress tests automatically load fixtures via `cy.loadStorageFixtures()` in the
 ### Samples (Visible in Storage Dashboard)
 
 - **E2E-001**: Assigned to `MAIN > FRZ01 > Shelf-A > Rack R1 > A1`
+  - Has 2 analyses: 1 finalized (with result), 1 not started
 - **E2E-002**: Assigned to `MAIN > FRZ01 > Shelf-A > Rack R1 > A2`
+  - Has 1 analysis: Technical acceptance
 - **E2E-003**: Assigned to `MAIN > FRZ01 > Shelf-A > Rack R1 > A4`
+  - Has 1 analysis: Canceled
 - **E2E-004**: **Unassigned** (for testing assignment workflow)
 - **E2E-005**: Assigned to `MAIN > FRZ01 > Shelf-A > Rack R1 > A5`
+  - Has 1 analysis: Finalized (with result)
+- **E2E-006** through **E2E-010**: Additional samples for filter testing
 
 ## Verification
 
@@ -55,6 +63,12 @@ docker exec openelisglobal-database psql -U clinlims -d clinlims -c "SELECT COUN
 
 # Count samples
 docker exec openelisglobal-database psql -U clinlims -d clinlims -c "SELECT COUNT(*) FROM sample WHERE accession_number LIKE 'E2E-%';"
+
+# Count analyses
+docker exec openelisglobal-database psql -U clinlims -d clinlims -c "SELECT COUNT(*) FROM analysis WHERE id BETWEEN 20000 AND 30000;"
+
+# Count results
+docker exec openelisglobal-database psql -U clinlims -d clinlims -c "SELECT COUNT(*) FROM result WHERE id BETWEEN 30000 AND 40000;"
 
 # View sample assignments
 docker exec openelisglobal-database psql -U clinlims -d clinlims -c "SELECT s.accession_number, p.last_name, pos.coordinate FROM sample s JOIN sample_human sh ON s.id = sh.samp_id JOIN patient pt ON sh.patient_id = pt.id JOIN person p ON pt.person_id = p.id LEFT JOIN sample_storage_assignment ssa ON s.id = ssa.sample_id LEFT JOIN storage_position pos ON ssa.storage_position_id = pos.id WHERE s.accession_number LIKE 'E2E-%';"
@@ -78,8 +92,11 @@ cy.cleanStorageFixtures()
 
 # Or manually via SQL
 docker exec openelisglobal-database psql -U clinlims -d clinlims << 'EOF'
-DELETE FROM sample_storage_movement WHERE sample_id IN (SELECT id FROM sample WHERE accession_number LIKE 'E2E-%');
-DELETE FROM sample_storage_assignment WHERE sample_id IN (SELECT id FROM sample WHERE accession_number LIKE 'E2E-%');
+DELETE FROM result WHERE analysis_id IN (SELECT id FROM analysis WHERE sampitem_id IN (SELECT id FROM sample_item WHERE samp_id IN (SELECT id FROM sample WHERE accession_number LIKE 'E2E-%')));
+DELETE FROM analysis WHERE sampitem_id IN (SELECT id FROM sample_item WHERE samp_id IN (SELECT id FROM sample WHERE accession_number LIKE 'E2E-%'));
+DELETE FROM sample_storage_movement WHERE sample_item_id IN (SELECT id FROM sample_item WHERE samp_id IN (SELECT id FROM sample WHERE accession_number LIKE 'E2E-%'));
+DELETE FROM sample_storage_assignment WHERE sample_item_id IN (SELECT id FROM sample_item WHERE samp_id IN (SELECT id FROM sample WHERE accession_number LIKE 'E2E-%'));
+DELETE FROM sample_item WHERE samp_id IN (SELECT id FROM sample WHERE accession_number LIKE 'E2E-%');
 DELETE FROM sample_human WHERE samp_id IN (SELECT id FROM sample WHERE accession_number LIKE 'E2E-%');
 DELETE FROM sample WHERE accession_number LIKE 'E2E-%';
 DELETE FROM patient_identity WHERE patient_id IN (SELECT id FROM patient WHERE external_id LIKE 'E2E-%');

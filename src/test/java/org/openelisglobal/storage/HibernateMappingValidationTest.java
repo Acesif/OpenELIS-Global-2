@@ -43,11 +43,20 @@ public class HibernateMappingValidationTest {
         configuration.addAnnotatedClass(SampleStorageAssignment.class);
         configuration.addAnnotatedClass(SampleStorageMovement.class);
 
-        // Add dependent entity mappings (Sample still uses XML - legacy)
+        // Add dependent entity mappings (Sample and SampleItem still use XML - legacy)
+        // SampleItem depends on TypeOfSample and UnitOfMeasure
+        // TypeOfSample depends on Localization
         configuration.addResource("hibernate/hbm/Sample.hbm.xml");
+        configuration.addResource("hibernate/hbm/SampleItem.hbm.xml");
+        configuration.addResource("hibernate/hbm/TypeOfSample.hbm.xml");
+        configuration.addResource("hibernate/hbm/UnitOfMeasure.hbm.xml");
+        configuration.addResource("hibernate/hbm/Localization.hbm.xml");
 
         // Configure minimal properties (no actual DB connection)
         configuration.setProperty("hibernate.dialect", "org.hibernate.dialect.PostgreSQLDialect");
+        // Skip foreign key validation for this test - we're only validating mapping
+        // structure
+        configuration.setProperty("hibernate.hbm2ddl.auto", "none");
 
         // Build SessionFactory - this will FAIL if any mapping is invalid
         sessionFactory = configuration.buildSessionFactory(

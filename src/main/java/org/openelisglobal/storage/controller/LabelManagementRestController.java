@@ -213,11 +213,11 @@ public class LabelManagementRestController extends BaseRestController {
             Integer locationId = Integer.parseInt(id);
             switch (type) {
             case "device":
-                return storageDeviceDAO.get(locationId);
+                return storageDeviceDAO.get(locationId).orElse(null);
             case "shelf":
-                return storageShelfDAO.get(locationId);
+                return storageShelfDAO.get(locationId).orElse(null);
             case "rack":
-                return storageRackDAO.get(locationId);
+                return storageRackDAO.get(locationId).orElse(null);
             default:
                 return null;
             }

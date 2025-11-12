@@ -71,7 +71,11 @@ if [ "$USE_DOCKER" = true ]; then
             UNION ALL
             SELECT '', 'Sample Items', COUNT(*) FROM sample_item WHERE id BETWEEN 10000 AND 20000
             UNION ALL
-            SELECT '', 'Storage Assignments', COUNT(*) FROM sample_storage_assignment WHERE id >= 1000;
+            SELECT '', 'Storage Assignments', COUNT(*) FROM sample_storage_assignment WHERE id >= 1000
+            UNION ALL
+            SELECT '', 'Analyses', COUNT(*) FROM analysis WHERE id BETWEEN 20000 AND 30000
+            UNION ALL
+            SELECT '', 'Results', COUNT(*) FROM result WHERE id BETWEEN 30000 AND 40000;
         " | sed 's/^[[:space:]]*//' | grep -v '^$'
 
         echo ""
@@ -151,7 +155,11 @@ else
             UNION ALL
             SELECT '', 'Sample Items', COUNT(*) FROM sample_item WHERE id BETWEEN 10000 AND 20000
             UNION ALL
-            SELECT '', 'Storage Assignments', COUNT(*) FROM sample_storage_assignment WHERE id >= 1000;
+            SELECT '', 'Storage Assignments', COUNT(*) FROM sample_storage_assignment WHERE id >= 1000
+            UNION ALL
+            SELECT '', 'Analyses', COUNT(*) FROM analysis WHERE id BETWEEN 20000 AND 30000
+            UNION ALL
+            SELECT '', 'Results', COUNT(*) FROM result WHERE id BETWEEN 30000 AND 40000;
         " | sed 's/^[[:space:]]*//' | grep -v '^$'
 
         echo ""

@@ -68,6 +68,8 @@ public class StorageLocationFhirTransformTest {
         testPosition.setColumnIndex(5);
         // Occupancy is now calculated dynamically from SampleStorageAssignment records
         testPosition.setParentRack(testRack);
+        testPosition.setParentShelf(testShelf);
+        testPosition.setParentDevice(testDevice); // Required for hierarchical code generation
     }
 
     @Test

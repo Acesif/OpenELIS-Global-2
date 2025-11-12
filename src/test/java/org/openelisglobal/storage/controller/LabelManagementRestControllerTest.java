@@ -51,6 +51,25 @@ public class LabelManagementRestControllerTest extends BaseWebContextSensitiveTe
     @Before
     public void setUp() throws Exception {
         super.setUp();
+        // Load test data that includes status_of_sample records needed by
+        // BarcodeLabelMaker static initializer
+        // This must be done BEFORE any code that references BarcodeLabelMaker
+        executeDataSetWithStateManagement("testdata/status-of-sample.xml");
+
+        // CRITICAL: Force StatusService to build its maps by calling getStatusID()
+        // This ensures the @PostConstruct method has run and maps are populated
+        // BEFORE BarcodeLabelMaker's static initializer runs (when new
+        // BarcodeLabelMaker() is called)
+        org.openelisglobal.common.services.IStatusService statusService = org.openelisglobal.spring.util.SpringContext
+                .getBean(org.openelisglobal.common.services.IStatusService.class);
+        String statusId = statusService
+                .getStatusID(org.openelisglobal.common.services.StatusService.SampleStatus.Entered);
+        // Verify we got a valid ID (not "-1" which means not found)
+        if ("-1".equals(statusId)) {
+            throw new IllegalStateException(
+                    "SampleStatus.Entered not found in database. Test data may not be loaded correctly.");
+        }
+
         mockMvc = MockMvcBuilders.webAppContextSetup(webApplicationContext).build();
         objectMapper = new ObjectMapper();
         jdbcTemplate = new JdbcTemplate(dataSource);
@@ -86,8 +105,12 @@ public class LabelManagementRestControllerTest extends BaseWebContextSensitiveTe
         device.setName("Test Device");
         device.setActive(true);
         // Save via service or DAO - using direct SQL for simplicity in test
-        jdbcTemplate.update("INSERT INTO storage_device (code, name, active, room_id) VALUES (?, ?, ?, 1)",
-                device.getCode(), device.getName(), device.getActive());
+        // Get a room ID first (assuming room with id=1 exists, or create one)
+        Integer roomId = 1; // Default test room
+        jdbcTemplate.update(
+                "INSERT INTO storage_device (id, name, code, type, parent_room_id, active, sys_user_id, last_updated, fhir_uuid) "
+                        + "VALUES (nextval('storage_device_seq'), ?, ?, 'freezer', ?, ?, ?, CURRENT_TIMESTAMP, gen_random_uuid())",
+                device.getName(), device.getCode(), roomId, device.getActive(), 1);
         Integer id = jdbcTemplate.queryForObject("SELECT id FROM storage_device WHERE code = ?", Integer.class,
                 device.getCode());
         return String.valueOf(id);

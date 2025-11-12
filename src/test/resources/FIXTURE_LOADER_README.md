@@ -98,6 +98,8 @@ CYPRESS_SKIP_FIXTURES=true npm run cy:run -- --spec "cypress/e2e/storage*.cy.js"
 - 10 Test Samples (E2E-001 through E2E-010)
 - 20+ Test Sample Items
 - 15+ Storage Assignments
+- 5 Test Analyses (orders for E2E sample items)
+- 2 Test Results (for finalized analyses)
 
 ## Verification
 
@@ -114,6 +116,8 @@ E2E Test Data     | Patients            |     3
                   | Samples             |    10
                   | Sample Items        |    20+
                   | Storage Assignments |    15+
+                  | Analyses            |     5
+                  | Results             |     2
 ```
 
 ## Troubleshooting

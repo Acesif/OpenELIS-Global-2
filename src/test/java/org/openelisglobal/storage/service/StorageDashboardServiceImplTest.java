@@ -233,7 +233,8 @@ public class StorageDashboardServiceImplTest {
     }
 
     /**
-     * Test: getRacksForAPI should include roomId column (FR-065a)
+     * Test: getRacksForAPI should include parentRoomId column (FR-065a)
+     * Note: Uses parentRoomId (not roomId) for consistency with other parent-prefixed keys
      */
     @Test
     public void testGetRacks_IncludesRoomColumn() {
@@ -243,12 +244,12 @@ public class StorageDashboardServiceImplTest {
         // When: Get racks for API
         List<Map<String, Object>> result = dashboardService.getRacksForAPI(null, null, null, null);
 
-        // Then: All racks should have roomId column
+        // Then: All racks should have parentRoomId column
         assertNotNull("Result should not be null", result);
         assertFalse("Should return at least one rack", result.isEmpty());
         for (Map<String, Object> rack : result) {
-            assertTrue("Rack should have roomId key", rack.containsKey("roomId"));
-            assertNotNull("Rack roomId should not be null", rack.get("roomId"));
+            assertTrue("Rack should have parentRoomId key", rack.containsKey("parentRoomId"));
+            assertNotNull("Rack parentRoomId should not be null", rack.get("parentRoomId"));
         }
     }
 
