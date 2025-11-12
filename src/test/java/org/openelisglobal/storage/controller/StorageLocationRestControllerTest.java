@@ -1196,11 +1196,12 @@ public class StorageLocationRestControllerTest extends BaseWebContextSensitiveTe
                             + "ON CONFLICT (id) DO NOTHING",
                     sampleItemId, sampleId);
             String positionCoord = "A" + i;
+            // Use DELETE then INSERT to avoid ON CONFLICT type issues
+            jdbcTemplate.update("DELETE FROM sample_storage_assignment WHERE sample_item_id = ?", sampleItemId);
             jdbcTemplate.update(
                     "INSERT INTO sample_storage_assignment (id, sample_item_id, location_id, location_type, position_coordinate, assigned_date, assigned_by_user_id, notes, last_updated) "
-                            + "VALUES (?, ?, ?, 'rack', ?, CURRENT_TIMESTAMP, 1, 'Test assignment', CURRENT_TIMESTAMP) "
-                            + "ON CONFLICT (id) DO UPDATE SET location_id = EXCLUDED.location_id",
-                    1000 + i, sampleItemId, rack1Id, positionCoord);
+                            + "VALUES (?, ?, ?, 'rack', ?, CURRENT_TIMESTAMP, 1, 'Test assignment', CURRENT_TIMESTAMP)",
+                    1000 + i, sampleItemId, Integer.parseInt(rack1Id), positionCoord);
         }
 
         // Create 4 sample assignments to rack 2
@@ -1225,11 +1226,12 @@ public class StorageLocationRestControllerTest extends BaseWebContextSensitiveTe
                             + "ON CONFLICT (id) DO NOTHING",
                     sampleItemId, sampleId);
             String positionCoord2 = "1-" + i;
+            // Use DELETE then INSERT to avoid ON CONFLICT type issues
+            jdbcTemplate.update("DELETE FROM sample_storage_assignment WHERE sample_item_id = ?", sampleItemId);
             jdbcTemplate.update(
                     "INSERT INTO sample_storage_assignment (id, sample_item_id, location_id, location_type, position_coordinate, assigned_date, assigned_by_user_id, notes, last_updated) "
-                            + "VALUES (?, ?, ?, 'rack', ?, CURRENT_TIMESTAMP, 1, 'Test assignment', CURRENT_TIMESTAMP) "
-                            + "ON CONFLICT (id) DO UPDATE SET location_id = EXCLUDED.location_id",
-                    1005 + i, sampleItemId, rack2Id, positionCoord2);
+                            + "VALUES (?, ?, ?, 'rack', ?, CURRENT_TIMESTAMP, 1, 'Test assignment', CURRENT_TIMESTAMP)",
+                    1005 + i, sampleItemId, Integer.parseInt(rack2Id), positionCoord2);
         }
 
         // When: Get shelves for API (which includes occupiedCount)

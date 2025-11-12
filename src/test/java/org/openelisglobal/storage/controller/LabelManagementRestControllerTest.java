@@ -11,6 +11,7 @@ import org.junit.Before;
 import org.junit.Test;
 import org.openelisglobal.BaseWebContextSensitiveTest;
 import org.openelisglobal.storage.form.ShortCodeUpdateForm;
+import org.openelisglobal.storage.dao.StorageDeviceDAO;
 import org.openelisglobal.storage.service.LabelManagementService;
 import org.openelisglobal.storage.service.ShortCodeValidationService;
 import org.openelisglobal.storage.valueholder.StorageDevice;
@@ -20,6 +21,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.web.context.WebApplicationContext;
 
@@ -43,6 +45,9 @@ public class LabelManagementRestControllerTest extends BaseWebContextSensitiveTe
 
     @Autowired
     private ShortCodeValidationService shortCodeValidationService;
+
+    @Autowired
+    private StorageDeviceDAO storageDeviceDAO;
 
     private MockMvc mockMvc;
     private ObjectMapper objectMapper;
@@ -91,6 +96,7 @@ public class LabelManagementRestControllerTest extends BaseWebContextSensitiveTe
             jdbcTemplate.execute("DELETE FROM storage_rack WHERE id::integer >= 1000 OR label LIKE 'TEST-%'");
             jdbcTemplate.execute("DELETE FROM storage_shelf WHERE id::integer >= 1000 OR label LIKE 'TEST-%'");
             jdbcTemplate.execute("DELETE FROM storage_device WHERE id::integer >= 1000 OR code LIKE 'TEST-%'");
+            jdbcTemplate.execute("DELETE FROM storage_room WHERE id::integer >= 1000 OR code LIKE 'TEST-%'");
         } catch (Exception e) {
             logger.warn("Failed to clean storage test data: " + e.getMessage());
         }
@@ -100,13 +106,21 @@ public class LabelManagementRestControllerTest extends BaseWebContextSensitiveTe
      * Helper: Create a test device and return its ID
      */
     private String createTestDevice() throws Exception {
+        // Create a test room first (following pattern from other storage tests)
+        long timestamp = System.currentTimeMillis() % 9000;
+        Integer roomId = 1000 + (int) timestamp;
+        jdbcTemplate.update(
+                "INSERT INTO storage_room (id, name, code, active, sys_user_id, last_updated, fhir_uuid) "
+                        + "VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP, gen_random_uuid()) "
+                        + "ON CONFLICT (id) DO NOTHING",
+                roomId, "Test Room", "TEST-ROOM-" + timestamp, true, 1);
+
+        // Create device with proper room relationship
         StorageDevice device = new StorageDevice();
-        device.setCode("TEST-DEVICE-" + System.currentTimeMillis());
+        device.setCode("TEST-DEVICE-" + timestamp);
         device.setName("Test Device");
         device.setActive(true);
-        // Save via service or DAO - using direct SQL for simplicity in test
-        // Get a room ID first (assuming room with id=1 exists, or create one)
-        Integer roomId = 1; // Default test room
+        
         jdbcTemplate.update(
                 "INSERT INTO storage_device (id, name, code, type, parent_room_id, active, sys_user_id, last_updated, fhir_uuid) "
                         + "VALUES (nextval('storage_device_seq'), ?, ?, 'freezer', ?, ?, ?, CURRENT_TIMESTAMP, gen_random_uuid())",
@@ -175,14 +189,46 @@ public class LabelManagementRestControllerTest extends BaseWebContextSensitiveTe
      */
     @Test
     public void testPostPrintLabelEndpoint_GeneratesPdf_Returns200() throws Exception {
-        // Given: Test device exists
+        // Given: Test device exists with proper room relationship
         String deviceId = createTestDevice();
+        
+        // Verify device was created correctly with code and parentRoom
+        StorageDevice device = storageDeviceDAO.get(Integer.parseInt(deviceId)).orElse(null);
+        assertNotNull("Device should exist", device);
+        assertNotNull("Device should have code", device.getCode());
+        assertNotNull("Device should have parentRoom", device.getParentRoom());
+        assertNotNull("ParentRoom should have code", device.getParentRoom().getCode());
 
         // When: POST /rest/storage/device/{id}/print-label?shortCode=FRZ01
         // Then: Expect 200 OK with PDF content
+        MvcResult result = mockMvc.perform(post("/rest/storage/device/" + deviceId + "/print-label").param("shortCode", "FRZ01"))
+                .andReturn();
+        
+        // Debug: Print response details if not 200
+        if (result.getResponse().getStatus() != 200) {
+            Exception exception = result.getResolvedException();
+            try {
+                java.io.FileWriter fw = new java.io.FileWriter("/tmp/test-response-error.log");
+                fw.write("Status: " + result.getResponse().getStatus() + "\n");
+                fw.write("Body: " + result.getResponse().getContentAsString() + "\n");
+                fw.write("Headers: " + result.getResponse().getHeaderNames() + "\n");
+                if (exception != null) {
+                    fw.write("Exception: " + exception.getClass().getName() + "\n");
+                    fw.write("Exception Message: " + exception.getMessage() + "\n");
+                    java.io.StringWriter sw = new java.io.StringWriter();
+                    java.io.PrintWriter pw = new java.io.PrintWriter(sw);
+                    exception.printStackTrace(pw);
+                    fw.write("Stack Trace:\n" + sw.toString() + "\n");
+                }
+                fw.close();
+            } catch (Exception e) {
+                // Ignore
+            }
+        }
+        
         mockMvc.perform(post("/rest/storage/device/" + deviceId + "/print-label").param("shortCode", "FRZ01"))
                 .andExpect(status().isOk()).andExpect(header().string("Content-Type", "application/pdf"))
-                .andExpect(header().exists("Content-Disposition")).andExpect(header().exists("Content-Disposition"));
+                .andExpect(header().exists("Content-Disposition"));
     }
 
     /**
@@ -200,7 +246,7 @@ public class LabelManagementRestControllerTest extends BaseWebContextSensitiveTe
 
         // Then: Print history record exists in database
         Integer count = jdbcTemplate.queryForObject(
-                "SELECT COUNT(*) FROM storage_location_print_history WHERE location_id = ? AND location_type = 'device'",
+                "SELECT COUNT(*) FROM storage_location_print_history WHERE location_id::integer = ? AND location_type = 'device'",
                 Integer.class, Integer.parseInt(deviceId));
         assertNotNull("Print history should be recorded", count);
         assertTrue("Print history count should be > 0", count > 0);

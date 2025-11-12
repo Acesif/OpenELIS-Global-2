@@ -9,7 +9,9 @@ import org.openelisglobal.storage.valueholder.StorageDevice;
 import org.openelisglobal.storage.valueholder.StorageRack;
 import org.openelisglobal.storage.valueholder.StorageRoom;
 import org.openelisglobal.storage.valueholder.StorageShelf;
+import javax.sql.DataSource;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -24,9 +26,12 @@ public class LabelManagementServiceImpl implements LabelManagementService {
     @Autowired
     private StorageLocationService storageLocationService;
 
-    // TODO: Add print history DAO when database schema is added in Phase 5.4
-    // @Autowired
-    // private StorageLocationPrintHistoryDAO printHistoryDAO;
+    @Autowired
+    private DataSource dataSource;
+
+    private JdbcTemplate getJdbcTemplate() {
+        return new JdbcTemplate(dataSource);
+    }
 
     @Override
     @Transactional(readOnly = true)
@@ -124,19 +129,27 @@ public class LabelManagementServiceImpl implements LabelManagementService {
             // Link barcode label info (for print tracking)
             label.linkBarcodeLabelInfo();
 
-            // Create BarcodeLabelMaker and add label
-            BarcodeLabelMaker labelMaker = new BarcodeLabelMaker();
-            ArrayList<org.openelisglobal.barcode.labeltype.Label> labels = new ArrayList<>();
-            labels.add(label);
-            labelMaker = new BarcodeLabelMaker(labels);
+            // Create BarcodeLabelMaker - use single-label constructor which properly initializes
+            // The no-arg constructor initializes barcodeType from configuration
+            BarcodeLabelMaker labelMaker = new BarcodeLabelMaker(label);
 
             // Set number of labels to print (default 1)
             label.setNumLabels(1);
 
             // Generate PDF stream
-            return labelMaker.createLabelsAsStream();
+            ByteArrayOutputStream stream = labelMaker.createLabelsAsStream();
+            
+            if (stream == null || stream.size() == 0) {
+                LogEvent.logError("LabelManagementServiceImpl", "generatePDF", "PDF stream is null or empty!");
+            }
+            
+            return stream;
         } catch (Exception e) {
-            LogEvent.logError("LabelManagementServiceImpl", "generatePDF", e.toString());
+            LogEvent.logError("LabelManagementServiceImpl", "generatePDF", "Exception during PDF generation: " + e.getClass().getName() + " - " + e.getMessage());
+            LogEvent.logError(e);
+            if (e.getCause() != null) {
+                LogEvent.logError("LabelManagementServiceImpl", "generatePDF", "Caused by: " + e.getCause().getClass().getName() + " - " + e.getCause().getMessage());
+            }
             throw new RuntimeException("Failed to generate label PDF", e);
         }
     }
@@ -144,20 +157,11 @@ public class LabelManagementServiceImpl implements LabelManagementService {
     @Override
     @Transactional
     public void trackPrintHistory(String locationId, String locationType, String shortCode, String userId) {
-        // TODO: Implement when print history table is added in Phase 5.4
-        // For now, just log the print event
-        LogEvent.logInfo("LabelManagementServiceImpl", "trackPrintHistory",
-                String.format("Label printed - Location: %s, Type: %s, ShortCode: %s, User: %s", locationId,
-                        locationType, shortCode, userId));
-
-        // When database schema is ready:
-        // StorageLocationPrintHistory history = new StorageLocationPrintHistory();
-        // history.setLocationId(locationId);
-        // history.setLocationType(locationType);
-        // history.setShortCode(shortCode);
-        // history.setPrintedBy(userId);
-        // history.setPrintedDate(new Timestamp(System.currentTimeMillis()));
-        // history.setPrintCount(1);
-        // printHistoryDAO.insert(history);
+        // Insert print history record into database
+        getJdbcTemplate().update(
+                "INSERT INTO storage_location_print_history (id, location_type, location_id, short_code, printed_by, printed_date, print_count) "
+                        + "VALUES (gen_random_uuid(), ?, ?, ?, ?, CURRENT_TIMESTAMP, 1) "
+                        + "ON CONFLICT (id) DO UPDATE SET print_count = storage_location_print_history.print_count + 1",
+                locationType, locationId, shortCode, userId);
     }
 }

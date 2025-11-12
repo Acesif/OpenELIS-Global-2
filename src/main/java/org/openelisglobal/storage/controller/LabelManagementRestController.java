@@ -18,6 +18,8 @@ import org.openelisglobal.storage.valueholder.StorageShelf;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import java.io.IOException;
+import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -131,19 +133,21 @@ public class LabelManagementRestController extends BaseRestController {
      * Generate and return PDF label POST
      * /rest/storage/{type}/{id}/print-label?shortCode=FRZ01
      */
-    @PostMapping("/{type}/{id}/print-label")
-    public ResponseEntity<byte[]> printLabel(@PathVariable String type, @PathVariable String id,
-            @RequestParam(required = false) String shortCode) {
+    @PostMapping(value = "/{type}/{id}/print-label", produces = MediaType.APPLICATION_PDF_VALUE)
+    public void printLabel(@PathVariable String type, @PathVariable String id,
+            @RequestParam(required = false) String shortCode, HttpServletResponse response) throws IOException {
         try {
             // Validate type
             if (!"device".equals(type) && !"shelf".equals(type) && !"rack".equals(type)) {
-                return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
+                response.setStatus(HttpStatus.BAD_REQUEST.value());
+                return;
             }
 
             // Get location
             Object location = getLocationById(type, id);
             if (location == null) {
-                return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+                response.setStatus(HttpStatus.NOT_FOUND.value());
+                return;
             }
 
             // Generate label
@@ -157,7 +161,8 @@ public class LabelManagementRestController extends BaseRestController {
             } else if (location instanceof StorageRack) {
                 pdfStream = labelManagementService.generateLabel((StorageRack) location, shortCode);
             } else {
-                return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
+                response.setStatus(HttpStatus.BAD_REQUEST.value());
+                return;
             }
 
             // Track print history
@@ -166,15 +171,26 @@ public class LabelManagementRestController extends BaseRestController {
                     userId);
 
             // Return PDF
-            HttpHeaders headers = new HttpHeaders();
-            headers.setContentType(MediaType.APPLICATION_PDF);
-            headers.setContentDispositionFormData("attachment", "label.pdf");
-            headers.setContentLength(pdfStream.size());
-
-            return new ResponseEntity<>(pdfStream.toByteArray(), headers, HttpStatus.OK);
+            if (pdfStream == null || pdfStream.size() == 0) {
+                logger.error("PDF stream is null or empty");
+                response.setStatus(HttpStatus.INTERNAL_SERVER_ERROR.value());
+                return;
+            }
+            
+            // Write directly to response like other PDF controllers in the codebase
+            byte[] pdfBytes = pdfStream.toByteArray();
+            response.setContentType(MediaType.APPLICATION_PDF_VALUE);
+            response.setHeader("Content-Disposition", "attachment; filename=label.pdf");
+            response.setContentLength(pdfBytes.length);
+            response.getOutputStream().write(pdfBytes);
+            response.getOutputStream().flush();
+            response.getOutputStream().close();
         } catch (Exception e) {
-            logger.error("Error generating label", e);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+            logger.error("Error generating label: " + e.getClass().getName() + " - " + e.getMessage(), e);
+            if (e.getCause() != null) {
+                logger.error("Caused by: " + e.getCause().getClass().getName() + " - " + e.getCause().getMessage());
+            }
+            response.setStatus(HttpStatus.INTERNAL_SERVER_ERROR.value());
         }
     }
 

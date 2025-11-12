@@ -155,20 +155,28 @@ public class PositionHierarchyMigrationTest extends BaseWebContextSensitiveTest 
     @Test
     public void testParentDeviceIdForeignKey() {
         // Given: STORAGE_POSITION table exists
-        // When: Querying foreign key constraints
-        String sql = "SELECT " + "    conname as constraint_name, " + "    confrelid::regclass as referenced_table "
-                + "FROM pg_constraint " + "WHERE conrelid = 'storage_position'::regclass " + "    AND contype = 'f' " + // 'f'
-                                                                                                                        // for
-                                                                                                                        // FOREIGN
-                                                                                                                        // KEY
-                "    AND conkey::text LIKE '%parent_device_id%'";
+        // When: Querying foreign key constraints for parent_device_id
+        // Use pg_get_constraintdef to check if constraint involves parent_device_id column
+        String sql = "SELECT " + 
+                "    conname as constraint_name, " + 
+                "    confrelid::regclass as referenced_table, " +
+                "    pg_get_constraintdef(oid) as constraint_def " +
+                "FROM pg_constraint " + 
+                "WHERE conrelid = 'storage_position'::regclass " + 
+                "    AND contype = 'f' " + // 'f' for FOREIGN KEY
+                "    AND pg_get_constraintdef(oid) LIKE '%parent_device_id%'";
 
         var results = jdbcTemplate.queryForList(sql);
 
         // Then: Foreign key should exist and reference storage_device
         assertNotNull("parent_device_id foreign key should exist", results);
-        assertFalse("Should have at least one foreign key constraint", results.isEmpty());
-        var result = results.get(0);
-        assertEquals("storage_device", result.get("referenced_table").toString());
+        assertTrue("Should have at least one foreign key constraint on parent_device_id", results.size() > 0);
+        
+        // Find the constraint that references storage_device
+        boolean foundDeviceConstraint = results.stream()
+            .anyMatch(result -> "storage_device".equals(result.get("referenced_table").toString()));
+        
+        assertTrue("Should have foreign key constraint on parent_device_id referencing storage_device", 
+                foundDeviceConstraint);
     }
 }
