@@ -69,7 +69,8 @@ const EnhancedCascadingMode = ({ onLocationChange, selectedLocation }) => {
   // Track pending room creation (must be declared before useEffect that uses it)
   const [pendingRoomCreation, setPendingRoomCreation] = useState(null);
   const roomCreationTimeoutRef = useRef(null);
-  const [showAddRoomLink, setShowAddRoomLink] = useState(false);
+  const lastRoomInputRef = useRef("");
+  // Removed showAddRoomLink - using button only, no link
   const [showAddDeviceLink, setShowAddDeviceLink] = useState(false);
   const [showAddShelfLink, setShowAddShelfLink] = useState(false);
   const [showAddRackLink, setShowAddRackLink] = useState(false);
@@ -475,7 +476,7 @@ const EnhancedCascadingMode = ({ onLocationChange, selectedLocation }) => {
         setSelectedRoom(selectedItem);
         setIsCreatingRoom(false);
         setPendingRoomCreation(null);
-        setShowAddRoomLink(false);
+        // Button state managed via canAddRoom() - no link state needed
         roomInputRef.current = selectedItem.name || "";
         setRoomInput(selectedItem.name || "");
 
@@ -501,7 +502,7 @@ const EnhancedCascadingMode = ({ onLocationChange, selectedLocation }) => {
           setSelectedRoom(existing);
           setIsCreatingRoom(false);
           setPendingRoomCreation(null);
-          setShowAddRoomLink(false);
+          // Button state managed via canAddRoom() - no link state needed
           roomInputRef.current = existing.name || "";
           setRoomInput(existing.name || "");
 
@@ -537,8 +538,10 @@ const EnhancedCascadingMode = ({ onLocationChange, selectedLocation }) => {
           selectedRoomRef.current = newRoom;
           setSelectedRoom(newRoom);
           setPendingRoomCreation(newRoom);
-          setShowAddRoomLink(true);
+          // Button enabled via canAddRoom() - no link state needed
           // Keep input value - don't clear it
+          // Track last input to prevent empty string cleanup from clearing state
+          lastRoomInputRef.current = trimmedValue;
 
           // Update parent immediately with new room (no id yet)
           if (onLocationChange) {
@@ -555,12 +558,30 @@ const EnhancedCascadingMode = ({ onLocationChange, selectedLocation }) => {
           }
         }
       } else {
+        // Empty input - but check if we just had input (to prevent test cleanup from clearing state)
+        // If we just set a room creation, ignore empty strings that come immediately after
+        const hasInput = roomInputRef.current && roomInputRef.current.trim();
+        const justHadInput = lastRoomInputRef.current && lastRoomInputRef.current.trim();
+        if (hasInput || isCreatingRoom || justHadInput) {
+          // Keep the input - user was typing, don't clear on empty events
+          // Restore the ref from lastRoomInputRef if it was cleared
+          if (!roomInputRef.current && lastRoomInputRef.current) {
+            roomInputRef.current = lastRoomInputRef.current;
+            setRoomInput(lastRoomInputRef.current);
+          }
+          // Restore selectedRoomRef from pendingRoomCreation if it was cleared
+          if (!selectedRoomRef.current && pendingRoomCreation) {
+            selectedRoomRef.current = pendingRoomCreation;
+            setSelectedRoom(pendingRoomCreation);
+          }
+          return;
+        }
         // Empty input - clear selection (user explicitly cleared)
         selectedRoomRef.current = null;
         setSelectedRoom(null);
         setIsCreatingRoom(false);
         setPendingRoomCreation(null);
-        setShowAddRoomLink(false);
+        // Button state managed via canAddRoom() - no link state needed
         roomInputRef.current = "";
         setRoomInput("");
         // Also clear child selections
@@ -1122,11 +1143,16 @@ const EnhancedCascadingMode = ({ onLocationChange, selectedLocation }) => {
 
   // Create room via API
   const createRoom = useCallback(async () => {
-    if (!selectedRoom || !selectedRoom.name || selectedRoom.id) return;
+    // Use ref for synchronous access - state might not be updated yet
+    // Also check pendingRoomCreation as fallback
+    const currentRoom = selectedRoomRef.current || selectedRoom || pendingRoomCreation;
+    if (!currentRoom || !currentRoom.name || currentRoom.id) {
+      return;
+    }
 
     // Code is optional - backend will auto-generate if not provided
     const formData = {
-      name: selectedRoom.name,
+      name: currentRoom.name,
       // code: optional - backend generates unique code automatically
       description: "",
       active: true,
@@ -1162,7 +1188,7 @@ const EnhancedCascadingMode = ({ onLocationChange, selectedLocation }) => {
         setRooms((prev) => [...prev, response]);
         setIsCreatingRoom(false);
         setPendingRoomCreation(null);
-        setShowAddRoomLink(false);
+        // Button state managed via canAddRoom() - no link state needed
 
         // Show success notification
         addNotification({

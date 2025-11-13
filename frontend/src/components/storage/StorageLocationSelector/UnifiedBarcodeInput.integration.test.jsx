@@ -160,6 +160,7 @@ describe("UnifiedBarcodeInput Integration Tests", () => {
       expect(mockOnValidationResult).toHaveBeenCalledWith({
         success: true,
         data: mockResponse,
+        error: null, // UnifiedBarcodeInput includes error: null when valid
       });
     });
 

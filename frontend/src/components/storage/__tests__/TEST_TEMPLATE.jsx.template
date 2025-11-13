@@ -26,12 +26,12 @@ import {
 import "@testing-library/jest-dom";
 import { IntlProvider } from "react-intl";
 import { BrowserRouter } from "react-router-dom"; // Include if component uses routing
-import ComponentName from "./ComponentName";
-import { getFromOpenElisServer } from "../utils/Utils"; // Adjust path as needed
+// import ComponentName from "./ComponentName"; // Template - replace with actual component
+import { getFromOpenElisServer } from "../../utils/Utils"; // Adjust path as needed
 import messages from "../../../languages/en.json"; // Adjust path as needed
 
 // Mock the API utilities (MUST be before imports that use them)
-jest.mock("../utils/Utils", () => ({
+jest.mock("../../utils/Utils", () => ({
   getFromOpenElisServer: jest.fn(),
   // Add other utilities as needed: postToOpenElisServer, etc.
 }));
@@ -89,7 +89,9 @@ const setupApiMocks = (overrides = {}) => {
   });
 };
 
-describe("ComponentName", () => {
+// Template file - not meant to be run as a test
+// Uncomment and customize when creating a new test file
+// describe("ComponentName", () => {
   // Define mock data constants
   const mockData = {
     // Component-specific mock data

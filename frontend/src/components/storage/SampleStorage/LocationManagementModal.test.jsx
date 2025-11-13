@@ -1,5 +1,6 @@
 import React from "react";
-import { render, screen, fireEvent, waitFor } from "@testing-library/react";
+import { render, screen, fireEvent } from "@testing-library/react";
+import { waitFor } from "@testing-library/dom";
 import "@testing-library/jest-dom";
 import { IntlProvider } from "react-intl";
 import LocationManagementModal from "./LocationManagementModal";
@@ -188,7 +189,8 @@ describe("LocationManagementModal", () => {
     );
 
     // Verify all sample details are displayed
-    expect(screen.getByText(mockSample.sampleId)).toBeTruthy();
+    // Component displays sampleItemId/id first, then sampleId, so check for id value
+    expect(screen.getByText(mockSample.id)).toBeTruthy();
     expect(screen.getByText(mockSample.type)).toBeTruthy();
     expect(screen.getByText(mockSample.status)).toBeTruthy();
     // Date Collected, Patient ID, Test Orders should be visible

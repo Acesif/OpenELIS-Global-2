@@ -5,7 +5,8 @@
  */
 
 import React from "react";
-import { render, screen, fireEvent, waitFor } from "@testing-library/react";
+import { render, screen, fireEvent } from "@testing-library/react";
+import { waitFor } from "@testing-library/dom";
 import "@testing-library/jest-dom";
 import { IntlProvider } from "react-intl";
 import { BrowserRouter } from "react-router-dom";
@@ -13,11 +14,11 @@ import LabelManagementModal from "./LabelManagementModal";
 import {
   getFromOpenElisServer,
   postToOpenElisServer,
-} from "../../../utils/Utils";
+} from "../../utils/Utils";
 import messages from "../../../languages/en.json";
 
 // Mock the API utilities (MUST be before imports that use them)
-jest.mock("../../../utils/Utils", () => ({
+jest.mock("../../utils/Utils", () => ({
   getFromOpenElisServer: jest.fn(),
   postToOpenElisServer: jest.fn(),
 }));
@@ -208,6 +209,7 @@ describe("LabelManagementModal", () => {
       expect(getFromOpenElisServer).toHaveBeenCalledWith(
         expect.stringContaining("/rest/storage/device/1/print-history"),
         expect.any(Function),
+        expect.any(Function), // Error callback
       );
       const lastPrintedText = screen.getByText(/last printed/i);
       expect(lastPrintedText).toBeTruthy();

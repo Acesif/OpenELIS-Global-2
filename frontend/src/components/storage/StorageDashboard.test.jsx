@@ -4,9 +4,9 @@ import {
   screen,
   fireEvent,
   within,
-  waitFor,
   act,
 } from "@testing-library/react";
+import { waitFor } from "@testing-library/dom";
 import "@testing-library/jest-dom";
 import { IntlProvider } from "react-intl";
 import { BrowserRouter } from "react-router-dom";
@@ -1505,8 +1505,13 @@ describe("StorageDashboard Capacity Display", () => {
     expect(overflowMenus.length).toBeGreaterThan(0);
     fireEvent.click(overflowMenus[0]);
 
+    // Wait for menu to open and menu items to render
+    await waitFor(() => {
+      expect(screen.getByTestId("label-management-menu-item")).toBeInTheDocument();
+    }, { timeout: 2000 });
+
     // Find and click "Label Management" menu item
-    const labelManagementItem = await screen.findByTestId(
+    const labelManagementItem = screen.getByTestId(
       "label-management-menu-item",
     );
     expect(labelManagementItem).toBeTruthy();
@@ -1570,8 +1575,13 @@ describe("StorageDashboard Capacity Display", () => {
     expect(overflowMenus.length).toBeGreaterThan(0);
     fireEvent.click(overflowMenus[0]);
 
+    // Wait for menu to open and menu items to render
+    await waitFor(() => {
+      expect(screen.getByTestId("label-management-menu-item")).toBeInTheDocument();
+    }, { timeout: 2000 });
+
     // Find and click "Label Management" menu item
-    const labelManagementItem = await screen.findByTestId(
+    const labelManagementItem = screen.getByTestId(
       "label-management-menu-item",
     );
     expect(labelManagementItem).toBeTruthy();
@@ -1638,8 +1648,13 @@ describe("StorageDashboard Capacity Display", () => {
     expect(overflowMenus.length).toBeGreaterThan(0);
     fireEvent.click(overflowMenus[0]);
 
+    // Wait for menu to open and menu items to render
+    await waitFor(() => {
+      expect(screen.getByTestId("label-management-menu-item")).toBeInTheDocument();
+    }, { timeout: 2000 });
+
     // Find and click "Label Management" menu item
-    const labelManagementItem = await screen.findByTestId(
+    const labelManagementItem = screen.getByTestId(
       "label-management-menu-item",
     );
     expect(labelManagementItem).toBeTruthy();

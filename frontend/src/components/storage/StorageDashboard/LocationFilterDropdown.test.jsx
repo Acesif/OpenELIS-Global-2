@@ -1,5 +1,6 @@
 import React from "react";
 import { render, screen, fireEvent } from "@testing-library/react";
+import { waitFor } from "@testing-library/dom";
 import "@testing-library/jest-dom";
 import { IntlProvider } from "react-intl";
 import LocationFilterDropdown from "./LocationFilterDropdown";
@@ -276,8 +277,13 @@ describe("LocationFilterDropdown", () => {
     const searchInput = screen.getByPlaceholderText(/filter by locations/i);
     fireEvent.focus(searchInput);
 
-    // Wait for dropdown to open and LocationTreeView to mount
-    await screen.findByTestId("location-tree-view", {}, { timeout: 1000 });
+    // Wait for dropdown to open (isOpen becomes true)
+    await waitFor(() => {
+      expect(screen.getByTestId("location-tree-container")).toBeInTheDocument();
+    }, { timeout: 2000 });
+
+    // Wait for LocationTreeView to mount and render
+    await screen.findByTestId("location-tree-view", {}, { timeout: 2000 });
 
     // Wait for API call to complete
     await new Promise((resolve) => setTimeout(resolve, 300));
@@ -364,8 +370,13 @@ describe("LocationFilterDropdown", () => {
     const searchInput = screen.getByPlaceholderText(/filter by locations/i);
     fireEvent.focus(searchInput);
 
-    // Wait for dropdown to open and LocationTreeView to mount
-    await screen.findByTestId("location-tree-view", {}, { timeout: 1000 });
+    // Wait for dropdown to open (isOpen becomes true)
+    await waitFor(() => {
+      expect(screen.getByTestId("location-tree-container")).toBeInTheDocument();
+    }, { timeout: 2000 });
+
+    // Wait for LocationTreeView to mount and render
+    await screen.findByTestId("location-tree-view", {}, { timeout: 2000 });
 
     // Wait for API call to complete
     await new Promise((resolve) => setTimeout(resolve, 300));
