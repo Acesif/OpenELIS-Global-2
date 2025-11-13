@@ -7,6 +7,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.List;
 import java.util.Map;
+import java.util.Random;
 import javax.sql.DataSource;
 import org.junit.After;
 import org.junit.Before;
@@ -385,7 +386,9 @@ public class StorageSearchRestControllerTest extends BaseWebContextSensitiveTest
     private void cleanStorageTestData() {
         try {
             // Delete in order to respect foreign key constraints
+            // Use explicit transaction to ensure cleanup completes
             jdbcTemplate.execute("DELETE FROM sample_storage_assignment WHERE id >= 1000");
+            jdbcTemplate.execute("DELETE FROM sample_item WHERE id >= 40000");
             jdbcTemplate.execute("DELETE FROM sample WHERE id >= 10000");
             jdbcTemplate.execute("DELETE FROM storage_position WHERE id >= 1000");
             jdbcTemplate.execute("DELETE FROM storage_rack WHERE id >= 1000");
@@ -398,9 +401,11 @@ public class StorageSearchRestControllerTest extends BaseWebContextSensitiveTest
     }
 
     private void createTestStorageHierarchyWithSamples() throws Exception {
-        // Use unique IDs based on timestamp to avoid conflicts
+        // Use unique IDs based on timestamp + random to avoid conflicts
         long timestamp = System.currentTimeMillis() % 9000;
-        int baseId = 1000 + (int) timestamp;
+        Random random = new Random();
+        int randomComponent = random.nextInt(1000); // Add 0-999 random component
+        int baseId = 1000 + (int) timestamp + randomComponent;
 
         testRoomId = baseId;
         testRoom2Id = baseId + 100;
@@ -411,9 +416,10 @@ public class StorageSearchRestControllerTest extends BaseWebContextSensitiveTest
         testRackId = baseId;
         testRack2Id = baseId + 100;
         testPositionId = baseId;
-        testSampleId = 10000 + (int) timestamp;
-        testSample2Id = 10000 + (int) timestamp + 1;
-        testSample3Id = 10000 + (int) timestamp + 2;
+        // Sample IDs also include random component to avoid conflicts
+        testSampleId = 10000 + (int) timestamp + randomComponent;
+        testSample2Id = 10000 + (int) timestamp + randomComponent + 1;
+        testSample3Id = 10000 + (int) timestamp + randomComponent + 2;
         testAssignmentId = baseId + 1000;
         testAssignment2Id = baseId + 1001;
         testAssignment3Id = baseId + 1002;
@@ -480,9 +486,10 @@ public class StorageSearchRestControllerTest extends BaseWebContextSensitiveTest
         // Create SampleItems for each sample
         // Use numeric IDs (sample_item.id is numeric in DB, but Hibernate treats it as
         // String)
-        int sampleItemId1 = 40000 + (int) timestamp;
-        int sampleItemId2 = 40001 + (int) timestamp;
-        int sampleItemId3 = 40002 + (int) timestamp;
+        // Include random component to avoid conflicts
+        int sampleItemId1 = 40000 + (int) timestamp + randomComponent;
+        int sampleItemId2 = 40001 + (int) timestamp + randomComponent;
+        int sampleItemId3 = 40002 + (int) timestamp + randomComponent;
         // Get default status_id and typeosamp_id from database (create if needed)
         Integer statusId;
         List<Integer> statusIds = jdbcTemplate.queryForList("SELECT id FROM status_of_sample ORDER BY id LIMIT 1",
