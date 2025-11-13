@@ -1,7 +1,7 @@
 package org.openelisglobal.storage.service;
 
 import java.io.ByteArrayOutputStream;
-import java.util.ArrayList;
+import javax.sql.DataSource;
 import org.openelisglobal.barcode.BarcodeLabelMaker;
 import org.openelisglobal.common.log.LogEvent;
 import org.openelisglobal.storage.barcode.labeltype.StorageLocationLabel;
@@ -9,7 +9,6 @@ import org.openelisglobal.storage.valueholder.StorageDevice;
 import org.openelisglobal.storage.valueholder.StorageRack;
 import org.openelisglobal.storage.valueholder.StorageRoom;
 import org.openelisglobal.storage.valueholder.StorageShelf;
-import javax.sql.DataSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
@@ -129,7 +128,8 @@ public class LabelManagementServiceImpl implements LabelManagementService {
             // Link barcode label info (for print tracking)
             label.linkBarcodeLabelInfo();
 
-            // Create BarcodeLabelMaker - use single-label constructor which properly initializes
+            // Create BarcodeLabelMaker - use single-label constructor which properly
+            // initializes
             // The no-arg constructor initializes barcodeType from configuration
             BarcodeLabelMaker labelMaker = new BarcodeLabelMaker(label);
 
@@ -138,17 +138,19 @@ public class LabelManagementServiceImpl implements LabelManagementService {
 
             // Generate PDF stream
             ByteArrayOutputStream stream = labelMaker.createLabelsAsStream();
-            
+
             if (stream == null || stream.size() == 0) {
                 LogEvent.logError("LabelManagementServiceImpl", "generatePDF", "PDF stream is null or empty!");
             }
-            
+
             return stream;
         } catch (Exception e) {
-            LogEvent.logError("LabelManagementServiceImpl", "generatePDF", "Exception during PDF generation: " + e.getClass().getName() + " - " + e.getMessage());
+            LogEvent.logError("LabelManagementServiceImpl", "generatePDF",
+                    "Exception during PDF generation: " + e.getClass().getName() + " - " + e.getMessage());
             LogEvent.logError(e);
             if (e.getCause() != null) {
-                LogEvent.logError("LabelManagementServiceImpl", "generatePDF", "Caused by: " + e.getCause().getClass().getName() + " - " + e.getCause().getMessage());
+                LogEvent.logError("LabelManagementServiceImpl", "generatePDF",
+                        "Caused by: " + e.getCause().getClass().getName() + " - " + e.getCause().getMessage());
             }
             throw new RuntimeException("Failed to generate label PDF", e);
         }

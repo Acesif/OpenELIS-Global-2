@@ -1,7 +1,9 @@
 package org.openelisglobal.storage.controller;
 
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -18,9 +20,6 @@ import org.openelisglobal.storage.valueholder.StorageShelf;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import java.io.IOException;
-import jakarta.servlet.http.HttpServletResponse;
-import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -176,7 +175,7 @@ public class LabelManagementRestController extends BaseRestController {
                 response.setStatus(HttpStatus.INTERNAL_SERVER_ERROR.value());
                 return;
             }
-            
+
             // Write directly to response like other PDF controllers in the codebase
             byte[] pdfBytes = pdfStream.toByteArray();
             response.setContentType(MediaType.APPLICATION_PDF_VALUE);

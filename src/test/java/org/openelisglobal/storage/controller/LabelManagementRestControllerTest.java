@@ -10,8 +10,8 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.openelisglobal.BaseWebContextSensitiveTest;
-import org.openelisglobal.storage.form.ShortCodeUpdateForm;
 import org.openelisglobal.storage.dao.StorageDeviceDAO;
+import org.openelisglobal.storage.form.ShortCodeUpdateForm;
 import org.openelisglobal.storage.service.LabelManagementService;
 import org.openelisglobal.storage.service.ShortCodeValidationService;
 import org.openelisglobal.storage.valueholder.StorageDevice;
@@ -109,10 +109,8 @@ public class LabelManagementRestControllerTest extends BaseWebContextSensitiveTe
         // Create a test room first (following pattern from other storage tests)
         long timestamp = System.currentTimeMillis() % 9000;
         Integer roomId = 1000 + (int) timestamp;
-        jdbcTemplate.update(
-                "INSERT INTO storage_room (id, name, code, active, sys_user_id, last_updated, fhir_uuid) "
-                        + "VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP, gen_random_uuid()) "
-                        + "ON CONFLICT (id) DO NOTHING",
+        jdbcTemplate.update("INSERT INTO storage_room (id, name, code, active, sys_user_id, last_updated, fhir_uuid) "
+                + "VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP, gen_random_uuid()) " + "ON CONFLICT (id) DO NOTHING",
                 roomId, "Test Room", "TEST-ROOM-" + timestamp, true, 1);
 
         // Create device with proper room relationship
@@ -120,7 +118,7 @@ public class LabelManagementRestControllerTest extends BaseWebContextSensitiveTe
         device.setCode("TEST-DEVICE-" + timestamp);
         device.setName("Test Device");
         device.setActive(true);
-        
+
         jdbcTemplate.update(
                 "INSERT INTO storage_device (id, name, code, type, parent_room_id, active, sys_user_id, last_updated, fhir_uuid) "
                         + "VALUES (nextval('storage_device_seq'), ?, ?, 'freezer', ?, ?, ?, CURRENT_TIMESTAMP, gen_random_uuid())",
@@ -191,7 +189,7 @@ public class LabelManagementRestControllerTest extends BaseWebContextSensitiveTe
     public void testPostPrintLabelEndpoint_GeneratesPdf_Returns200() throws Exception {
         // Given: Test device exists with proper room relationship
         String deviceId = createTestDevice();
-        
+
         // Verify device was created correctly with code and parentRoom
         StorageDevice device = storageDeviceDAO.get(Integer.parseInt(deviceId)).orElse(null);
         assertNotNull("Device should exist", device);
@@ -201,9 +199,10 @@ public class LabelManagementRestControllerTest extends BaseWebContextSensitiveTe
 
         // When: POST /rest/storage/device/{id}/print-label?shortCode=FRZ01
         // Then: Expect 200 OK with PDF content
-        MvcResult result = mockMvc.perform(post("/rest/storage/device/" + deviceId + "/print-label").param("shortCode", "FRZ01"))
+        MvcResult result = mockMvc
+                .perform(post("/rest/storage/device/" + deviceId + "/print-label").param("shortCode", "FRZ01"))
                 .andReturn();
-        
+
         // Debug: Print response details if not 200
         if (result.getResponse().getStatus() != 200) {
             Exception exception = result.getResolvedException();
@@ -225,7 +224,7 @@ public class LabelManagementRestControllerTest extends BaseWebContextSensitiveTe
                 // Ignore
             }
         }
-        
+
         mockMvc.perform(post("/rest/storage/device/" + deviceId + "/print-label").param("shortCode", "FRZ01"))
                 .andExpect(status().isOk()).andExpect(header().string("Content-Type", "application/pdf"))
                 .andExpect(header().exists("Content-Disposition"));

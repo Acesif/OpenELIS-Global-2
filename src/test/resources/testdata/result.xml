@@ -126,7 +126,8 @@
         test_section_id="1" scriptlet_id="1" test_format_id="1"
         local_code="CBC" sort_order="2147483646" name="Complete Blood Count"
         orderable="true" guid="abc-123" name_localization_id="4"
-        reporting_name_localization_id="4" is_active="Y" antimicrobial_resistance="true" />
+        reporting_name_localization_id="4" is_active="Y"
+        antimicrobial_resistance="true" />
     <test id="2" method_id="2" uom_id="2" description="Urine Test"
         loinc="543216" reporting_description="Urinalysis"
         active_begin="2025-02-01 12:00:00" active_end="2025-12-31 12:00:00"

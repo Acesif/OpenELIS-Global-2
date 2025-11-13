@@ -46,13 +46,13 @@ const renderWithIntl = (component) => {
 const typeIntoComboBox = async (input, value) => {
   // Focus the input first to ensure Downshift is ready
   await userEvent.click(input);
-  
+
   // Use userEvent.type which properly simulates all events that Downshift listens for
   // This includes keydown, keypress, input, and keyup events in the correct sequence
   // Per Downshift docs: getInputProps() returns handlers that listen for these events
   // userEvent.type triggers them in the correct order, which fireEvent.input doesn't
   await userEvent.type(input, value, { delay: 0 });
-  
+
   // Small delay to allow Downshift to process and update its internal state
   await new Promise((resolve) => setTimeout(resolve, 50));
 };
@@ -114,11 +114,14 @@ describe("EnhancedCascadingMode", () => {
 
     // Use getByRole for accessibility - Carbon ComboBox renders as role="combobox"
     // This is the React Testing Library best practice: test like a user
-    const input = await waitFor(() => {
-      return screen.getByRole("combobox", { name: /room/i });
-    }, { timeout: 2000 });
+    const input = await waitFor(
+      () => {
+        return screen.getByRole("combobox", { name: /room/i });
+      },
+      { timeout: 2000 },
+    );
     expect(input).toBeTruthy();
-    
+
     // Verify initial state: button should be disabled when input is empty
     const addNewRoomButton = screen.getByTestId("add-new-room-button");
     expect(addNewRoomButton).toBeTruthy();
@@ -130,11 +133,14 @@ describe("EnhancedCascadingMode", () => {
 
     // Test for actual content: Wait for button to become enabled (observable state)
     // This is what we actually care about - the button state, not the events
-    await waitFor(() => {
-      const button = screen.getByTestId("add-new-room-button");
-      // Verify actual rendered state: button should be enabled
-      expect(button.disabled).toBe(false);
-    }, { timeout: 3000 });
+    await waitFor(
+      () => {
+        const button = screen.getByTestId("add-new-room-button");
+        // Verify actual rendered state: button should be enabled
+        expect(button.disabled).toBe(false);
+      },
+      { timeout: 3000 },
+    );
   });
 
   /**
@@ -169,45 +175,54 @@ describe("EnhancedCascadingMode", () => {
     // Wait for rooms to load and combobox to be available
     // Per Downshift docs: getInputProps() applies combobox role to the input element
     // So getByRole("combobox") should return the actual input
-    const combobox = await waitFor(() => {
-      return screen.getByRole("combobox", { name: /room/i });
-    }, { timeout: 2000 });
+    const combobox = await waitFor(
+      () => {
+        return screen.getByRole("combobox", { name: /room/i });
+      },
+      { timeout: 2000 },
+    );
     expect(combobox).toBeTruthy();
-    
+
     // Use the existing typeIntoComboBox helper that works in other tests
     // This helper properly triggers Downshift's onInputChange by simulating
     // character-by-character input events
     const testValue = "New Test Room";
     await typeIntoComboBox(combobox, testValue);
-    
+
     // Wait for the final state update - handleRoomChange with full value sets isCreatingRoom=true
     // But there may be empty string calls after that clear it, so wait a bit longer
     await new Promise((resolve) => setTimeout(resolve, 300));
-    
+
     // Wait for button to be enabled - per browser console, canAddRoom shows result:true
     // when isCreatingRoom=true and pendingRoomCreation exists
     // Use the same pattern as other passing tests: check disabled property
-    const addNewRoomButton = await waitFor(() => {
-      const button = screen.getByTestId("add-new-room-button");
-      expect(button).toBeTruthy();
-      // Verify actual rendered state: button should be enabled (not disabled)
-      expect(button.disabled).toBe(false);
-      return button;
-    }, { timeout: 3000 });
+    const addNewRoomButton = await waitFor(
+      () => {
+        const button = screen.getByTestId("add-new-room-button");
+        expect(button).toBeTruthy();
+        // Verify actual rendered state: button should be enabled (not disabled)
+        expect(button.disabled).toBe(false);
+        return button;
+      },
+      { timeout: 3000 },
+    );
 
     // Click the "Add new" button - use userEvent for more realistic interaction
     await userEvent.click(addNewRoomButton);
 
     // Wait for API call - button click triggers async API call
     // Note: postToOpenElisServerJsonResponse is called with 4 params: url, data, callback, errorCallback
-    await waitFor(() => {
-      expect(mockPostToOpenElisServerJsonResponse).toHaveBeenCalledWith(
-        "/rest/storage/rooms",
-        expect.stringContaining("New Test Room"),
-        expect.any(Function),
-        undefined, // errorCallback is optional
-      );
-    }, { timeout: 3000 });
+    await waitFor(
+      () => {
+        expect(mockPostToOpenElisServerJsonResponse).toHaveBeenCalledWith(
+          "/rest/storage/rooms",
+          expect.stringContaining("New Test Room"),
+          expect.any(Function),
+          undefined, // errorCallback is optional
+        );
+      },
+      { timeout: 3000 },
+    );
 
     // Verify link disappears after creation
     await new Promise((resolve) => setTimeout(resolve, 100));
@@ -230,35 +245,47 @@ describe("EnhancedCascadingMode", () => {
     expect(deviceCombobox.disabled).toBe(true);
 
     // Select an existing room - test for actual content
-    const input = await waitFor(() => {
-      return screen.getByRole("combobox", { name: /room/i });
-    }, { timeout: 2000 });
+    const input = await waitFor(
+      () => {
+        return screen.getByRole("combobox", { name: /room/i });
+      },
+      { timeout: 2000 },
+    );
     expect(input).toBeTruthy();
-    
+
     // Type to match existing room using Downshift typing helper
     await typeIntoComboBox(input, "Main Laboratory");
-    
+
     // After typing, we need to select the item from the dropdown
     // Carbon ComboBox doesn't auto-select on exact match - user must click or press Enter
     // Wait for the dropdown to open and then select the first item
-    await waitFor(() => {
-      const menu = document.querySelector('[role="listbox"]');
-      return menu && menu.children.length > 0;
-    }, { timeout: 2000 });
-    
+    await waitFor(
+      () => {
+        const menu = document.querySelector('[role="listbox"]');
+        return menu && menu.children.length > 0;
+      },
+      { timeout: 2000 },
+    );
+
     // Find and click the matching room option (use getByRole for listbox option)
     // Carbon ComboBox uses role="option" for dropdown items
-    const roomOption = await waitFor(() => {
-      return screen.getByRole("option", { name: /main laboratory/i });
-    }, { timeout: 2000 });
+    const roomOption = await waitFor(
+      () => {
+        return screen.getByRole("option", { name: /main laboratory/i });
+      },
+      { timeout: 2000 },
+    );
     await userEvent.click(roomOption);
-    
+
     // Wait for device to be enabled - room selection updates selectedRoom with id
     // The onChange handler calls handleRoomChange with selectedItem, which sets selectedRoom
-    await waitFor(() => {
-      const deviceCombobox = screen.getByTestId("device-combobox");
-      expect(deviceCombobox.disabled).toBe(false);
-    }, { timeout: 3000 });
+    await waitFor(
+      () => {
+        const deviceCombobox = screen.getByTestId("device-combobox");
+        expect(deviceCombobox.disabled).toBe(false);
+      },
+      { timeout: 3000 },
+    );
   });
 
   /**
@@ -291,21 +318,27 @@ describe("EnhancedCascadingMode", () => {
     await new Promise((resolve) => setTimeout(resolve, 100));
 
     // Type new room name - test for actual content
-    const input = await waitFor(() => {
-      return screen.getByRole("combobox", { name: /room/i });
-    }, { timeout: 2000 });
+    const input = await waitFor(
+      () => {
+        return screen.getByRole("combobox", { name: /room/i });
+      },
+      { timeout: 2000 },
+    );
     expect(input).toBeTruthy();
-    
+
     const testValue = "New Test Room";
     await typeIntoComboBox(input, testValue);
 
     // Test for actual content: Wait for button to be enabled (observable state)
-    await waitFor(() => {
-      const addNewRoomButton = screen.getByTestId("add-new-room-button");
-      expect(addNewRoomButton).toBeTruthy();
-      // Verify actual rendered state
-      expect(addNewRoomButton.disabled).toBe(false);
-    }, { timeout: 3000 });
+    await waitFor(
+      () => {
+        const addNewRoomButton = screen.getByTestId("add-new-room-button");
+        expect(addNewRoomButton).toBeTruthy();
+        // Verify actual rendered state
+        expect(addNewRoomButton.disabled).toBe(false);
+      },
+      { timeout: 3000 },
+    );
     const addNewRoomButton = screen.getByTestId("add-new-room-button");
 
     // Click button to create room
@@ -313,12 +346,15 @@ describe("EnhancedCascadingMode", () => {
 
     // Wait for API call and callback to execute
     // The callback sets selectedRoom to response (which has id), enabling device combobox
-    await waitFor(() => {
-      expect(mockPostToOpenElisServerJsonResponse).toHaveBeenCalled();
-      // After callback, selectedRoom should have id, enabling device
-      const deviceCombobox = screen.getByTestId("device-combobox");
-      return !deviceCombobox.disabled;
-    }, { timeout: 3000 });
+    await waitFor(
+      () => {
+        expect(mockPostToOpenElisServerJsonResponse).toHaveBeenCalled();
+        // After callback, selectedRoom should have id, enabling device
+        const deviceCombobox = screen.getByTestId("device-combobox");
+        return !deviceCombobox.disabled;
+      },
+      { timeout: 3000 },
+    );
   });
 
   /**
@@ -343,21 +379,27 @@ describe("EnhancedCascadingMode", () => {
     expect(deviceCombobox.disabled).toBe(false);
 
     // Type a new device name - test for actual content
-    const deviceInput = await waitFor(() => {
-      return screen.getByRole("combobox", { name: /device/i });
-    }, { timeout: 2000 });
+    const deviceInput = await waitFor(
+      () => {
+        return screen.getByRole("combobox", { name: /device/i });
+      },
+      { timeout: 2000 },
+    );
     expect(deviceInput).toBeTruthy();
-    
+
     const testValue = "New Freezer";
     await typeIntoComboBox(deviceInput, testValue);
 
     // Test for actual content: Wait for button to be enabled (observable state)
-    await waitFor(() => {
-      const addNewDeviceButton = screen.getByTestId("add-new-device-button");
-      expect(addNewDeviceButton).toBeTruthy();
-      // Verify actual rendered state
-      expect(addNewDeviceButton.disabled).toBe(false);
-    }, { timeout: 3000 });
+    await waitFor(
+      () => {
+        const addNewDeviceButton = screen.getByTestId("add-new-device-button");
+        expect(addNewDeviceButton).toBeTruthy();
+        // Verify actual rendered state
+        expect(addNewDeviceButton.disabled).toBe(false);
+      },
+      { timeout: 3000 },
+    );
   });
 
   /**
@@ -373,20 +415,26 @@ describe("EnhancedCascadingMode", () => {
 
     // Type existing room name
     // Select existing room - test for actual content
-    const input = await waitFor(() => {
-      return screen.getByRole("combobox", { name: /room/i });
-    }, { timeout: 2000 });
+    const input = await waitFor(
+      () => {
+        return screen.getByRole("combobox", { name: /room/i });
+      },
+      { timeout: 2000 },
+    );
     expect(input).toBeTruthy();
-    
+
     await typeIntoComboBox(input, "Main Laboratory");
 
     // Test for actual content: Button should remain disabled for existing room
-    await waitFor(() => {
-      const addNewRoomButton = screen.getByTestId("add-new-room-button");
-      expect(addNewRoomButton).toBeTruthy();
-      // Verify actual rendered state: button should be disabled
-      expect(addNewRoomButton.disabled).toBe(true);
-    }, { timeout: 2000 });
+    await waitFor(
+      () => {
+        const addNewRoomButton = screen.getByTestId("add-new-room-button");
+        expect(addNewRoomButton).toBeTruthy();
+        // Verify actual rendered state: button should be disabled
+        expect(addNewRoomButton.disabled).toBe(true);
+      },
+      { timeout: 2000 },
+    );
   });
 
   /**
@@ -397,7 +445,7 @@ describe("EnhancedCascadingMode", () => {
    * This complex workflow with cascading state updates and multiple API calls is better suited
    * for E2E testing with Cypress. See frontend/cypress/e2e/storageAssignment.cy.js for
    * similar workflow tests that run in a real browser environment.
-   * 
+   *
    * Jest unit tests should focus on:
    * - Individual component behaviors (button enabled/disabled states)
    * - Single-level interactions (creating one room, selecting one device)
@@ -462,21 +510,27 @@ describe("EnhancedCascadingMode Notifications", () => {
     });
 
     // Type new room name - test for actual content
-    const input = await waitFor(() => {
-      return screen.getByRole("combobox", { name: /room/i });
-    }, { timeout: 2000 });
+    const input = await waitFor(
+      () => {
+        return screen.getByRole("combobox", { name: /room/i });
+      },
+      { timeout: 2000 },
+    );
     expect(input).toBeTruthy();
-    
+
     const testValue = "New Test Room";
     await typeIntoComboBox(input, testValue);
 
     // Test for actual content: Wait for button to be enabled (observable state)
-    await waitFor(() => {
-      const addButton = screen.getByTestId("add-new-room-button");
-      expect(addButton).toBeTruthy();
-      // Verify actual rendered state: button should be enabled
-      expect(addButton.disabled).toBe(false);
-    }, { timeout: 3000 });
+    await waitFor(
+      () => {
+        const addButton = screen.getByTestId("add-new-room-button");
+        expect(addButton).toBeTruthy();
+        // Verify actual rendered state: button should be enabled
+        expect(addButton.disabled).toBe(false);
+      },
+      { timeout: 3000 },
+    );
 
     const addButton = screen.getByTestId("add-new-room-button");
     fireEvent.click(addButton);
@@ -489,13 +543,16 @@ describe("EnhancedCascadingMode Notifications", () => {
     // Verify notification format
     // Note: intl.formatMessage may return the key if translation doesn't exist
     // The fallback message is: `Room "${response.name}" created successfully`
-    const notificationCall = mockNotificationContext.addNotification.mock.calls[0][0];
+    const notificationCall =
+      mockNotificationContext.addNotification.mock.calls[0][0];
     expect(notificationCall).toMatchObject({
       title: expect.any(String),
       kind: "success",
     });
     // Message should either be the formatted message with room name, or the fallback
-    expect(notificationCall.message).toMatch(/New Test Room|storage\.create\.room\.success/);
+    expect(notificationCall.message).toMatch(
+      /New Test Room|storage\.create\.room\.success/,
+    );
 
     // Verify setNotificationVisible was called
     expect(mockNotificationContext.setNotificationVisible).toHaveBeenCalledWith(
@@ -528,22 +585,31 @@ describe("EnhancedCascadingMode Notifications", () => {
     });
 
     // Type new room name - test for actual content
-    const roomCombobox = await waitFor(() => screen.getByTestId("room-combobox"), { timeout: 2000 });
-    const input = await waitFor(() => {
-      return screen.getByRole("combobox", { name: /room/i });
-    }, { timeout: 2000 });
+    const roomCombobox = await waitFor(
+      () => screen.getByTestId("room-combobox"),
+      { timeout: 2000 },
+    );
+    const input = await waitFor(
+      () => {
+        return screen.getByRole("combobox", { name: /room/i });
+      },
+      { timeout: 2000 },
+    );
     expect(input).toBeTruthy();
-    
+
     const testValue = "Test Room";
     await typeIntoComboBox(input, testValue);
 
     // Test for actual content: Wait for button to be enabled (observable state)
-    await waitFor(() => {
-      const addButton = screen.getByTestId("add-new-room-button");
-      expect(addButton).toBeTruthy();
-      // Verify actual rendered state: button should be enabled
-      expect(addButton.disabled).toBe(false);
-    }, { timeout: 3000 });
+    await waitFor(
+      () => {
+        const addButton = screen.getByTestId("add-new-room-button");
+        expect(addButton).toBeTruthy();
+        // Verify actual rendered state: button should be enabled
+        expect(addButton.disabled).toBe(false);
+      },
+      { timeout: 3000 },
+    );
 
     const addButton = screen.getByTestId("add-new-room-button");
     fireEvent.click(addButton);
@@ -556,13 +622,16 @@ describe("EnhancedCascadingMode Notifications", () => {
     // Verify error notification format
     // Note: intl.formatMessage may return the key if translation doesn't exist
     // The fallback message is: `Failed to create room: ${response.error}`
-    const notificationCall = mockNotificationContext.addNotification.mock.calls[0][0];
+    const notificationCall =
+      mockNotificationContext.addNotification.mock.calls[0][0];
     expect(notificationCall).toMatchObject({
       title: expect.any(String),
       kind: "error",
     });
     // Message should either be the formatted message with error, or the fallback, or the key
-    expect(notificationCall.message).toMatch(/TEST-ROOM|storage\.create\.room\.error/);
+    expect(notificationCall.message).toMatch(
+      /TEST-ROOM|storage\.create\.room\.error/,
+    );
 
     // Verify setNotificationVisible was called
     expect(mockNotificationContext.setNotificationVisible).toHaveBeenCalledWith(

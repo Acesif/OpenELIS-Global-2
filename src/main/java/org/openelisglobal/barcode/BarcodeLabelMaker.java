@@ -98,8 +98,8 @@ public class BarcodeLabelMaker {
     private BarcodeLabelInfoService barcodeLabelService;
 
     /**
-     * Lazy initialization of barcodeLabelService.
-     * Initializes on first use to ensure SpringContext is ready.
+     * Lazy initialization of barcodeLabelService. Initializes on first use to
+     * ensure SpringContext is ready.
      * 
      * @return BarcodeLabelInfoService instance
      */
@@ -348,7 +348,7 @@ public class BarcodeLabelMaker {
             Document document = new Document();
             PdfWriter writer = PdfWriter.getInstance(document, stream);
             document.open();
-            
+
             for (Label label : labels) {
                 for (int i = 0; i < label.getNumLabels(); ++i) {
                     // a ratio is used with set width so that font size

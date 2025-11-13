@@ -561,7 +561,8 @@ const EnhancedCascadingMode = ({ onLocationChange, selectedLocation }) => {
         // Empty input - but check if we just had input (to prevent test cleanup from clearing state)
         // If we just set a room creation, ignore empty strings that come immediately after
         const hasInput = roomInputRef.current && roomInputRef.current.trim();
-        const justHadInput = lastRoomInputRef.current && lastRoomInputRef.current.trim();
+        const justHadInput =
+          lastRoomInputRef.current && lastRoomInputRef.current.trim();
         if (hasInput || isCreatingRoom || justHadInput) {
           // Keep the input - user was typing, don't clear on empty events
           // Restore the ref from lastRoomInputRef if it was cleared
@@ -1145,7 +1146,8 @@ const EnhancedCascadingMode = ({ onLocationChange, selectedLocation }) => {
   const createRoom = useCallback(async () => {
     // Use ref for synchronous access - state might not be updated yet
     // Also check pendingRoomCreation as fallback
-    const currentRoom = selectedRoomRef.current || selectedRoom || pendingRoomCreation;
+    const currentRoom =
+      selectedRoomRef.current || selectedRoom || pendingRoomCreation;
     if (!currentRoom || !currentRoom.name || currentRoom.id) {
       return;
     }

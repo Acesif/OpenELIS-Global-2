@@ -72,7 +72,8 @@ public class StorageDashboardRestControllerTest extends BaseWebContextSensitiveT
                 objectMapper.getTypeFactory().constructCollectionType(List.class, Map.class));
 
         assertNotNull("Response should not be null", samples);
-        // Note: Test may not have sample assignments, so we just verify the filter works if samples exist
+        // Note: Test may not have sample assignments, so we just verify the filter
+        // works if samples exist
         // If samples are returned, verify they match the location filter
         if (samples.size() > 0) {
             for (Map<String, Object> sample : samples) {
@@ -176,7 +177,8 @@ public class StorageDashboardRestControllerTest extends BaseWebContextSensitiveT
 
         assertNotNull("Response should not be null", shelves);
 
-        // Verify all returned shelves match all three filters (implementation uses parentDeviceId and parentRoomId)
+        // Verify all returned shelves match all three filters (implementation uses
+        // parentDeviceId and parentRoomId)
         for (Map<String, Object> shelf : shelves) {
             Integer deviceId = (Integer) shelf.get("parentDeviceId");
             Integer roomId = (Integer) shelf.get("parentRoomId");
@@ -207,7 +209,8 @@ public class StorageDashboardRestControllerTest extends BaseWebContextSensitiveT
 
         assertNotNull("Response should not be null", racks);
 
-        // Verify all returned racks match all four filters (implementation uses parentRoomId, parentShelfId, parentDeviceId)
+        // Verify all returned racks match all four filters (implementation uses
+        // parentRoomId, parentShelfId, parentDeviceId)
         for (Map<String, Object> rack : racks) {
             Integer roomId = (Integer) rack.get("parentRoomId");
             Integer shelfId = (Integer) rack.get("parentShelfId");
