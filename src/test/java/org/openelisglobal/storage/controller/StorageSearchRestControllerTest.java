@@ -419,18 +419,26 @@ public class StorageSearchRestControllerTest extends BaseWebContextSensitiveTest
         testSample2Id = jdbcTemplate.queryForObject("SELECT nextval('sample_seq')", Integer.class);
         testSample3Id = jdbcTemplate.queryForObject("SELECT nextval('sample_seq')", Integer.class);
 
-        // Create samples with different accession prefixes
+        // Use short unique suffix to ensure unique accession numbers (max 20 chars)
+        // Format: timestamp last 3 digits + thread ID + sequence ID
+        // This prevents collisions when tests run in parallel or if cleanup fails
+        long timestamp = System.currentTimeMillis();
+        long threadId = Thread.currentThread().getId();
+        String uniqueSuffix = String.format("%03d", timestamp % 1000) + "-" + (threadId % 100) + "-" + testSampleId;
+
+        // Create samples with different accession prefixes (keeping total length <= 20)
+        // "TEST-SAMPLE-" = 12 chars, uniqueSuffix = ~8-10 chars, total = ~20 chars
         jdbcTemplate.update(
                 "INSERT INTO sample (id, accession_number, entered_date, received_date, lastupdated) VALUES (?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)",
-                testSampleId, "TEST-SAMPLE-" + testSampleId);
+                testSampleId, "TEST-SAMPLE-" + uniqueSuffix);
 
         jdbcTemplate.update(
                 "INSERT INTO sample (id, accession_number, entered_date, received_date, lastupdated) VALUES (?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)",
-                testSample2Id, "TB-001-" + testSample2Id);
+                testSample2Id, "TB-001-" + uniqueSuffix);
 
         jdbcTemplate.update(
                 "INSERT INTO sample (id, accession_number, entered_date, received_date, lastupdated) VALUES (?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)",
-                testSample3Id, "S-2025-" + testSample3Id);
+                testSample3Id, "S-2025-" + uniqueSuffix);
 
         // Get or create default status_id and typeosamp_id
         Integer statusId;
@@ -462,17 +470,19 @@ public class StorageSearchRestControllerTest extends BaseWebContextSensitiveTest
         int sampleItemId2 = jdbcTemplate.queryForObject("SELECT nextval('sample_item_seq')", Integer.class);
         int sampleItemId3 = jdbcTemplate.queryForObject("SELECT nextval('sample_item_seq')", Integer.class);
 
-        jdbcTemplate.update(
-                "INSERT INTO sample_item (id, samp_id, sort_order, sampitem_id, external_id, typeosamp_id, status_id, lastupdated) VALUES (?, ?, 1, NULL, ?, ?, ?, CURRENT_TIMESTAMP)",
-                sampleItemId1, testSampleId, "TEST-SAMPLE-" + testSampleId + "-TUBE-1", typeOfSampleId, statusId);
+        // Reuse same unique suffix for sample items to match their parent samples
 
         jdbcTemplate.update(
                 "INSERT INTO sample_item (id, samp_id, sort_order, sampitem_id, external_id, typeosamp_id, status_id, lastupdated) VALUES (?, ?, 1, NULL, ?, ?, ?, CURRENT_TIMESTAMP)",
-                sampleItemId2, testSample2Id, "TB-001-" + testSample2Id + "-TUBE-1", typeOfSampleId, statusId);
+                sampleItemId1, testSampleId, "TEST-SAMPLE-" + uniqueSuffix + "-T1", typeOfSampleId, statusId);
 
         jdbcTemplate.update(
                 "INSERT INTO sample_item (id, samp_id, sort_order, sampitem_id, external_id, typeosamp_id, status_id, lastupdated) VALUES (?, ?, 1, NULL, ?, ?, ?, CURRENT_TIMESTAMP)",
-                sampleItemId3, testSample3Id, "S-2025-" + testSample3Id + "-TUBE-1", typeOfSampleId, statusId);
+                sampleItemId2, testSample2Id, "TB-001-" + uniqueSuffix + "-T1", typeOfSampleId, statusId);
+
+        jdbcTemplate.update(
+                "INSERT INTO sample_item (id, samp_id, sort_order, sampitem_id, external_id, typeosamp_id, status_id, lastupdated) VALUES (?, ?, 1, NULL, ?, ?, ?, CURRENT_TIMESTAMP)",
+                sampleItemId3, testSample3Id, "S-2025-" + uniqueSuffix + "-T1", typeOfSampleId, statusId);
 
         // Create assignments using fixture storage hierarchy
         // Use fixture Rack 30 (Rack R1) with positions A1, A2, A3
