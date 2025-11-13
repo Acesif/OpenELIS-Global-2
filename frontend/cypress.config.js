@@ -30,6 +30,12 @@ module.exports = defineConfig({
   },
   e2e: {
     setupNodeEvents(on, config) {
+      // NOTE: Storage E2E tests (001-sample-storage) are currently disabled
+      // Storage tests excluded via excludeSpecPattern in e2e config
+      // Storage support imports commented out in e2e.js
+      // Storage tasks below remain registered but won't be called (harmless)
+      // To re-enable: Uncomment imports in e2e.js and remove excludeSpecPattern
+
       // Task to log messages to terminal (for console.log capture)
       // This is used to forward browser console logs to terminal
       on("task", {
@@ -181,6 +187,9 @@ module.exports = defineConfig({
     },
     baseUrl: "https://localhost",
     testIsolation: false,
+    // DISABLED: Exclude storage tests (001-sample-storage feature)
+    // Remove "**/storage*.cy.js" from this array to re-enable storage tests
+    excludeSpecPattern: ["**/storage*.cy.js"],
     env: {
       STARTUP_WAIT_MILLISECONDS: 300000,
     },

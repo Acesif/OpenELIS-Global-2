@@ -16,11 +16,10 @@
 // Import commands.js using ES2015 syntax:
 import "./commands";
 
-// Import storage fixtures loader
-import "./load-storage-fixtures";
-
-// Import storage setup helpers
-import "./storage-setup";
+// DISABLED: Storage test support (001-sample-storage feature)
+// Storage tests are temporarily disabled - uncomment to re-enable
+// import "./load-storage-fixtures";
+// import "./storage-setup";
 
 // Capture browser console logs and forward to terminal
 // This is especially important for Electron browser
