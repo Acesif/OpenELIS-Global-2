@@ -2120,14 +2120,16 @@ section), `specs/001-sample-storage/contracts/fhir-mappings.md`
 ## 12. Carbon Design System Component Testing Best Practices
 
 **Feature**: Standardized testing patterns for Carbon Design System components  
-**Purpose**: Document proven patterns for testing Carbon components to prevent recurring test failures and reduce debugging time  
+**Purpose**: Document proven patterns for testing Carbon components to prevent
+recurring test failures and reduce debugging time  
 **Date**: 2025-11-13
 
 ### Research Questions
 
 #### Q1: How should Carbon TextInput/ComboBox components be tested?
 
-**Decision**: Use `fireEvent.focus` + `fireEvent.click` with `act()` wrapper, then wait for state updates with `waitFor` and `queryByTestId`.
+**Decision**: Use `fireEvent.focus` + `fireEvent.click` with `act()` wrapper,
+then wait for state updates with `waitFor` and `queryByTestId`.
 
 **Pattern for TextInput/ComboBox Focus**:
 
@@ -2138,14 +2140,17 @@ await act(async () => {
   fireEvent.focus(searchInput);
   fireEvent.click(searchInput);
   // Small delay for state update
-  await new Promise(resolve => setTimeout(resolve, 50));
+  await new Promise((resolve) => setTimeout(resolve, 50));
 });
 
 // Wait for dropdown/content to appear
-await waitFor(() => {
-  const container = screen.queryByTestId("location-tree-container");
-  expect(container).toBeInTheDocument();
-}, { timeout: 5000 });
+await waitFor(
+  () => {
+    const container = screen.queryByTestId("location-tree-container");
+    expect(container).toBeInTheDocument();
+  },
+  { timeout: 5000 }
+);
 ```
 
 **Rationale**:
@@ -2160,36 +2165,45 @@ await waitFor(() => {
 
 - ❌ Using only `fireEvent.focus` - may not trigger all Carbon handlers
 - ❌ Not using `act()` wrapper - React state updates may not be processed
-- ❌ Using `getByTestId` in `waitFor` - throws error if element not found during retry
-- ❌ Using `findByTestId` with empty object `{}` - incorrect syntax: `findByTestId("id", {}, { timeout })` is WRONG
+- ❌ Using `getByTestId` in `waitFor` - throws error if element not found during
+  retry
+- ❌ Using `findByTestId` with empty object `{}` - incorrect syntax:
+  `findByTestId("id", {}, { timeout })` is WRONG
 
 **Reference**: `LocationFilterDropdown.test.jsx` (lines 128-143)
 
 #### Q2: How should Carbon OverflowMenu components be tested?
 
-**Decision**: Click the menu button, use `act()` with delay, then wait for menu items with `waitFor` and `queryByTestId` or text queries.
+**Decision**: Click the menu button, use `act()` with delay, then wait for menu
+items with `waitFor` and `queryByTestId` or text queries.
 
 **Pattern for OverflowMenu**:
 
 ```javascript
 // ✅ CORRECT: Find menu, click button, wait for items
-const overflowMenus = await screen.findAllByTestId("location-actions-overflow-menu");
-const menuButton = overflowMenus[0].querySelector('button') || overflowMenus[0];
+const overflowMenus = await screen.findAllByTestId(
+  "location-actions-overflow-menu"
+);
+const menuButton = overflowMenus[0].querySelector("button") || overflowMenus[0];
 
 // Use act() to ensure React processes the click and menu opens
 await act(async () => {
   fireEvent.click(menuButton);
   // Small delay for Carbon OverflowMenu to open and render items
-  await new Promise(resolve => setTimeout(resolve, 100));
+  await new Promise((resolve) => setTimeout(resolve, 100));
 });
 
 // Wait for menu items to render (Carbon renders in portal)
 let menuItem;
-await waitFor(() => {
-  menuItem = screen.queryByTestId("label-management-menu-item") ||
-             screen.queryByText(/label management/i);
-  expect(menuItem).toBeTruthy();
-}, { timeout: 5000 });
+await waitFor(
+  () => {
+    menuItem =
+      screen.queryByTestId("label-management-menu-item") ||
+      screen.queryByText(/label management/i);
+    expect(menuItem).toBeTruthy();
+  },
+  { timeout: 5000 }
+);
 
 // Click the menu item
 fireEvent.click(menuItem);
@@ -2210,11 +2224,13 @@ fireEvent.click(menuItem);
 - ❌ Using `getByTestId` in `waitFor` - throws if item not found during retry
 - ❌ Not finding the actual button element - Carbon wraps in div structure
 
-**Reference**: `StorageDashboard.test.jsx` (lines 1495-1513), `SampleActionsOverflowMenu.test.jsx`
+**Reference**: `StorageDashboard.test.jsx` (lines 1495-1513),
+`SampleActionsOverflowMenu.test.jsx`
 
 #### Q3: How should Carbon ComboBox (Downshift-based) components be tested?
 
-**Decision**: Use `userEvent.type` for input, wait for dropdown, then explicitly select option with `getByRole("option")`.
+**Decision**: Use `userEvent.type` for input, wait for dropdown, then explicitly
+select option with `getByRole("option")`.
 
 **Pattern for ComboBox Input and Selection**:
 
@@ -2226,20 +2242,28 @@ const input = screen.getByRole("combobox", { name: /room/i });
 await userEvent.type(input, "Main Laboratory", { delay: 0 });
 
 // Wait for dropdown to open
-await waitFor(() => {
-  const menu = document.querySelector('[role="listbox"]');
-  expect(menu && menu.children.length > 0).toBeTruthy();
-}, { timeout: 2000 });
+await waitFor(
+  () => {
+    const menu = document.querySelector('[role="listbox"]');
+    expect(menu && menu.children.length > 0).toBeTruthy();
+  },
+  { timeout: 2000 }
+);
 
 // Explicitly select the option (Carbon doesn't auto-select)
-const roomOption = await screen.findByRole("option", { name: /main laboratory/i });
+const roomOption = await screen.findByRole("option", {
+  name: /main laboratory/i,
+});
 await userEvent.click(roomOption);
 
 // Wait for selection to update state
-await waitFor(() => {
-  const deviceCombobox = screen.getByTestId("device-combobox");
-  expect(deviceCombobox.disabled).toBe(false);
-}, { timeout: 3000 });
+await waitFor(
+  () => {
+    const deviceCombobox = screen.getByTestId("device-combobox");
+    expect(deviceCombobox.disabled).toBe(false);
+  },
+  { timeout: 3000 }
+);
 ```
 
 **Rationale**:
@@ -2261,21 +2285,25 @@ await waitFor(() => {
 
 #### Q4: How should async state updates be handled in Carbon component tests?
 
-**Decision**: Always use `waitFor` with `queryBy*` methods, never use `setTimeout`, use `act()` for state updates.
+**Decision**: Always use `waitFor` with `queryBy*` methods, never use
+`setTimeout`, use `act()` for state updates.
 
 **Pattern for Async State Updates**:
 
 ```javascript
 // ✅ CORRECT: waitFor with queryBy* for async elements
-await waitFor(() => {
-  const element = screen.queryByTestId("async-element");
-  expect(element).toBeTruthy();
-}, { timeout: 5000 });
+await waitFor(
+  () => {
+    const element = screen.queryByTestId("async-element");
+    expect(element).toBeTruthy();
+  },
+  { timeout: 5000 }
+);
 
 // ✅ CORRECT: act() wrapper for state updates
 await act(async () => {
   fireEvent.click(button);
-  await new Promise(resolve => setTimeout(resolve, 100));
+  await new Promise((resolve) => setTimeout(resolve, 100));
 });
 
 // ❌ WRONG: setTimeout without waitFor
@@ -2299,16 +2327,19 @@ await waitFor(() => {
 
 **Common Pitfalls**:
 
-- ❌ Using `getBy*` in `waitFor` - throws error if element not found during retry
+- ❌ Using `getBy*` in `waitFor` - throws error if element not found during
+  retry
 - ❌ Using `setTimeout` - arbitrary delays, no retry logic
 - ❌ Not using `act()` - React state updates may not be processed
 - ❌ Too short timeouts - Carbon components need time to render
 
-**Reference**: React Testing Library async utilities, `LocationFilterDropdown.test.jsx`
+**Reference**: React Testing Library async utilities,
+`LocationFilterDropdown.test.jsx`
 
 #### Q5: How should Carbon component validation errors be tested?
 
-**Decision**: Use invalid format (not too-long values), wait for error with `queryByTestId` or text fallback, check both testid and text.
+**Decision**: Use invalid format (not too-long values), wait for error with
+`queryByTestId` or text fallback, check both testid and text.
 
 **Pattern for Validation Errors**:
 
@@ -2322,13 +2353,17 @@ fireEvent.change(input, {
 });
 
 // Wait for validation error (appears in InlineNotification)
-await waitFor(() => {
-  const errorMessage = screen.queryByTestId("short-code-error");
-  // Fallback to text query if testid not working
-  const errorText = screen.queryByText(/must start with/i) || 
-                   screen.queryByText(/letter or number/i);
-  expect(errorMessage || errorText).toBeTruthy();
-}, { timeout: 3000 });
+await waitFor(
+  () => {
+    const errorMessage = screen.queryByTestId("short-code-error");
+    // Fallback to text query if testid not working
+    const errorText =
+      screen.queryByText(/must start with/i) ||
+      screen.queryByText(/letter or number/i);
+    expect(errorMessage || errorText).toBeTruthy();
+  },
+  { timeout: 3000 }
+);
 ```
 
 **Rationale**:
@@ -2350,14 +2385,16 @@ await waitFor(() => {
 
 #### Q6: When should Carbon component tests be moved to E2E (Cypress)?
 
-**Decision**: Move complex multi-level workflows, portal-rendered components, and tests requiring real browser environment to Cypress.
+**Decision**: Move complex multi-level workflows, portal-rendered components,
+and tests requiring real browser environment to Cypress.
 
 **Criteria for E2E Testing**:
 
 - ✅ **Move to Cypress**: Multi-level workflows (room → device → shelf → rack)
 - ✅ **Move to Cypress**: Components with complex state cascading
 - ✅ **Move to Cypress**: Portal-rendered components (OverflowMenu, Modal)
-- ✅ **Move to Cypress**: Tests requiring real browser APIs (window.open, blob URLs)
+- ✅ **Move to Cypress**: Tests requiring real browser APIs (window.open, blob
+  URLs)
 - ✅ **Keep in Jest**: Individual component behaviors (button enabled/disabled)
 - ✅ **Keep in Jest**: Single-level interactions (creating one room)
 - ✅ **Keep in Jest**: Input validation logic
@@ -2387,18 +2424,19 @@ test("testCreatingRoomEnablesDeviceInput", async () => {
 - Complex workflows are better tested end-to-end
 - Simple behaviors are faster in Jest unit tests
 
-**Reference**: Constitution V.5 (Cypress E2E Testing), `EnhancedCascadingMode.test.jsx`
+**Reference**: Constitution V.5 (Cypress E2E Testing),
+`EnhancedCascadingMode.test.jsx`
 
 ### Technical Decisions Summary
 
-| Decision | Choice | Rationale |
-|----------|--------|-----------|
-| TextInput/ComboBox Focus | `fireEvent.focus` + `fireEvent.click` with `act()` | Carbon needs both events to reliably open |
-| OverflowMenu Testing | Click button, `act()` with delay, `waitFor` with `queryBy*` | Portal rendering requires waiting |
-| ComboBox Selection | `userEvent.type` + explicit `getByRole("option")` click | Carbon doesn't auto-select |
-| Async State Updates | `waitFor` with `queryBy*`, never `setTimeout` | Reliable retry logic |
-| Validation Errors | Invalid format + `queryByTestId`/text fallback | Component may reject too-long values |
-| E2E vs Jest | Complex workflows → Cypress, simple behaviors → Jest | Right tool for each use case |
+| Decision                 | Choice                                                      | Rationale                                 |
+| ------------------------ | ----------------------------------------------------------- | ----------------------------------------- |
+| TextInput/ComboBox Focus | `fireEvent.focus` + `fireEvent.click` with `act()`          | Carbon needs both events to reliably open |
+| OverflowMenu Testing     | Click button, `act()` with delay, `waitFor` with `queryBy*` | Portal rendering requires waiting         |
+| ComboBox Selection       | `userEvent.type` + explicit `getByRole("option")` click     | Carbon doesn't auto-select                |
+| Async State Updates      | `waitFor` with `queryBy*`, never `setTimeout`               | Reliable retry logic                      |
+| Validation Errors        | Invalid format + `queryByTestId`/text fallback              | Component may reject too-long values      |
+| E2E vs Jest              | Complex workflows → Cypress, simple behaviors → Jest        | Right tool for each use case              |
 
 ### Dependencies
 
@@ -2415,7 +2453,8 @@ test("testCreatingRoomEnablesDeviceInput", async () => {
    - Carbon OverflowMenu items render in portal (requires longer waits)
    - Carbon ComboBox doesn't auto-select (must click option)
    - Carbon TextInput needs both focus and click events
-   - Validation errors may appear in InlineNotification (check both testid and text)
+   - Validation errors may appear in InlineNotification (check both testid and
+     text)
 
 ### Best Practices Checklist
 
@@ -2427,8 +2466,10 @@ test("testCreatingRoomEnablesDeviceInput", async () => {
 - ✅ Use `getByRole("option")` for ComboBox dropdown items
 - ✅ Explicitly click ComboBox options (no auto-selection)
 - ✅ Use `userEvent.type` for ComboBox input (triggers Downshift handlers)
-- ✅ For OverflowMenu: Click button, `act()` with delay, then `waitFor` for items
-- ✅ For validation: Use invalid format (not too-long), check both testid and text
+- ✅ For OverflowMenu: Click button, `act()` with delay, then `waitFor` for
+  items
+- ✅ For validation: Use invalid format (not too-long), check both testid and
+  text
 - ✅ Use longer timeouts (3000-5000ms) for Carbon component rendering
 - ✅ Move complex multi-level workflows to Cypress E2E tests
 - ✅ Never use `setTimeout` - use `waitFor` instead
@@ -2446,9 +2487,11 @@ test("testCreatingRoomEnablesDeviceInput", async () => {
 **Reference**:
 
 - Carbon Design System: https://carbondesignsystem.com/
-- React Testing Library: https://testing-library.com/docs/react-testing-library/intro/
+- React Testing Library:
+  https://testing-library.com/docs/react-testing-library/intro/
 - Downshift Testing: https://www.downshift-js.com/
-- Test Examples: `EnhancedCascadingMode.test.jsx`, `LocationFilterDropdown.test.jsx`, `StorageDashboard.test.jsx`
+- Test Examples: `EnhancedCascadingMode.test.jsx`,
+  `LocationFilterDropdown.test.jsx`, `StorageDashboard.test.jsx`
 
 ---
 
