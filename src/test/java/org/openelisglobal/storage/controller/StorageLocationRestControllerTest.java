@@ -1174,6 +1174,14 @@ public class StorageLocationRestControllerTest extends BaseWebContextSensitiveTe
         String rack1Id = createRackAndGetId("Rack 1", 8, 12, shelfId);
         String rack2Id = createRackAndGetId("Rack 2", 10, 10, shelfId);
 
+        // Ensure status_of_sample and type_of_sample exist BEFORE creating samples
+        jdbcTemplate.update(
+                "INSERT INTO status_of_sample (id, description, code, status_type, lastupdated) VALUES (1, 'Test Status', 1, 'S', CURRENT_TIMESTAMP) ON CONFLICT (id) DO NOTHING");
+        jdbcTemplate.update(
+                "INSERT INTO localization (id, english, french, lastupdated) VALUES (1, 'Test Sample Type', 'Type d''échantillon de test', CURRENT_TIMESTAMP) ON CONFLICT (id) DO NOTHING");
+        jdbcTemplate.update(
+                "INSERT INTO type_of_sample (id, description, domain, name_localization_id, lastupdated) VALUES (1, 'Test Sample Type', 'H', 1, CURRENT_TIMESTAMP) ON CONFLICT (id) DO NOTHING");
+
         // Create 5 sample assignments to rack 1
         for (int i = 1; i <= 5; i++) {
             Integer sampleId = 10000 + i;
@@ -1183,13 +1191,6 @@ public class StorageLocationRestControllerTest extends BaseWebContextSensitiveTe
                             + "ON CONFLICT (id) DO NOTHING",
                     sampleId, i);
             Integer sampleItemId = 20000 + sampleId; // Use numeric ID
-            // Ensure status_of_sample and type_of_sample exist
-            jdbcTemplate.update(
-                    "INSERT INTO status_of_sample (id, description, code, status_type, lastupdated) VALUES (1, 'Test Status', 1, 'S', CURRENT_TIMESTAMP) ON CONFLICT (id) DO NOTHING");
-            jdbcTemplate.update(
-                    "INSERT INTO localization (id, english, french, lastupdated) VALUES (1, 'Test Sample Type', 'Type d''échantillon de test', CURRENT_TIMESTAMP) ON CONFLICT (id) DO NOTHING");
-            jdbcTemplate.update(
-                    "INSERT INTO type_of_sample (id, description, domain, name_localization_id, lastupdated) VALUES (1, 'Test Sample Type', 'H', 1, CURRENT_TIMESTAMP) ON CONFLICT (id) DO NOTHING");
 
             jdbcTemplate.update(
                     "INSERT INTO sample_item (id, samp_id, sort_order, status_id, typeosamp_id, lastupdated) VALUES (?, ?, 1, 1, 1, CURRENT_TIMESTAMP) "
