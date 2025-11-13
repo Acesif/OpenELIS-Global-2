@@ -7,7 +7,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.List;
 import java.util.Map;
-import java.util.Random;
 import javax.sql.DataSource;
 import org.junit.After;
 import org.junit.Before;
@@ -26,6 +25,11 @@ import org.springframework.test.web.servlet.MvcResult;
  * Shelves tab: Search by label - Racks tab: Search by label
  * 
  * All searches use case-insensitive partial/substring matching.
+ * 
+ * Uses Liquibase fixtures (IDs 1-999) for storage hierarchy: - Room 1 (MAIN),
+ * Room 2 (SEC) - Device 10 (FRZ01), Device 11 (REF01) - Shelf 20 (Shelf-A),
+ * Shelf 21 (Shelf-B) - Rack 30 (Rack R1), Rack 31 (Rack R2) - Position 100
+ * (A1), Position 101 (A2), Position 102 (A3)
  */
 public class StorageSearchRestControllerTest extends BaseWebContextSensitiveTest {
 
@@ -35,15 +39,13 @@ public class StorageSearchRestControllerTest extends BaseWebContextSensitiveTest
     private JdbcTemplate jdbcTemplate;
     private ObjectMapper objectMapper = new ObjectMapper();
 
-    private Integer testRoomId;
-    private Integer testRoom2Id;
-    private Integer testDeviceId;
-    private Integer testDevice2Id;
-    private Integer testShelfId;
-    private Integer testShelf2Id;
-    private Integer testRackId;
-    private Integer testRack2Id;
-    private Integer testPositionId;
+    // Use fixture IDs from Liquibase test data (004-insert-test-storage-data.xml)
+    private static final Integer FIXTURE_ROOM_ID = 1; // "MAIN"
+    private static final Integer FIXTURE_DEVICE_ID = 10; // "FRZ01"
+    private static final Integer FIXTURE_SHELF_ID = 20; // "Shelf-A"
+    private static final Integer FIXTURE_RACK_ID = 30; // "Rack R1"
+    private static final Integer FIXTURE_POSITION_ID = 100; // "A1"
+
     private Integer testSampleId;
     private Integer testSample2Id;
     private Integer testSample3Id;
@@ -55,13 +57,16 @@ public class StorageSearchRestControllerTest extends BaseWebContextSensitiveTest
     public void setUp() throws Exception {
         super.setUp();
         jdbcTemplate = new JdbcTemplate(dataSource);
-        cleanStorageTestData();
-        createTestStorageHierarchyWithSamples();
+        // Clean only test-created samples/assignments, not fixtures
+        cleanTestSamplesAndAssignments();
+        // Create samples and assignments using fixture storage hierarchy
+        createTestSamplesWithAssignments();
     }
 
     @After
     public void tearDown() throws Exception {
-        cleanStorageTestData();
+        // Clean only test-created samples/assignments, not fixtures
+        cleanTestSamplesAndAssignments();
     }
 
     // ========== Samples Search Tests ==========
@@ -119,8 +124,8 @@ public class StorageSearchRestControllerTest extends BaseWebContextSensitiveTest
 
     @Test
     public void testSearchSamples_ByLocationPath_ReturnsMatching() throws Exception {
-        // Search by location path substring (e.g., "Freezer" matches "Test Integration
-        // Room > Test Freezer > ...")
+        // Search by location path substring (e.g., "Freezer" matches "Main Laboratory >
+        // Freezer Unit 1 > ...")
         MvcResult result = mockMvc.perform(get("/rest/storage/samples/search").param("q", "Freezer"))
                 .andExpect(status().isOk()).andExpect(content().contentType(MediaType.APPLICATION_JSON)).andReturn();
 
@@ -145,7 +150,7 @@ public class StorageSearchRestControllerTest extends BaseWebContextSensitiveTest
         // Search should match ANY of the three fields (sample ID, accession prefix,
         // location path)
         // Test with a query that matches location path but not ID or accession
-        MvcResult result = mockMvc.perform(get("/rest/storage/samples/search").param("q", "Test Integration"))
+        MvcResult result = mockMvc.perform(get("/rest/storage/samples/search").param("q", "Main Laboratory"))
                 .andExpect(status().isOk()).andExpect(content().contentType(MediaType.APPLICATION_JSON)).andReturn();
 
         String responseBody = result.getResponse().getContentAsString();
@@ -219,8 +224,8 @@ public class StorageSearchRestControllerTest extends BaseWebContextSensitiveTest
 
     @Test
     public void testSearchRooms_ByName_ReturnsMatching() throws Exception {
-        // Search by name (case-insensitive partial)
-        MvcResult result = mockMvc.perform(get("/rest/storage/rooms/search").param("q", "Test Integration"))
+        // Search by name (case-insensitive partial) - using fixture room name
+        MvcResult result = mockMvc.perform(get("/rest/storage/rooms/search").param("q", "Main Laboratory"))
                 .andExpect(status().isOk()).andExpect(content().contentType(MediaType.APPLICATION_JSON)).andReturn();
 
         String responseBody = result.getResponse().getContentAsString();
@@ -234,14 +239,14 @@ public class StorageSearchRestControllerTest extends BaseWebContextSensitiveTest
         for (Map<String, Object> room : rooms) {
             String name = (String) room.get("name");
             assertNotNull("Name should not be null", name);
-            assertTrue("Name should contain query (case-insensitive)", name.toLowerCase().contains("test integration"));
+            assertTrue("Name should contain query (case-insensitive)", name.toLowerCase().contains("main laboratory"));
         }
     }
 
     @Test
     public void testSearchRooms_ByCode_ReturnsMatching() throws Exception {
-        // Search by code (case-insensitive partial)
-        MvcResult result = mockMvc.perform(get("/rest/storage/rooms/search").param("q", "TEST-INT"))
+        // Search by code (case-insensitive partial) - using fixture room code
+        MvcResult result = mockMvc.perform(get("/rest/storage/rooms/search").param("q", "MAIN"))
                 .andExpect(status().isOk()).andExpect(content().contentType(MediaType.APPLICATION_JSON)).andReturn();
 
         String responseBody = result.getResponse().getContentAsString();
@@ -271,8 +276,8 @@ public class StorageSearchRestControllerTest extends BaseWebContextSensitiveTest
 
     @Test
     public void testSearchDevices_ByName_ReturnsMatching() throws Exception {
-        // Search by name
-        MvcResult result = mockMvc.perform(get("/rest/storage/devices/search").param("q", "Test Freezer"))
+        // Search by name - using fixture device name
+        MvcResult result = mockMvc.perform(get("/rest/storage/devices/search").param("q", "Freezer Unit"))
                 .andExpect(status().isOk()).andExpect(content().contentType(MediaType.APPLICATION_JSON)).andReturn();
 
         String responseBody = result.getResponse().getContentAsString();
@@ -285,8 +290,8 @@ public class StorageSearchRestControllerTest extends BaseWebContextSensitiveTest
 
     @Test
     public void testSearchDevices_ByCode_ReturnsMatching() throws Exception {
-        // Search by code
-        MvcResult result = mockMvc.perform(get("/rest/storage/devices/search").param("q", "TEST-FREEZER"))
+        // Search by code - using fixture device code
+        MvcResult result = mockMvc.perform(get("/rest/storage/devices/search").param("q", "FRZ01"))
                 .andExpect(status().isOk()).andExpect(content().contentType(MediaType.APPLICATION_JSON)).andReturn();
 
         String responseBody = result.getResponse().getContentAsString();
@@ -339,8 +344,8 @@ public class StorageSearchRestControllerTest extends BaseWebContextSensitiveTest
 
     @Test
     public void testSearchShelves_ByLabel_ReturnsMatching() throws Exception {
-        // Search by label (case-insensitive partial)
-        MvcResult result = mockMvc.perform(get("/rest/storage/shelves/search").param("q", "Test Shelf"))
+        // Search by label (case-insensitive partial) - using fixture shelf label
+        MvcResult result = mockMvc.perform(get("/rest/storage/shelves/search").param("q", "Shelf-A"))
                 .andExpect(status().isOk()).andExpect(content().contentType(MediaType.APPLICATION_JSON)).andReturn();
 
         String responseBody = result.getResponse().getContentAsString();
@@ -354,7 +359,7 @@ public class StorageSearchRestControllerTest extends BaseWebContextSensitiveTest
         for (Map<String, Object> shelf : shelves) {
             String label = (String) shelf.get("label");
             assertNotNull("Label should not be null", label);
-            assertTrue("Label should contain query (case-insensitive)", label.toLowerCase().contains("test shelf"));
+            assertTrue("Label should contain query (case-insensitive)", label.toLowerCase().contains("shelf-a"));
         }
     }
 
@@ -362,8 +367,8 @@ public class StorageSearchRestControllerTest extends BaseWebContextSensitiveTest
 
     @Test
     public void testSearchRacks_ByLabel_ReturnsMatching() throws Exception {
-        // Search by label (case-insensitive partial)
-        MvcResult result = mockMvc.perform(get("/rest/storage/racks/search").param("q", "Test Rack"))
+        // Search by label (case-insensitive partial) - using fixture rack label
+        MvcResult result = mockMvc.perform(get("/rest/storage/racks/search").param("q", "Rack R1"))
                 .andExpect(status().isOk()).andExpect(content().contentType(MediaType.APPLICATION_JSON)).andReturn();
 
         String responseBody = result.getResponse().getContentAsString();
@@ -377,142 +382,57 @@ public class StorageSearchRestControllerTest extends BaseWebContextSensitiveTest
         for (Map<String, Object> rack : racks) {
             String label = (String) rack.get("label");
             assertNotNull("Label should not be null", label);
-            assertTrue("Label should contain query (case-insensitive)", label.toLowerCase().contains("test rack"));
+            assertTrue("Label should contain query (case-insensitive)", label.toLowerCase().contains("rack r1"));
         }
     }
 
     // ========== Helper Methods ==========
 
-    private void cleanStorageTestData() {
+    /**
+     * Clean only test-created samples and assignments, preserving Liquibase
+     * fixtures. Fixtures (IDs 1-999) are loaded by Liquibase and should not be
+     * deleted.
+     */
+    private void cleanTestSamplesAndAssignments() {
         try {
-            // Delete in order to respect foreign key constraints
-            // Use explicit transaction to ensure cleanup completes
+            // Delete test-created assignments (IDs >= 1000)
             jdbcTemplate.execute("DELETE FROM sample_storage_assignment WHERE id >= 1000");
+            // Delete test-created sample items (IDs >= 40000)
             jdbcTemplate.execute("DELETE FROM sample_item WHERE id >= 40000");
+            // Delete test-created samples (IDs >= 10000)
             jdbcTemplate.execute("DELETE FROM sample WHERE id >= 10000");
-            jdbcTemplate.execute("DELETE FROM storage_position WHERE id >= 1000");
-            jdbcTemplate.execute("DELETE FROM storage_rack WHERE id >= 1000");
-            jdbcTemplate.execute("DELETE FROM storage_shelf WHERE id >= 1000");
-            jdbcTemplate.execute("DELETE FROM storage_device WHERE id >= 1000");
-            jdbcTemplate.execute("DELETE FROM storage_room WHERE id >= 1000");
         } catch (Exception e) {
             // Ignore cleanup errors - data may not exist
         }
     }
 
-    private void createTestStorageHierarchyWithSamples() throws Exception {
-        // Use unique IDs based on nanoTime + thread ID + random to avoid conflicts
-        // nanoTime provides better uniqueness than currentTimeMillis for parallel tests
-        // Include thread ID to prevent collisions in parallel test execution
-        long nanoTime = System.nanoTime();
-        long timestamp = System.currentTimeMillis() % 100000; // For code strings (readable, not used for uniqueness)
-        long threadId = Thread.currentThread().getId();
-        Random random = new Random(nanoTime + threadId); // Seed with nanoTime + thread for reproducibility
-        int randomComponent = random.nextInt(10000); // 0-9999 random component
-        // Use modulo to keep IDs in reasonable range (1000-99999) while maintaining
-        // uniqueness
-        // Formula: 1000 + (nanoTime % 90000) + (threadId * 1000) + random(0-9999)
-        int baseId = 1000 + (int) ((nanoTime % 90000) + (threadId * 1000) + randomComponent);
-
-        testRoomId = baseId;
-        testRoom2Id = baseId + 100;
-        testDeviceId = baseId;
-        testDevice2Id = baseId + 100;
-        testShelfId = baseId;
-        testShelf2Id = baseId + 100;
-        testRackId = baseId;
-        testRack2Id = baseId + 100;
-        testPositionId = baseId;
-        // Sample IDs also include random component to avoid conflicts
-        testSampleId = 10000 + (int) ((nanoTime % 90000) + randomComponent);
-        testSample2Id = 10000 + (int) ((nanoTime % 90000) + randomComponent + 1);
-        testSample3Id = 10000 + (int) ((nanoTime % 90000) + randomComponent + 2);
-        testAssignmentId = baseId + 1000;
-        testAssignment2Id = baseId + 1001;
-        testAssignment3Id = baseId + 1002;
-
-        // Defensive cleanup: Delete any existing records with these specific IDs
-        // This prevents duplicate key errors if previous test run didn't clean up
-        // properly
-        try {
-            jdbcTemplate.update("DELETE FROM sample_storage_assignment WHERE id IN (?, ?, ?)", testAssignmentId,
-                    testAssignment2Id, testAssignment3Id);
-            jdbcTemplate.update("DELETE FROM storage_position WHERE id = ?", testPositionId);
-            jdbcTemplate.update("DELETE FROM storage_rack WHERE id IN (?, ?)", testRackId, testRack2Id);
-            jdbcTemplate.update("DELETE FROM storage_shelf WHERE id IN (?, ?)", testShelfId, testShelf2Id);
-            jdbcTemplate.update("DELETE FROM storage_device WHERE id IN (?, ?)", testDeviceId, testDevice2Id);
-            jdbcTemplate.update("DELETE FROM storage_room WHERE id IN (?, ?)", testRoomId, testRoom2Id);
-        } catch (Exception e) {
-            // Ignore cleanup errors - records may not exist
-        }
-
-        // Create first room
-        jdbcTemplate.update(
-                "INSERT INTO storage_room (id, name, code, active, sys_user_id, last_updated, fhir_uuid) VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP, gen_random_uuid())",
-                testRoomId, "Test Integration Room", "TEST-INT-ROOM-" + timestamp, true, 1);
-
-        // Create second room for variety
-        jdbcTemplate.update(
-                "INSERT INTO storage_room (id, name, code, active, sys_user_id, last_updated, fhir_uuid) VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP, gen_random_uuid())",
-                testRoom2Id, "Secondary Test Room", "SECOND-ROOM-" + timestamp, true, 1);
-
-        // Create first device (freezer)
-        jdbcTemplate.update(
-                "INSERT INTO storage_device (id, name, code, type, parent_room_id, active, sys_user_id, last_updated, fhir_uuid) VALUES (?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, gen_random_uuid())",
-                testDeviceId, "Test Freezer", "TEST-FREEZER-" + timestamp, "freezer", testRoomId, true, 1);
-
-        // Create second device (refrigerator)
-        jdbcTemplate.update(
-                "INSERT INTO storage_device (id, name, code, type, parent_room_id, active, sys_user_id, last_updated, fhir_uuid) VALUES (?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, gen_random_uuid())",
-                testDevice2Id, "Test Refrigerator", "TEST-REFRIG-" + timestamp, "refrigerator", testRoomId, true, 1);
-
-        // Create first shelf
-        jdbcTemplate.update(
-                "INSERT INTO storage_shelf (id, label, parent_device_id, active, sys_user_id, last_updated, fhir_uuid) VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP, gen_random_uuid())",
-                testShelfId, "Test Shelf", testDeviceId, true, 1);
-
-        // Create second shelf
-        jdbcTemplate.update(
-                "INSERT INTO storage_shelf (id, label, parent_device_id, active, sys_user_id, last_updated, fhir_uuid) VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP, gen_random_uuid())",
-                testShelf2Id, "Secondary Shelf", testDevice2Id, true, 1);
-
-        // Create first rack
-        jdbcTemplate.update(
-                "INSERT INTO storage_rack (id, label, rows, columns, parent_shelf_id, active, sys_user_id, last_updated, fhir_uuid) VALUES (?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, gen_random_uuid())",
-                testRackId, "Test Rack", 9, 9, testShelfId, true, 1);
-
-        // Create second rack
-        jdbcTemplate.update(
-                "INSERT INTO storage_rack (id, label, rows, columns, parent_shelf_id, active, sys_user_id, last_updated, fhir_uuid) VALUES (?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, gen_random_uuid())",
-                testRack2Id, "Secondary Rack", 8, 8, testShelf2Id, true, 1);
-
-        // Create position (occupancy is now calculated dynamically from
-        // SampleStorageAssignment)
-        jdbcTemplate.update(
-                "INSERT INTO storage_position (id, coordinate, parent_rack_id, parent_device_id, parent_shelf_id, sys_user_id, last_updated, fhir_uuid) VALUES (?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, gen_random_uuid())",
-                testPositionId, "A1", testRackId, testDeviceId, testShelfId, 1);
+    /**
+     * Create test samples and assignments using fixture storage hierarchy. Storage
+     * hierarchy (rooms, devices, shelves, racks, positions) comes from Liquibase
+     * fixtures (IDs 1-999).
+     */
+    private void createTestSamplesWithAssignments() throws Exception {
+        // Use sequence-based IDs for samples to avoid conflicts
+        // Sequences are set to start at 1000+ by Liquibase
+        // (storage-test-007-update-sequences)
+        testSampleId = jdbcTemplate.queryForObject("SELECT nextval('sample_seq')", Integer.class);
+        testSample2Id = jdbcTemplate.queryForObject("SELECT nextval('sample_seq')", Integer.class);
+        testSample3Id = jdbcTemplate.queryForObject("SELECT nextval('sample_seq')", Integer.class);
 
         // Create samples with different accession prefixes
         jdbcTemplate.update(
                 "INSERT INTO sample (id, accession_number, entered_date, received_date, lastupdated) VALUES (?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)",
-                testSampleId, "TEST-SAMPLE-" + timestamp);
+                testSampleId, "TEST-SAMPLE-" + testSampleId);
 
         jdbcTemplate.update(
                 "INSERT INTO sample (id, accession_number, entered_date, received_date, lastupdated) VALUES (?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)",
-                testSample2Id, "TB-001-" + timestamp);
+                testSample2Id, "TB-001-" + testSample2Id);
 
         jdbcTemplate.update(
                 "INSERT INTO sample (id, accession_number, entered_date, received_date, lastupdated) VALUES (?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)",
-                testSample3Id, "S-2025-" + timestamp);
+                testSample3Id, "S-2025-" + testSample3Id);
 
-        // Create SampleItems for each sample
-        // Use numeric IDs (sample_item.id is numeric in DB, but Hibernate treats it as
-        // String)
-        // Include random component to avoid conflicts
-        int sampleItemId1 = 40000 + (int) ((nanoTime % 90000) + randomComponent);
-        int sampleItemId2 = 40001 + (int) ((nanoTime % 90000) + randomComponent);
-        int sampleItemId3 = 40002 + (int) ((nanoTime % 90000) + randomComponent);
-        // Get default status_id and typeosamp_id from database (create if needed)
+        // Get or create default status_id and typeosamp_id
         Integer statusId;
         List<Integer> statusIds = jdbcTemplate.queryForList("SELECT id FROM status_of_sample ORDER BY id LIMIT 1",
                 Integer.class);
@@ -537,33 +457,43 @@ public class StorageSearchRestControllerTest extends BaseWebContextSensitiveTest
             typeOfSampleId = typeOfSampleIds.get(0);
         }
 
-        jdbcTemplate.update(
-                "INSERT INTO sample_item (id, samp_id, sort_order, sampitem_id, external_id, typeosamp_id, status_id, lastupdated) VALUES (?, ?, 1, NULL, ?, ?, ?, CURRENT_TIMESTAMP)",
-                sampleItemId1, testSampleId, "TEST-SAMPLE-" + timestamp + "-TUBE-1", typeOfSampleId, statusId);
+        // Create SampleItems using sequence-based IDs
+        int sampleItemId1 = jdbcTemplate.queryForObject("SELECT nextval('sample_item_seq')", Integer.class);
+        int sampleItemId2 = jdbcTemplate.queryForObject("SELECT nextval('sample_item_seq')", Integer.class);
+        int sampleItemId3 = jdbcTemplate.queryForObject("SELECT nextval('sample_item_seq')", Integer.class);
 
         jdbcTemplate.update(
                 "INSERT INTO sample_item (id, samp_id, sort_order, sampitem_id, external_id, typeosamp_id, status_id, lastupdated) VALUES (?, ?, 1, NULL, ?, ?, ?, CURRENT_TIMESTAMP)",
-                sampleItemId2, testSample2Id, "TB-001-" + timestamp + "-TUBE-1", typeOfSampleId, statusId);
+                sampleItemId1, testSampleId, "TEST-SAMPLE-" + testSampleId + "-TUBE-1", typeOfSampleId, statusId);
 
         jdbcTemplate.update(
                 "INSERT INTO sample_item (id, samp_id, sort_order, sampitem_id, external_id, typeosamp_id, status_id, lastupdated) VALUES (?, ?, 1, NULL, ?, ?, ?, CURRENT_TIMESTAMP)",
-                sampleItemId3, testSample3Id, "S-2025-" + timestamp + "-TUBE-1", typeOfSampleId, statusId);
+                sampleItemId2, testSample2Id, "TB-001-" + testSample2Id + "-TUBE-1", typeOfSampleId, statusId);
 
-        // Create assignments using flexible assignment model (location_id +
-        // location_type, SampleItem-level)
-        // Assign to rack level with position coordinate
+        jdbcTemplate.update(
+                "INSERT INTO sample_item (id, samp_id, sort_order, sampitem_id, external_id, typeosamp_id, status_id, lastupdated) VALUES (?, ?, 1, NULL, ?, ?, ?, CURRENT_TIMESTAMP)",
+                sampleItemId3, testSample3Id, "S-2025-" + testSample3Id + "-TUBE-1", typeOfSampleId, statusId);
+
+        // Create assignments using fixture storage hierarchy
+        // Use fixture Rack 30 (Rack R1) with positions A1, A2, A3
+        testAssignmentId = jdbcTemplate.queryForObject("SELECT nextval('sample_storage_assignment_seq')",
+                Integer.class);
+        testAssignment2Id = jdbcTemplate.queryForObject("SELECT nextval('sample_storage_assignment_seq')",
+                Integer.class);
+        testAssignment3Id = jdbcTemplate.queryForObject("SELECT nextval('sample_storage_assignment_seq')",
+                Integer.class);
+
+        // Assign to fixture rack with position coordinates
         jdbcTemplate.update(
                 "INSERT INTO sample_storage_assignment (id, sample_item_id, location_id, location_type, position_coordinate, assigned_by_user_id, assigned_date, last_updated) VALUES (?, ?, ?, 'rack', ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)",
-                testAssignmentId, sampleItemId1, testRackId, "A1", 1);
+                testAssignmentId, sampleItemId1, FIXTURE_RACK_ID, "A1", 1);
 
-        // Assign second SampleItem to same rack, different position
         jdbcTemplate.update(
                 "INSERT INTO sample_storage_assignment (id, sample_item_id, location_id, location_type, position_coordinate, assigned_by_user_id, assigned_date, last_updated) VALUES (?, ?, ?, 'rack', ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)",
-                testAssignment2Id, sampleItemId2, testRackId, "A2", 1);
+                testAssignment2Id, sampleItemId2, FIXTURE_RACK_ID, "A2", 1);
 
-        // Assign third SampleItem to same rack, different position
         jdbcTemplate.update(
                 "INSERT INTO sample_storage_assignment (id, sample_item_id, location_id, location_type, position_coordinate, assigned_by_user_id, assigned_date, last_updated) VALUES (?, ?, ?, 'rack', ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)",
-                testAssignment3Id, sampleItemId3, testRackId, "A3", 1);
+                testAssignment3Id, sampleItemId3, FIXTURE_RACK_ID, "A3", 1);
     }
 }
