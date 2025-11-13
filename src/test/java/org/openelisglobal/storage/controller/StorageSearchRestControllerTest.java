@@ -401,11 +401,18 @@ public class StorageSearchRestControllerTest extends BaseWebContextSensitiveTest
     }
 
     private void createTestStorageHierarchyWithSamples() throws Exception {
-        // Use unique IDs based on timestamp + random to avoid conflicts
-        long timestamp = System.currentTimeMillis() % 9000;
-        Random random = new Random();
-        int randomComponent = random.nextInt(1000); // Add 0-999 random component
-        int baseId = 1000 + (int) timestamp + randomComponent;
+        // Use unique IDs based on nanoTime + thread ID + random to avoid conflicts
+        // nanoTime provides better uniqueness than currentTimeMillis for parallel tests
+        // Include thread ID to prevent collisions in parallel test execution
+        long nanoTime = System.nanoTime();
+        long timestamp = System.currentTimeMillis() % 100000; // For code strings (readable, not used for uniqueness)
+        long threadId = Thread.currentThread().getId();
+        Random random = new Random(nanoTime + threadId); // Seed with nanoTime + thread for reproducibility
+        int randomComponent = random.nextInt(10000); // 0-9999 random component
+        // Use modulo to keep IDs in reasonable range (1000-99999) while maintaining
+        // uniqueness
+        // Formula: 1000 + (nanoTime % 90000) + (threadId * 1000) + random(0-9999)
+        int baseId = 1000 + (int) ((nanoTime % 90000) + (threadId * 1000) + randomComponent);
 
         testRoomId = baseId;
         testRoom2Id = baseId + 100;
@@ -417,12 +424,27 @@ public class StorageSearchRestControllerTest extends BaseWebContextSensitiveTest
         testRack2Id = baseId + 100;
         testPositionId = baseId;
         // Sample IDs also include random component to avoid conflicts
-        testSampleId = 10000 + (int) timestamp + randomComponent;
-        testSample2Id = 10000 + (int) timestamp + randomComponent + 1;
-        testSample3Id = 10000 + (int) timestamp + randomComponent + 2;
+        testSampleId = 10000 + (int) ((nanoTime % 90000) + randomComponent);
+        testSample2Id = 10000 + (int) ((nanoTime % 90000) + randomComponent + 1);
+        testSample3Id = 10000 + (int) ((nanoTime % 90000) + randomComponent + 2);
         testAssignmentId = baseId + 1000;
         testAssignment2Id = baseId + 1001;
         testAssignment3Id = baseId + 1002;
+
+        // Defensive cleanup: Delete any existing records with these specific IDs
+        // This prevents duplicate key errors if previous test run didn't clean up
+        // properly
+        try {
+            jdbcTemplate.update("DELETE FROM sample_storage_assignment WHERE id IN (?, ?, ?)", testAssignmentId,
+                    testAssignment2Id, testAssignment3Id);
+            jdbcTemplate.update("DELETE FROM storage_position WHERE id = ?", testPositionId);
+            jdbcTemplate.update("DELETE FROM storage_rack WHERE id IN (?, ?)", testRackId, testRack2Id);
+            jdbcTemplate.update("DELETE FROM storage_shelf WHERE id IN (?, ?)", testShelfId, testShelf2Id);
+            jdbcTemplate.update("DELETE FROM storage_device WHERE id IN (?, ?)", testDeviceId, testDevice2Id);
+            jdbcTemplate.update("DELETE FROM storage_room WHERE id IN (?, ?)", testRoomId, testRoom2Id);
+        } catch (Exception e) {
+            // Ignore cleanup errors - records may not exist
+        }
 
         // Create first room
         jdbcTemplate.update(
@@ -487,9 +509,9 @@ public class StorageSearchRestControllerTest extends BaseWebContextSensitiveTest
         // Use numeric IDs (sample_item.id is numeric in DB, but Hibernate treats it as
         // String)
         // Include random component to avoid conflicts
-        int sampleItemId1 = 40000 + (int) timestamp + randomComponent;
-        int sampleItemId2 = 40001 + (int) timestamp + randomComponent;
-        int sampleItemId3 = 40002 + (int) timestamp + randomComponent;
+        int sampleItemId1 = 40000 + (int) ((nanoTime % 90000) + randomComponent);
+        int sampleItemId2 = 40001 + (int) ((nanoTime % 90000) + randomComponent);
+        int sampleItemId3 = 40002 + (int) ((nanoTime % 90000) + randomComponent);
         // Get default status_id and typeosamp_id from database (create if needed)
         Integer statusId;
         List<Integer> statusIds = jdbcTemplate.queryForList("SELECT id FROM status_of_sample ORDER BY id LIMIT 1",
