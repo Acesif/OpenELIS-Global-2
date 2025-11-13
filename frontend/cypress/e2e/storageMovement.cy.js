@@ -53,11 +53,15 @@ describe("Storage Movement - Single Sample Move (P2B)", function () {
       .within(() => {
         // Click overflow menu
         cy.get('[data-testid="sample-actions-overflow-menu"]').click();
-        // Click Move option
-        cy.get('[data-testid="move-menu-item"]', { timeout: 2000 })
-          .should("be.visible")
-          .click();
       });
+
+    // Wait for menu to open (Carbon OverflowMenu renders in portal)
+    cy.wait(500);
+
+    // Click Move option outside .within() block (menu items render in portal)
+    cy.get('[data-testid="move-menu-item"]', { timeout: 3000 })
+      .should("be.visible")
+      .click();
 
     // Wait for move modal to open
     cy.get('[data-testid="move-modal"]', { timeout: 5000 }).should(
@@ -113,11 +117,15 @@ describe("Storage Movement - Single Sample Move (P2B)", function () {
       .within(() => {
         // Click overflow menu
         cy.get('[data-testid="sample-actions-overflow-menu"]').click();
-        // Click Move option
-        cy.get('[data-testid="move-menu-item"]', { timeout: 2000 })
-          .should("be.visible")
-          .click();
       });
+
+    // Wait for menu to open (Carbon OverflowMenu renders in portal)
+    cy.wait(500);
+
+    // Click Move option outside .within() block (menu items render in portal)
+    cy.get('[data-testid="move-menu-item"]', { timeout: 3000 })
+      .should("be.visible")
+      .click();
 
     cy.get('[data-testid="move-modal"]', { timeout: 5000 }).should(
       "be.visible",
@@ -391,10 +399,13 @@ describe("Storage Movement - Previous Position Freed (P2B)", function () {
                   cy.get(
                     '[data-testid="sample-actions-overflow-menu"]',
                   ).click();
+                  // Wait for menu to open (Carbon OverflowMenu renders in portal)
+                  cy.wait(500);
                   cy.get("body").then(($body3) => {
                     if (
                       $body3.find('[data-testid="move-menu-item"]').length > 0
                     ) {
+                      // Click Move menu item outside .within() block (menu items render in portal)
                       cy.get('[data-testid="move-menu-item"]').click();
 
                       cy.get('[data-testid="move-modal"]', {

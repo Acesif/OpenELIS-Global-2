@@ -16,21 +16,31 @@ describe("Add Location Button Crash Debug", function () {
     // Set up common API intercepts
     cy.setupStorageIntercepts();
 
-    // Enable console error capture
-    cy.on("window:before:load", (win) => {
-      win.addEventListener("error", (e) => {
-        cy.log("Window Error:", e.message, e.filename, e.lineno);
-      });
-      win.addEventListener("unhandledrejection", (e) => {
-        cy.log("Unhandled Promise Rejection:", e.reason);
-      });
-    });
-
     cy.visit("/Storage/samples");
     cy.wait("@getSamples", { timeout: 10000 });
   });
 
   it("Should not crash when clicking Add Location button", function () {
+    // Declare arrays to store captured errors and rejections
+    const errors = [];
+    const rejections = [];
+
+    // Set up error capture BEFORE any actions
+    cy.window().then((win) => {
+      win.addEventListener("error", (e) => {
+        errors.push({
+          message: e.message,
+          filename: e.filename,
+          lineno: e.lineno,
+        });
+        cy.log("Window Error:", e.message, e.filename, e.lineno);
+      });
+      win.addEventListener("unhandledrejection", (e) => {
+        rejections.push({ reason: e.reason });
+        cy.log("Unhandled Promise Rejection:", e.reason);
+      });
+    });
+
     // Turn off uncaught exception handling to see real errors
     Cypress.on("uncaught:exception", (err, runnable) => {
       // Log the error but don't fail the test immediately
@@ -50,11 +60,15 @@ describe("Add Location Button Crash Debug", function () {
       .first()
       .within(() => {
         cy.get('[data-testid="sample-actions-overflow-menu"]').click();
-        cy.wait(500); // Wait for menu to appear
-        cy.get('[data-testid="move-menu-item"]', { timeout: 3000 })
-          .should("be.visible")
-          .click();
       });
+
+    // Wait for menu to open (portal rendering)
+    cy.wait(500);
+
+    // Click Move menu item outside .within() block (Carbon OverflowMenu renders in portal)
+    cy.get('[data-testid="move-menu-item"]', { timeout: 3000 })
+      .should("be.visible")
+      .click();
 
     // Wait for move modal to open
     cy.get('[data-testid="move-modal"]', { timeout: 5000 }).should(
@@ -72,8 +86,8 @@ describe("Add Location Button Crash Debug", function () {
     // Wait a bit to see if crash happens
     cy.wait(2000);
 
-    // Check for errors
-    cy.window().then((win) => {
+    // Check for errors using the arrays we declared
+    cy.then(() => {
       cy.log("Errors captured:", errors.length);
       cy.log("Rejections captured:", rejections.length);
       if (errors.length > 0) {

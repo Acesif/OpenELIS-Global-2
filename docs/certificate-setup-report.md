@@ -286,10 +286,14 @@ certbot-renew:
 
 **Option B: Cron Job on Host**
 
-Add to host crontab:
+Add to host crontab (use absolute path or `cd` pattern for reliability):
 
 ```bash
-0 3 * * * docker compose -f /path/to/dev.docker-compose.yml run --rm certbot renew --webroot --webroot-path=/var/www/certbot && docker compose -f /path/to/dev.docker-compose.yml restart proxy
+# Using cd pattern (recommended for cron jobs)
+0 3 * * * cd /path/to/OpenELIS-Global-2 && docker compose -f dev.docker-compose.yml run --rm certbot renew --webroot --webroot-path=/var/www/certbot && docker compose -f dev.docker-compose.yml restart proxy
+
+# OR using absolute paths
+0 3 * * * docker compose -f /path/to/OpenELIS-Global-2/dev.docker-compose.yml run --rm certbot renew --webroot --webroot-path=/var/www/certbot && docker compose -f /path/to/OpenELIS-Global-2/dev.docker-compose.yml restart proxy
 ```
 
 ### Alternative: Using Nginx Proxy with Automatic Let's Encrypt

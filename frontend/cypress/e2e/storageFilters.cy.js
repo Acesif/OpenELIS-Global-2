@@ -139,7 +139,7 @@ describe("Storage Dashboard Filtering - Samples Tab", function () {
     cy.get(".cds--list-box__menu-item", { timeout: 5000 }).should("be.visible");
     cy.get(".cds--list-box__menu-item").contains("Active").click();
     // Wait for API call and table update (retry-ability)
-    cy.wait("@getShelves", { timeout: 10000 });
+    cy.wait("@getSamples", { timeout: 10000 });
 
     // Verify API was called with status filter
     cy.wait("@getSamples").then((interception) => {
@@ -204,7 +204,7 @@ describe("Storage Dashboard Filtering - Rooms Tab", function () {
         );
         cy.get(".cds--list-box__menu-item").contains("Active").click();
         // Wait for API call and table update (retry-ability)
-        cy.wait("@getShelves", { timeout: 10000 });
+        cy.wait("@getRooms", { timeout: 10000 });
 
         // Verify API was called with status filter
         cy.wait("@getRooms").then((interception) => {
@@ -236,7 +236,7 @@ describe("Storage Dashboard Filtering - Rooms Tab", function () {
     cy.get(".cds--list-box__menu-item", { timeout: 5000 }).should("be.visible");
     cy.get(".cds--list-box__menu-item").contains("Inactive").click();
     // Wait for API call and table update (retry-ability)
-    cy.wait("@getShelves", { timeout: 10000 });
+    cy.wait("@getRooms", { timeout: 10000 });
 
     // Verify API was called with status filter
     cy.wait("@getRooms").then((interception) => {
@@ -331,7 +331,7 @@ describe("Storage Dashboard Filtering - Devices Tab", function () {
     cy.get(".cds--list-box__menu-item", { timeout: 5000 }).should("be.visible");
     cy.get(".cds--list-box__menu-item").contains("Active").click();
     // Wait for API call and table update (retry-ability)
-    cy.wait("@getShelves", { timeout: 10000 });
+    cy.wait("@getDevices", { timeout: 10000 });
 
     // Verify API was called with status filter
     cy.wait("@getDevices").then((interception) => {
@@ -392,7 +392,7 @@ describe("Storage Dashboard Filtering - Shelves Tab", function () {
           .then(($item) => {
             cy.wrap($item).click();
             // Wait for API call and table update (retry-ability)
-            cy.wait("@getDevices", { timeout: 10000 });
+            cy.wait("@getShelves", { timeout: 10000 });
 
             // Verify API was called with deviceId filter
             cy.wait("@getShelves").then((interception) => {
@@ -426,7 +426,7 @@ describe("Storage Dashboard Filtering - Shelves Tab", function () {
           .then(($item) => {
             cy.wrap($item).click();
             // Wait for API call and table update (retry-ability)
-            cy.wait("@getDevices", { timeout: 10000 });
+            cy.wait("@getShelves", { timeout: 10000 });
 
             // Verify API was called with roomId filter
             cy.wait("@getShelves").then((interception) => {
@@ -511,7 +511,7 @@ describe("Storage Dashboard Filtering - Racks Tab", function () {
           .then(($item) => {
             cy.wrap($item).click();
             // Wait for API call and table update (retry-ability)
-            cy.wait("@getDevices", { timeout: 10000 });
+            cy.wait("@getRacks", { timeout: 10000 });
 
             // Verify API was called with roomId filter
             cy.wait("@getRacks").then((interception) => {
@@ -551,7 +551,7 @@ describe("Storage Dashboard Filtering - Racks Tab", function () {
           .then(($item) => {
             cy.wrap($item).click();
             // Wait for API call and table update (retry-ability)
-            cy.wait("@getDevices", { timeout: 10000 });
+            cy.wait("@getRacks", { timeout: 10000 });
 
             // Verify API was called with deviceId filter
             cy.wait("@getRacks").then((interception) => {
@@ -577,7 +577,7 @@ describe("Storage Dashboard Filtering - Racks Tab", function () {
     cy.get(".cds--list-box__menu-item", { timeout: 5000 }).should("be.visible");
     cy.get(".cds--list-box__menu-item").contains("Active").click();
     // Wait for API call and table update (retry-ability)
-    cy.wait("@getShelves", { timeout: 10000 });
+    cy.wait("@getRacks", { timeout: 10000 });
 
     // Verify API was called with status filter
     cy.wait("@getRacks").then((interception) => {
