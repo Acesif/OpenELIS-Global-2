@@ -147,9 +147,8 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .dispatcherTypeMatchers(DispatcherType.FORWARD, DispatcherType.INCLUDE, DispatcherType.ERROR)
                         .permitAll().anyRequest().permitAll())
-                // SECURITY TODO: CSRF disabled for open pages. Session-authenticated
-                // REST APIs are vulnerable to cross-site request forgery. Enabling
-                // requires frontend CSRF token integration. Tracked in PR #2782.
+                // CSRF disabled — open pages allow unauthenticated access (no session to
+                // protect)
                 .csrf(csrf -> csrf.disable())
                 .headers(headers -> headers.frameOptions().sameOrigin().contentSecurityPolicy(CONTENT_SECURITY_POLICY));
         return http.build();
@@ -174,9 +173,7 @@ public class SecurityConfig {
                 // ensure they are authenticated
                 // ensure they authenticate with http basic
                 .httpBasic(Customizer.withDefaults())
-                // SECURITY TODO: CSRF disabled for httpBasic chain. Session-authenticated
-                // REST APIs are vulnerable to cross-site request forgery. Enabling
-                // requires frontend CSRF token integration. Tracked in PR #2782.
+                // CSRF disabled — HTTP Basic auth is not cookie-based, not CSRF-vulnerable
                 .csrf(csrf -> csrf.disable())
 
                 .addFilterAt(SpringContext.getBean(BasicAuthFilter.class), BasicAuthenticationFilter.class)
@@ -396,8 +393,7 @@ public class SecurityConfig {
         http.securityMatcher(new CertificateAuthRequestedMatcher())
                 .authorizeHttpRequests(auth -> auth.anyRequest().authenticated())
                 .x509(x509 -> x509.subjectPrincipalRegex("CN=(.*?)(?:,|$)"))
-                // SECURITY TODO: CSRF disabled for certificate auth chain. Enabling
-                // requires frontend CSRF token integration. Tracked in PR #2782.
+                // CSRF disabled — certificate auth is not cookie-based, not CSRF-vulnerable
                 .userDetailsService(SpringContext.getBean(UserDetailsService.class)).csrf().disable();
         return http.build();
     }
@@ -431,8 +427,20 @@ public class SecurityConfig {
                         .invalidateHttpSession(true))
                 .sessionManagement(sessionManagement -> sessionManagement.invalidSessionUrl("/LoginPage")
                         .sessionFixation().migrateSession())
-                .csrf(csrf -> csrf.ignoringRequestMatchers("/ValidateLogin", "/rest/**",
-                        "/api/OpenELIS-Global/rest/**"))
+                .csrf(csrf -> csrf.ignoringRequestMatchers("/ValidateLogin"))
+                .exceptionHandling(ex -> ex.accessDeniedHandler((request, response, accessDeniedException) -> {
+                    String path = request.getRequestURI().substring(request.getContextPath().length());
+                    if (path.startsWith("/rest") || path.startsWith("/Provider")
+                            || path.startsWith("/api/OpenELIS-Global/rest")) {
+                        response.setStatus(403);
+                        response.setContentType("application/json");
+                        response.setCharacterEncoding("UTF-8");
+                        response.getWriter()
+                                .write("{ \"status\": 403, \"message\": \"CSRF token missing or invalid\" }");
+                    } else {
+                        response.sendRedirect(request.getContextPath() + "/Home?access=denied");
+                    }
+                }))
                 // add security headers
                 .headers(headers -> headers.frameOptions().sameOrigin().contentSecurityPolicy(CONTENT_SECURITY_POLICY));
         return http.build();
