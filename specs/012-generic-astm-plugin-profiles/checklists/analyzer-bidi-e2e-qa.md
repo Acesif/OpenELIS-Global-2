@@ -32,8 +32,22 @@ Run this checklist before considering the analyzer bidirectional E2E slice done.
        `npx playwright test analyzer-bidi-fixture`
 - [ ] **Promotion gate** (harness required):  
        `npx playwright test analyzer-bidi-promotion-gate`
+- [ ] **ASTM matrix** (harness + multi-port mock, load
+      `--analyzers=astm-full`):  
+       `npx playwright test analyzer-bidi-matrix`
 - [ ] **Full analyzer set** (optional, after focused slices pass):  
        `npx playwright test tests/analyzer-`
+
+## 3a. Multi-analyzer (ASTM full) validation
+
+- [ ] **Harness**: Single mock with `config/port_templates.json`; ports
+      9600–9604 map to genexpert_astm, mindray_ba88a, stago_start4,
+      horiba_micros60, horiba_pentra60.
+- [ ] **Fixtures**: Load with
+      `./src/test/resources/load-test-fixtures.sh --analyzers=astm-full`
+      (minimal + analyzer-astm-full.sql; IDs 2013–2017).
+- [ ] **Matrix spec**: `analyzer-bidi-matrix.spec.ts` runs Test Connection for
+      each `ASTM_FIXTURE_IDS`; skip when harness or mock is unavailable.
 
 ## 4. Trace and debug expectations
 

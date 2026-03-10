@@ -7,10 +7,11 @@
 # Usage: ./load-test-fixtures.sh [--reset] [--no-verify] [--analyzers=MODE]
 #
 # Analyzer modes (--analyzers=MODE):
-#   minimal  - analyzer-minimal.sql only (3 analyzers for focused plugin testing)
-#   legacy   - analyzer-test-data.sql only (Feature 004 UI testing, IDs 1000-1004)
-#   full     - Legacy + generated + type-linking (full regression, default)
-#   none     - Skip all analyzer fixtures (storage/patient only)
+#   minimal   - analyzer-minimal.sql only (3 analyzers for focused plugin testing)
+#   legacy    - analyzer-test-data.sql only (Feature 004 UI testing, IDs 1000-1004)
+#   full      - Legacy + generated + type-linking (full regression, default)
+#   astm-full - minimal + analyzer-astm-full.sql (IDs 2013-2017, multi-port mock)
+#   none      - Skip all analyzer fixtures (storage/patient only)
 #
 # Files loaded (in order):
 #   1. e2e-foundational-data.sql - Providers, Organizations (base data for ALL tests)
@@ -25,6 +26,7 @@ PROJECT_ROOT="$(cd "$SCRIPT_DIR/../../.." && pwd)"
 FOUNDATIONAL_SQL_FILE="$SCRIPT_DIR/e2e-foundational-data.sql"
 ANALYZER_SQL_FILE="$SCRIPT_DIR/analyzer-test-data.sql"
 ANALYZER_MINIMAL_SQL_FILE="$SCRIPT_DIR/analyzer-minimal.sql"
+ANALYZER_ASTM_FULL_SQL_FILE="$SCRIPT_DIR/analyzer-astm-full.sql"
 ANALYZER_TYPE_LINKING_SQL="$SCRIPT_DIR/analyzer-type-linking.sql"
 RESET_SCRIPT="$SCRIPT_DIR/reset-test-database.sh"
 
@@ -45,16 +47,16 @@ while [[ $# -gt 0 ]]; do
             ;;
         --analyzers=*)
             ANALYZER_MODE="${1#*=}"
-            if [[ ! "$ANALYZER_MODE" =~ ^(minimal|legacy|full|none)$ ]]; then
+            if [[ ! "$ANALYZER_MODE" =~ ^(minimal|legacy|full|astm-full|none)$ ]]; then
                 echo "ERROR: Invalid analyzer mode: $ANALYZER_MODE"
-                echo "Valid modes: minimal, legacy, full, none"
+                echo "Valid modes: minimal, legacy, full, astm-full, none"
                 exit 1
             fi
             shift
             ;;
         *)
             echo "Unknown option: $1"
-            echo "Usage: $0 [--reset] [--no-verify] [--analyzers=minimal|legacy|full|none]"
+            echo "Usage: $0 [--reset] [--no-verify] [--analyzers=minimal|legacy|full|astm-full|none]"
             exit 1
             ;;
     esac
@@ -274,6 +276,12 @@ load_analyzer_fixtures() {
 
             # Link fixture analyzers to their AnalyzerType records
             load_sql_file "$ANALYZER_TYPE_LINKING_SQL" "analyzer-type-linking.sql (plugin type linking)"
+            ;;
+        astm-full)
+            load_sql_file "$ANALYZER_MINIMAL_SQL_FILE" "analyzer-minimal.sql (3 analyzers + GeneXpert 2013)"
+            if [ -f "$ANALYZER_ASTM_FULL_SQL_FILE" ]; then
+                load_sql_file "$ANALYZER_ASTM_FULL_SQL_FILE" "analyzer-astm-full.sql (2014-2017, multi-port mock)"
+            fi
             ;;
     esac
 }
