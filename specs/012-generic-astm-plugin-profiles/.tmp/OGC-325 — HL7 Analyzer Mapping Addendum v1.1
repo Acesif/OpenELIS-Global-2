@@ -1,0 +1,403 @@
+OGC-325 — HL7 Analyzer Mapping Addendum v1.1
+Comprehensive Design Session Transcript
+Date: February 27–28, 2026
+Jira Ticket: OGC-325
+Related Tickets: OGC-324 (ASTM Analyzer Mapping Templates)
+Author: Casey Iiams-Hauser (with Claude AI assistance)
+Profiling Approach: 1.2 style for ASTM and HL7 analyzer integrations
+
+Purpose of This Document
+This transcript captures the full design rationale, decision points, trade-offs, and context behind the HL7 Analyzer Mapping Addendum. It is intended to serve as a reference for:
+
+Understanding why specific design choices were made
+Providing context that may not be fully captured in the spec or mockup deliverables
+Guiding future questions about the HL7 integration approach
+Onboarding new contributors to the analyzer integration work
+
+
+Table of Contents
+
+Starting Context and Approach
+Milestone 1–3: Spec Foundation
+Milestone 4: Base React Mockup — Design Decisions
+Milestone 5: Value Mapping and Query Analyzer
+Milestone 6: Preview Tab and Import Simulation
+Non-Numeric Test Gap Analysis
+Select List Integration — Design Rationale
+ASTM Breadcrumb Fix — Pending
+Remaining Gaps and Future Work
+Deliverable Summary
+
+
+1. Starting Context and Approach
+Background
+The work began from a standing project decision to use the 1.2 style profiling approach for all ASTM and HL7 analyzer integrations in OpenELIS Global. This approach requires three deliverables per integration:
+
+A mapping document (the spec)
+A companion analyzer setup document (the mockup serves this role)
+An update to the Analyzer Integration Tracker
+
+Why HL7 as an Addendum (Not a Separate Spec)
+The HL7 spec was structured as an addendum to the existing ASTM Analyzer Mapping Templates FRS (OGC-324) rather than a standalone document. This decision was driven by:
+
+~70% feature overlap between ASTM and HL7 analyzer integration workflows (test code mapping, QC rules, value transformations, field extraction)
+Shared UI patterns — the same Carbon-based admin interface serves both protocols
+Maintenance burden — a single spec family is easier to keep in sync than two parallel documents
+Developer clarity — the addendum format makes it explicit which features are HL7-specific vs. shared
+
+The addendum references ASTM FR numbers (FR-1 through FR-21) by cross-reference and adds HL7-specific requirements as FR-22 through FR-30.
+Milestone Structure
+Work was divided into 6 milestones to manage complexity and allow incremental review:
+MilestoneScopeRationaleM1Spec scaffold + HL7 segment catalogEstablish structural foundation and protocol-level differencesM2Functional requirements, business rules, user storiesCore behavioral specM3API endpoints, database tables, i18n tags, acceptance criteriaImplementation-ready detailM4Base React mockup (7 tabs)Visual validation of all spec featuresM5Value Map editor + Query AnalyzerMost interactive features, needed separate attentionM6Preview tab with import simulationEnd-to-end validation tool, most complex single feature
+
+2. Milestone 1–3: Spec Foundation
+HL7 v2.3.1 Segment Catalog
+Why v2.3.1 specifically: Most clinical laboratory analyzers that support HL7 use v2.3.1 or v2.5.1. We chose v2.3.1 as the baseline because:
+
+It is the most common version in deployed laboratory instruments globally
+It covers the core ORU^R01 (results) and QRY^R02 (query) message types
+v2.5.1 features (like expanded coded element types CWE/CNE) can be supported as backward-compatible extensions
+Many instruments in low-resource settings (OpenELIS Global's primary deployment context) use older HL7 versions
+
+Segment-to-ASTM mapping: The spec includes a detailed field-level comparison between HL7 segments (MSH, PID, OBR, OBX) and ASTM records (H, P, O, R). This mapping table was critical for:
+
+Ensuring the generic plugin architecture could serve both protocols
+Identifying where HL7 has richer data (e.g., OBX-2 value type declaration) vs. where ASTM has it (e.g., simpler test ID format)
+Guiding the shared database schema design
+
+9 Functional Requirements (FR-22 through FR-30)
+Key design decisions in the FRs:
+FR-22 (MLLP Connection): Chose to support both Shared MLLP Port (multiple analyzers on one port, routed by MSH-3) and Dedicated Port (one port per analyzer). The shared port model is important for sites with many analyzers but limited network infrastructure. MSH-3 (Sending Application) is the routing key because it is the most reliably populated identifier field.
+FR-23 (ACK Generation): Four ACK modes were defined rather than a simple on/off because different deployment scenarios need different behavior:
+
+Always Accept (AA): For initial setup and testing — never reject messages
+Accept on Success Only: For production — ensures only fully-mapped results are accepted
+Accept with Errors: For transition periods — accepts partial results while flagging gaps
+Never (Suppress ACK): For analyzers that don't expect ACK responses or for debugging
+
+FR-24 (QC Rules): Five QC rule types were chosen based on analysis of how real analyzers identify QC samples in HL7 messages. The most common patterns are specimen ID prefix (e.g., "CTRL-") and patient name pattern (e.g., "QC Control"). The HL7 field reference selector uses optgroups (MSH/PID/OBR/OBX) rather than a flat list because HL7 has ~100+ possible fields and grouping by segment makes the selector usable.
+FR-25 (Value Transformations): Identical transformation types to ASTM but with HL7-specific parsing behavior. The key difference is that HL7 declares the value type in OBX-2 (NM, CE, SN, ST, TX, FT) whereas ASTM treats all result values as plain strings. This means the transformation engine can be smarter about parsing.
+FR-26 (Field Extraction): Uses Segment-Field.Component notation (e.g., OBX-3.1) instead of ASTM's Record.Position notation (e.g., R.3). The 14 configurable fields were chosen as the minimum set needed to handle all known analyzer variations. The defaults work for ~95% of analyzers.
+FR-27 (Message Simulator) and FR-28 (Result Aggregation): Carried forward from ASTM with HL7 adaptations.
+Business Rules (BR-18 through BR-25)
+Notable rules and their rationale:
+
+BR-19 (MSH-3 Routing): When using shared MLLP port, MSH-3 is required for routing. If MSH-3 doesn't match any configured analyzer, the message is logged but not processed. This prevents silent data loss.
+BR-21 (ACK Timing): ACK must be sent within the configured timeout. If processing takes longer, send AA immediately and process asynchronously. This prevents analyzer-side timeouts.
+BR-23 (Duplicate Detection): Uses MSH-10 (Message Control ID) within a configurable time window. This handles the common case of analyzers retransmitting when they don't receive ACK in time.
+
+User Stories (12 across 4 Epics)
+Epics 9-12 were structured around the admin workflow:
+
+Epic 9: Configure HL7 analyzer connection (MLLP setup, MSH-3 identification)
+Epic 10: Map HL7 test codes (OBX-3 mapping, value type handling)
+Epic 11: Configure ACK behavior (response modes, duplicate detection)
+Epic 12: Validate configuration (simulator, preview, auto-detection)
+
+API and Database Design
+16 API endpoints follow RESTful patterns consistent with existing OpenELIS Global API. 7 database tables extend the ASTM schema with HL7-specific columns (e.g., mllp_listener_mode, ack_mode, msh3_sender_app).
+i18n Tags (120+)
+Every user-facing string has an i18n tag. This is critical for OpenELIS Global which is deployed in 20+ countries with localization needs. Tags follow the existing label. and error. prefix conventions.
+Acceptance Criteria (AC-87 through AC-152)
+66 acceptance criteria providing testable conditions for every functional requirement. Numbered sequentially from the ASTM spec's AC-86.
+
+3. Milestone 4: Base React Mockup
+Why a React Mockup (Not Figma)
+The mockup was built as a functional React component rather than static Figma screens because:
+
+Interactivity: The analyzer mapping workflow has complex state transitions (tab switching, inline editing, modal flows) that are better demonstrated with working code
+Carbon Design System fidelity: OpenELIS Global uses IBM Carbon for React; building in React ensures pixel-accurate representation
+Reusability: Components from the mockup can inform actual implementation
+Figma was used for reference: The OpenELIS Global Template Figma file was consulted for design tokens, spacing, and component patterns
+
+Design System Decisions
+Color tokens: Used IBM Carbon's standard palette (blue-60, purple-60, green-50, red-60, yellow-30) mapped to semantic meanings:
+
+Blue: ASTM protocol, interactive elements
+Purple: HL7 protocol, coded/CE value types
+Green: success, mapped status, active
+Red: errors, unmapped status
+Yellow: warnings, SN value type, draft status
+
+Typography: IBM Plex Sans for UI text, IBM Plex Mono for code/field references (analyzer codes, HL7 field positions, OBX-3 values). The monospace font is important for readability when displaying technical identifiers.
+Layout: Dark navy sidebar (consistent with OpenELIS Global navigation) + white content area. The sidebar stays fixed while content scrolls.
+Analyzer List View Design
+Protocol badge: Purple "HL7" / Blue "ASTM" badges were added because the list view needs to show both protocol types together. This is a departure from the ASTM-only mockup which didn't need protocol differentiation.
+MSH-3 in subtitle: Showing the MSH-3 (Sending Application) value directly in the analyzer card subtitle (e.g., "HL7 v2.3.1 · MSH-3: BC-5380") was a deliberate choice. MSH-3 is the primary identifier for HL7 analyzers — admins need to see it at a glance to know which physical instrument a configuration maps to.
+Connection column: Shows "MLLP Shared :2575" or "MLLP Dedicated :2576" because connection mode is the most operationally relevant detail for troubleshooting.
+MLLP Configuration Modal Design
+Connection Role toggle: Server vs. Client. Most deployments use Server mode (OpenELIS listens on a port), but Client mode (OpenELIS connects to the analyzer) is needed for some network configurations, especially in cloud-hosted deployments behind NAT.
+Shared vs. Dedicated listener: This is the most consequential configuration choice. Shared listeners save port resources but require MSH-3 routing. The modal shows contextual help text explaining the trade-off.
+MSH-3 filter field: Only visible when Listener Mode = Shared, because it's only needed for routing. This conditional visibility reduces cognitive load for Dedicated mode setups.
+Tab Structure — 7 Tabs
+The original ASTM mockup had 4 tabs (Field Mapping, Test Codes, QC Config, Communication). The HL7 mockup expanded to 7:
+TabWhy AddedTest CodesCarried from ASTM, enhanced with OBX-2 badgesQC RulesCarried from ASTM, adapted for HL7 field referencesACK ConfigNew for HL7 — ASTM uses ENQ/EOT framing, HL7 uses ACK messagesMessage SimulatorCarried from ASTM, enhanced with ACK previewPreviewNew — full import simulation with parse logField ExtractionCarried from ASTM, notation changed to Segment-Field.ComponentAdvancedCarried from ASTM, HL7-specific aggregation modes added
+Tab ordering rationale: Test Codes first because it's the most-used tab. ACK Config after QC Rules because ACK behavior depends on understanding QC classification. Preview after Simulator because it's a more advanced validation tool. Field Extraction and Advanced last because they're rarely changed after initial setup.
+OBX-2 Value Type Badges
+The color-coded badges for OBX-2 value types (NM blue, CE purple, SN yellow, ST/TX gray) were one of the most important visual design decisions. In HL7, the value type determines:
+
+How the result value is parsed
+Which transformations are applicable
+Whether a select list mapping is needed
+How the SN auto-parse engine behaves
+
+Making the value type visually prominent in the test codes table helps admins quickly identify which mappings need special attention (CE values almost always need Value Map configuration).
+SN Auto-Parse Banner
+When a test code has OBX-2 = SN, an info banner explains that structured numeric values are automatically parsed. This was added because SN handling is one of the most confusing aspects of HL7 for non-developers — the banner preempts support questions.
+Mock Data Design
+The 5 mock analyzers were chosen to represent common deployment scenarios:
+
+Sysmex XN-1000: High-volume hematology analyzer (HL7, shared port)
+BC-5380: Mid-range hematology (HL7, dedicated port)
+Cobas c311: Chemistry analyzer (HL7, shared port)
+GeneXpert: Molecular testing (HL7, client mode — represents instrument-initiated connections)
+Indiko Plus: Chemistry (ASTM — shows mixed-protocol list)
+
+The 13 OpenELIS tests cover the most common laboratory tests globally: CBC panel (WBC, RBC, HGB, HCT, PLT), chemistry (Glucose, BUN, Creatinine, ALT, AST, Cholesterol), and serology (HIV Ag/Ab, HBsAg). These are representative of a typical OpenELIS Global deployment.
+
+4. Milestone 5: Value Mapping and Query Analyzer
+Value Map Inline Editor — Design Rationale
+Why inline (not a separate modal): The Value Map editor appears directly in the Test Codes detail panel when transform = VALUE_MAP. This was chosen over a separate modal because:
+
+Admins need to see the mapping context (analyzer code, OBX-2 type, OE test) while editing value maps
+Switching between the mapping row and a separate modal would break the visual connection
+The editor is compact enough to fit in the detail panel without scrolling issues
+
+Analyzer Value → OpenELIS Value arrow layout: The arrow (→) between columns reinforces the directional nature of the mapping. This is important because the mapping is one-directional: analyzer sends coded values, OpenELIS stores display values.
+Default action: Reject / Pass-through / Default Value: Three options rather than just "reject or accept" because real deployments need flexibility:
+
+Reject: Strict mode — unknown values are flagged as errors. Best for production.
+Pass-through: Store the raw value with a warning. Best for initial setup when not all codes are known yet.
+Default Value: Map all unknown values to a specific value (e.g., "Indeterminate"). Best for tests where unknown results should default to a safe interpretation.
+
+Query Analyzer Modal — Design Rationale
+Why QRY^R02: The HL7 QRY^R02 message type allows a host system (OpenELIS) to query an analyzer for its test menu. Not all analyzers support this, but when available, it dramatically simplifies initial configuration — the admin doesn't need to manually enter every test code from the analyzer's documentation.
+Status states (Idle → Querying → Success/Failed): The modal has explicit status states rather than just showing results because:
+
+MLLP connections can be slow or fail
+Admins need to know whether a timeout is normal or indicates a configuration problem
+The "Failed" state includes a Retry button for transient errors
+
+Already Mapped / New badges: When query results come back, each discovered code is tagged as "Already Mapped" (green, checkbox disabled) or "New" (yellow, checkbox enabled). This prevents accidental duplicate mappings and makes it easy to see what's new.
+Add Selected / Add All buttons: Bulk operations are essential because analyzers often send 20-50 test codes. Adding them one by one would be tedious.
+Mock Discovered Codes
+The 12 mock discovered codes represent a full CBC panel (WBC, RBC, HGB, HCT, PLT, MCV, MCH, MCHC, RDW, MPV, NEUT%, LYMPH%). This was chosen because:
+
+CBC is the most common panel ordered in clinical laboratories
+It has enough codes (12) to demonstrate the value of bulk operations
+Some codes overlap with existing mappings (WBC, RBC, HGB, HCT, PLT — already mapped) while others are new (MCV, MCH, etc.), demonstrating the Already Mapped/New badge behavior
+
+
+5. Milestone 6: Preview Tab and Import Simulation
+Why a Separate Preview Tab (vs. Enhancing the Simulator)
+The Message Simulator (Tab 4) and Preview (Tab 5) serve different purposes:
+FeatureMessage SimulatorPreviewInputPaste a single HL7 messagePaste or upload a file (potentially multiple messages)FocusParse validation — are fields extracted correctly?Import simulation — what would happen if this message were live?OutputParse results table + ACK previewSummary cards + results table + full parse logAudienceInitial configuration validationPre-go-live validation and troubleshooting
+The Preview tab exercises the full configuration chain (field extraction → test matching → QC detection → value transformation → ACK simulation) while the Simulator focuses on parsing correctness.
+Parse Log Design
+The parse log was the most carefully designed element of M6. Key decisions:
+Step-by-step trace: Each log entry has a step number, making it possible to follow the exact processing sequence. This is critical for debugging — if a result is unexpectedly rejected, the admin can trace through the log to see exactly where the failure occurred.
+4 log levels (INFO/WARN/ERROR/DEBUG): Modeled after standard logging frameworks:
+
+INFO: Normal processing steps (message received, test matched, ACK generated)
+WARN: Non-fatal issues (unmapped codes, SN auto-parse edge cases)
+ERROR: Fatal issues (value map rejection, parse failures)
+DEBUG: Detailed internal processing (component extraction, transform details)
+
+Filterable buttons: The level filter buttons let admins quickly narrow down to problems (ERROR only) or see everything (ALL). During initial setup, DEBUG is useful. During pre-go-live validation, WARN+ERROR is the focus.
+HL7 field references per log entry: Each log entry includes the HL7 field reference (e.g., "OBX-3 #1", "MSH-3", "QC Rule") so admins can correlate log entries with the raw message.
+Simulation Engine Design
+The simulation engine in the mockup is a simplified but realistic parser that:
+
+Parses MSH — extracts sender application, message ID, timestamp
+Parses PID — extracts patient name (for QC rule evaluation)
+Parses OBR — extracts specimen ID, panel code
+Evaluates QC rules — checks specimen ID prefix and patient name patterns
+Parses OBX — extracts test code, value type, result value, units, flags
+Matches test codes — looks up each OBX-3.1 in the mapping table
+Applies transforms — runs Value Map, Greater/Less Flag, SN auto-parse
+Generates ACK — determines ACK code based on configured ACK mode and results
+
+This chain mirrors what the production implementation will do, making the Preview tab a genuine validation tool rather than just a cosmetic demo.
+Summary Cards Design
+The 5 summary cards (Specimens, Matched, Unmatched, QC, Errors) use large numbers with semantic colors:
+
+Green for matched (good)
+Yellow/amber for unmatched (needs attention)
+Purple for QC (informational)
+Red for errors (action required)
+
+This gives admins an instant visual assessment before diving into details.
+
+6. Non-Numeric Test Gap Analysis
+The Question
+After M6 was complete, the question was raised: "Can this design handle non-numeric tests?"
+This was an important check because the initial mockup data was heavily weighted toward numeric tests (CBC panel, chemistry). The gap analysis revealed that while the architecture supported non-numeric tests, the UI implementation had significant gaps for coded/qualitative results.
+Gap Analysis Results
+ScenarioCurrent StatusGapSeverityNM → NumericWorks fullyNone—CE → Select ListValue Map exists but uses free-textNo dropdown from OE select list; no type mismatch warningHIGHSN → NumericAuto-parse worksNone—ST/TX → TextPass-through worksNo explicit "store as text" confirmationLowThreshold ClassifyListed in dropdownNo range editor UIMediumCoded LookupListed in dropdownNo table selector or case sensitivity toggleMediumNTE commentsNot representedNo extraction/storage configLow
+Why CE → Select List Was Highest Priority
+The CE (Coded Element) gap was prioritized because:
+
+Frequency: Coded/qualitative tests are extremely common in OpenELIS Global deployments — HIV, HBsAg, RPR, malaria RDTs, blood typing. In many African and Southeast Asian deployments, these represent 30-50% of all analyzer-connected tests.
+Error risk: The free-text input for "OpenELIS Value" meant admins could type "Negative" when the actual select list value was "NEG" or "negative". This would cause silent import failures — the result would be stored but wouldn't match the expected coded value, leading to incorrect reporting.
+User experience: Admins shouldn't need to memorize or look up select list values. The dropdown should present them automatically.
+
+Decision: Fix CE → Select List First
+The other gaps (Threshold Classify editor, Coded Lookup selector) were deferred because:
+
+They affect fewer real-world analyzers
+Their absence doesn't cause silent data corruption (unlike the CE gap)
+They can be added as incremental enhancements
+
+
+7. Select List Integration — Design Rationale
+Data Model Change: selectListOptions on OE_TESTS
+Added selectListOptions arrays to CODED tests in OE_TESTS. Each option has { id, displayValue, code }. This mirrors the Result Options data model from the Result Options Requirements spec.
+7 CODED tests added with realistic select lists:
+
+HIV Ag/Ab Combo: Negative/Positive/Indeterminate (standard rapid test results)
+HBsAg: Negative/Positive/Indeterminate (hepatitis B screening)
+RPR: Non-reactive/Reactive/Weakly Reactive (syphilis screening)
+Blood Group (ABO): A/B/AB/O (blood typing)
+Rh Factor: Positive/Negative (blood typing)
+Malaria RDT: Negative/P. falciparum/P. vivax/Mixed/Invalid (malaria rapid diagnostic test — 5 options because multi-species detection is common)
+
+These tests were chosen because they represent the most common coded results in OpenELIS Global's target deployments.
+Dropdown vs. Free-Text — Conditional Rendering
+Design decision: The "OpenELIS Value" column in the Value Map editor renders as:
+
+Dropdown when the mapped OE test has a select list → constrained to valid values
+Free-text input when the OE test has no select list → flexible fallback
+
+This conditional approach was chosen over "always dropdown" because:
+
+Some CODED tests may not have select lists defined yet
+Some NUMERIC tests may use Value Map for edge cases (e.g., mapping "QNS" to a coded value)
+The fallback ensures the feature works even with incomplete test catalog data
+
+Dropdown Shows displayValue (code)
+Each dropdown option shows "Negative (NEG)" rather than just "Negative". The code in parentheses helps admins verify they're mapping to the correct option, especially when multiple options have similar display values.
+Auto-Populate Button
+Rationale: When an admin selects a CODED OE test and switches to VALUE_MAP, they typically need one Value Map entry per select list option. The "Auto-populate from Select List" button pre-fills these rows, saving manual entry.
+Behavior details:
+
+Leaves "Analyzer Value" empty — the admin must fill in what the analyzer sends
+Preserves existing entries — only adds options not already in the map
+Shows toast notification with count of added options
+
+This is a productivity feature. In testing, manually creating 5-7 Value Map rows per coded test was the most time-consuming part of configuration.
+Orphaned Value Detection
+Problem: If an admin configures a Value Map and then someone later edits the select list in Test Catalog (removes or renames an option), the Value Map entry becomes "orphaned" — it maps to a value that no longer exists.
+Solution: The dropdown checks whether each entry's openelisValue exists in the current select list. If not, it shows with a yellow background and "⚠ (not in select list)" suffix.
+This prevents a subtle class of bugs where configurations work initially but break after test catalog maintenance.
+Auto-Suggest VALUE_MAP
+Trigger: When an admin selects a CODED OE test (with select list options) for a CE/CWE/CNE OBX and the current transform is Pass-through.
+Action: Automatically switches the transform dropdown to VALUE_MAP.
+Rationale: Pass-through on a CE → CODED mapping would store the raw OBX-5.1 code (e.g., "NEG") instead of the OpenELIS display value (e.g., "Negative"). This is almost never what the admin wants. Auto-switching saves a step and prevents misconfiguration.
+Not auto-switching when: The transform is already something other than Pass-through (e.g., Coded Lookup). This respects intentional configuration choices.
+Result Type Mismatch Detection (FR-25.7)
+Problem: Nothing in the original UI prevented mapping a CE OBX to a NUMERIC OE test, or an NM OBX to a CODED OE test. These mismatches would cause import failures or incorrect data storage.
+Solution: A result type comparison row in the detail panel showing:
+
+OBX-2 badge → OE result type badge
+Checkmark when compatible
+Warning when incompatible
+
+Mismatch matrix:
+OBX-2OE NUMERICOE CODEDNM✓⚠CE/CWE/CNE⚠✓ST/TX✓✓SN✓⚠
+ST/TX (text) is compatible with both because text can represent either numeric or coded values as strings.
+Three UI locations for mismatch warnings:
+
+Detail panel: Full comparison row with explanation text
+Table row: Small ⚠ icon next to OBX-2 badge (quick scan)
+Value Map editor: Yellow banner at top (contextual to the transform)
+
+Purple hint for CODED without VALUE_MAP: When an admin maps a CODED OE test but leaves the transform as Pass-through, a purple hint says "This OpenELIS test uses a select list. Consider switching to the Value Map transform." This is gentler than an error — it's a suggestion, not a block, because there may be legitimate reasons to use Pass-through on coded tests.
+Default Value Dropdown
+When Default Action = DEFAULT and the OE test has a select list, the default value field also renders as a dropdown instead of free-text. This ensures the default value is always a valid select list option.
+Value Map Mock Data
+Three pre-loaded coded test mappings demonstrate different configurations:
+
+HIV Ag/Ab Combo (m6): 3 entries (NEG→Negative, POS→Positive, IND→Indeterminate), default action = REJECT. Represents a strict production configuration.
+HBsAg (m10): 3 entries (NEG→Negative, POS→Positive, EQV→Indeterminate), default action = REJECT. Note: the analyzer sends "EQV" (equivocal) but OpenELIS maps to "Indeterminate" — this demonstrates code-to-display-value translation.
+RPR (m11): 2 entries (NR→Non-reactive, R→Reactive), default action = DEFAULT with default value = "Weakly Reactive". Demonstrates the default value feature — if the analyzer sends an unrecognized code, it defaults to "Weakly Reactive" rather than rejecting.
+
+
+8. ASTM Breadcrumb Fix — Pending
+Request
+Change the ASTM mockup (analyzer-mapping-templates-mockup.jsx) breadcrumb order so that sub-pages (Field Mappings, Test Codes, etc.) are nested under the specific analyzer, which is nested under the main analyzer list.
+Current Behavior
+The breadcrumb doesn't clearly reflect the hierarchy.
+Target Breadcrumb Structure
+Admin > Analyzer Management                              (list view)
+Admin > Analyzer Management > BC-5380                     (analyzer overview)
+Admin > Analyzer Management > BC-5380 > Field Mappings    (sub-page)
+Admin > Analyzer Management > BC-5380 > Test Codes        (sub-page)
+Admin > Analyzer Management > BC-5380 > QC Config         (sub-page)
+Admin > Analyzer Management > BC-5380 > Communication     (sub-page)
+Each breadcrumb segment should be clickable to navigate back up.
+Design Rationale
+The hierarchical breadcrumb reinforces the mental model that:
+
+The analyzer list is the "home" for all analyzer configuration
+Each analyzer is a container for its configuration pages
+Tabs/sub-pages belong to a specific analyzer, not to the global admin
+
+This is especially important when admins manage 10+ analyzers and need to quickly orient themselves.
+Status
+Not yet implemented — the compute environment was unavailable when this request was made. To be completed in a follow-up session. This change should also be propagated to the HL7 mockup for consistency.
+
+9. Remaining Gaps and Future Work
+Gaps Identified but Not Addressed
+GapSeverityNotesThreshold Classify editor UIMediumNeed range table with min/max/label rows, overlap validation. Important for MALDI Biotyper (protein match scores).Coded Lookup editor UIMediumNeed master table selector (Organism Master, Antibiotic Master, Data Dictionary), case sensitivity toggle. Important for MALDI Biotyper (organism names).CE component extraction configLowCurrently always uses OBX-5.1 (code). Some analyzers might need OBX-5.2 (display text). Could add a "CE Store Component" dropdown.NTE segment handlingLowNo extraction or storage config for HL7 comment segments. NTE can carry important clinical context.Multi-line TX/FT storageLowNo explicit handling for text results that span multiple OBX segments. Need concatenation rules.ASTM breadcrumb fixMediumBreadcrumb hierarchy needs to be fixed in both ASTM and HL7 mockups.
+Recommended Next Steps
+
+ASTM breadcrumb fix — Apply to both mockups
+Threshold Classify editor — Add range table UI to mockup, needed for MALDI Biotyper integration
+Coded Lookup editor — Add master table selector, needed for MALDI Biotyper integration
+Update Analyzer Integration Tracker — Add HL7 analyzer entries per 1.2 profiling approach
+Developer handoff — Review spec + mockup with implementation team
+
+
+10. Deliverable Summary
+Files Produced
+FileLinesDescriptionhl7-analyzer-mapping-addendum-v1_1.md2,133Functional Requirements Specificationhl7-analyzer-mapping-mockup.jsx2,111Interactive React mockup (Carbon Design System)
+Spec Contents
+
+9 functional requirements (FR-22 through FR-30)
+8 business rules (BR-18 through BR-25)
+12 user stories across 4 epics (Epics 9–12)
+16 API endpoints
+7 database tables
+120+ i18n localization tags
+66 acceptance criteria (AC-87 through AC-152)
+FR-25.6: Select List Integration for Value Maps
+FR-25.7: Result Type Mismatch Detection
+
+Mockup Contents
+
+Analyzer list view with protocol badges
+Add/Edit modal with MLLP configuration
+7 interactive tabs: Test Codes, QC Rules, ACK Config, Message Simulator, Preview, Field Extraction, Advanced
+Select list-integrated Value Map editor
+Query Analyzer modal
+Import simulation with parse log
+17 mock OE tests (10 NUMERIC, 7 CODED with select list options)
+11 mock test code mappings (8 NUMERIC, 3 CODED with value maps)
+
+Jira Actions
+
+Comment posted to OGC-325 with deliverable summary
+Files to be attached manually
+
+Outstanding Items
+
+ASTM breadcrumb fix (blocked by compute — follow-up session)
+Analyzer Integration Tracker update
+Threshold Classify and Coded Lookup editor UIs (future milestone)
+
+Profiling Approach Compliance
+Per the 1.2 style profiling approach for ASTM and HL7 analyzer integrations:
+
+Mapping doc — COMPLETE (hl7-analyzer-mapping-addendum-v1_1.md)
+Companion analyzer setup doc — COMPLETE (hl7-analyzer-mapping-mockup.jsx)
+Analyzer Integration Tracker update — TO DO (Tracker link)

@@ -156,12 +156,12 @@
   - Reuse current `isAnalyzerResult()` behavior for Q-only messages routing.
   - Implemented via `GenericASTMResponder` class (keeps
     `GenericASTMLineInserter` focused on result ingest parsing).
-- [ ] T046 [P] [M3] Implement order send service (`send-order`).
-- [ ] T047 [P] [M3] Implement results query service (`query-results`) using H+Q
+- [x] T046 [P] [M3] Implement order send service (`send-order`).
+- [x] T047 [P] [M3] Implement results query service (`query-results`) using H+Q
       ASTM query messages and parse P/O/R response values for ingest.
   - Explicitly keep this distinct from existing field-discovery query behavior
     in `AnalyzerQueryServiceImpl`.
-- [ ] T048 [P] [M3] Update mock server for bidirectional pathway testing.
+- [x] T048 [P] [M3] Update mock server for bidirectional pathway testing.
   - Mode 1 (existing): Field query response, H-only request to R-record
     definitions without values.
   - Mode 2 (existing): Results push, analyzer-initiated P/O/R send.
@@ -171,7 +171,7 @@
     P/O/R with result values from template data.
   - Add harness scripts: `test-genexpert-orders-pull.sh`,
     `test-genexpert-orders-push.sh`, `test-genexpert-results-pull.sh`.
-- [ ] T049 [M3] Add controller endpoints and RBAC checks aligned to existing
+- [x] T049 [M3] Add controller endpoints and RBAC checks aligned to existing
       `analyzer-profiles-api.yaml` endpoint contracts (`send-order`,
       `query-results`).
 - [ ] T050 [M3] Add unit/integration tests for each pathway.
