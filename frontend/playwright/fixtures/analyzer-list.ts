@@ -84,6 +84,8 @@ export class AnalyzerListPage {
     action:
       | "mappings"
       | "test-connection"
+      | "send-order"
+      | "query-results"
       | "edit"
       | "delete"
       | "copy-mappings",

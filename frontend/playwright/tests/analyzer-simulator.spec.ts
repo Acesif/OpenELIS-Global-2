@@ -1,5 +1,6 @@
 import { test, expect } from "@playwright/test";
 import { AnalyzerListPage } from "../fixtures/analyzer-list";
+import { GENEXPERT_FIXTURE_ID } from "../fixtures/analyzer-constants";
 
 /**
  * Analyzer Simulator E2E
@@ -16,16 +17,15 @@ test.describe("Analyzer Simulator", () => {
   test("GeneXpert preview-mapping shows v1.2 simulator payload", async ({
     page,
   }) => {
-    const GENEXPERT_ID = "2013";
     const list = new AnalyzerListPage(page);
 
     await list.goto();
     await list.expectLoaded();
-    await list.openOverflowMenu(GENEXPERT_ID);
-    await list.clickAction(GENEXPERT_ID, "mappings");
+    await list.openOverflowMenu(GENEXPERT_FIXTURE_ID);
+    await list.clickAction(GENEXPERT_FIXTURE_ID, "mappings");
 
     await expect(page).toHaveURL(
-      new RegExp(`/analyzers/${GENEXPERT_ID}/mappings`),
+      new RegExp(`/analyzers/${GENEXPERT_FIXTURE_ID}/mappings`),
     );
     await expect(page.locator('[data-testid="field-mapping"]')).toBeVisible();
 
