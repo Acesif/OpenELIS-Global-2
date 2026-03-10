@@ -145,17 +145,41 @@
 
 **Depends on**: M1
 
-- [ ] T045 [M3] Implement Q-segment detection/responder path.
+- [ ] T045 [M3] Implement `GenericASTMResponder` on existing `AnalyzerResponder`
+      interface.
+  - Create responder implementation with `buildResponse(lines)` for ASTM
+    Q-record queries (not QC parsing).
+  - Detect Q-record query intent, look up orders/results by sample identifier,
+    and build protocol-compliant P/O (or P/O/R) response segments.
+  - Override `getAnalyzerResponder()` in `GenericASTMAnalyzer` to return the
+    responder implementation.
+  - Reuse current `isAnalyzerResult()` behavior for Q-only messages routing.
 - [ ] T046 [P] [M3] Implement order send service (`send-order`).
-- [ ] T047 [P] [M3] Implement results query service (`query-results`).
-- [ ] T048 [P] [M3] Add/update mock-server and harness scripts for all 4
-      pathways.
-- [ ] T049 [M3] Add controller endpoints and RBAC checks.
+- [ ] T047 [P] [M3] Implement results query service (`query-results`) using H+Q
+      ASTM query messages and parse P/O/R response values for ingest.
+  - Explicitly keep this distinct from existing field-discovery query behavior
+    in `AnalyzerQueryServiceImpl`.
+- [ ] T048 [P] [M3] Update mock server for bidirectional pathway testing.
+  - Mode 1 (existing): Field query response, H-only request to R-record
+    definitions without values.
+  - Mode 2 (existing): Results push, analyzer-initiated P/O/R send.
+  - Mode 3 (new): Order receive, accept OpenELIS H/P/O/L orders, log payload,
+    and ACK.
+  - Mode 4 (new): Results query response, receive OpenELIS H+Q query and return
+    P/O/R with result values from template data.
+  - Add harness scripts: `test-genexpert-orders-pull.sh`,
+    `test-genexpert-orders-push.sh`, `test-genexpert-results-pull.sh`.
+- [ ] T049 [M3] Add controller endpoints and RBAC checks aligned to existing
+      `analyzer-profiles-api.yaml` endpoint contracts (`send-order`,
+      `query-results`).
 - [ ] T050 [M3] Add unit/integration tests for each pathway.
 - [ ] T051 [M3] Validate all 4 pathways against mock analyzer.
 - [ ] T052 [M3] Validate all 4 pathways against real GeneXpert and capture
-      evidence.
+      evidence using `specs/checklists/real-device-validation-template.md`.
 - [ ] T053 [M3] Run build/tests and open M3 PR.
+- [ ] T069 [M3] Run results-push regression gate with
+      `projects/analyzer-harness/scripts/test-genexpert-astm.sh` after M3
+      bidirectional changes.
 
 ---
 
