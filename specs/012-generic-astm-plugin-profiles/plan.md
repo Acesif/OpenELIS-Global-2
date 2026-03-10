@@ -110,7 +110,9 @@ projects/analyzer-profiles/
 └── hl7/*.json
 
 src/main/resources/liquibase/3.4.x.x/
-├── 009-decouple-test-mappings.xml
+└── 009-decouple-test-mappings.xml
+
+src/main/resources/liquibase/3.4.14.x/
 ├── 010-create-analyzer-plugin-config.xml
 └── 011-create-analyzer-pending-code.xml
 ```

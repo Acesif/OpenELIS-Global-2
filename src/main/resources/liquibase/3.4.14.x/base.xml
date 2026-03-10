@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+  xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.8.xsd">
+
+  <!-- 012-generic-astm-plugin-profiles changesets -->
+  <include relativeToChangelogFile="true" file="010-create-analyzer-plugin-config.xml"/>
+  <include relativeToChangelogFile="true" file="011-create-analyzer-pending-code.xml"/>
+</databaseChangeLog>
