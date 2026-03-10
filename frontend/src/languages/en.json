@@ -328,7 +328,7 @@
   "analyzerType.field.selectProtocol": "Select protocol",
   "analyzerType.field.pluginClassName": "Plugin Class Name",
   "analyzerType.field.identifierPattern": "Identifier Pattern",
-  "analyzerType.field.identifierPatternHelper": "Regex pattern for matching sample identifiers (e.g. ^[A-Z]{2}\\d{6}$)",
+  "analyzerType.field.identifierPatternHelper": "Regex pattern for ASTM H-segment identifiers (manufacturer/model from header field 4) for routing, e.g. ^ABX\\^PENTRA.*",
   "analyzerType.field.isGenericPlugin": "Generic Plugin",
   "analyzerType.field.isActive": "Active",
   "analyzerType.error.nameRequired": "Name is required",
