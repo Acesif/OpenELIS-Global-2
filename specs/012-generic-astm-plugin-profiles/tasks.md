@@ -145,7 +145,7 @@
 
 **Depends on**: M1
 
-- [ ] T045 [M3] Implement `GenericASTMResponder` on existing `AnalyzerResponder`
+- [x] T045 [M3] Implement `GenericASTMResponder` on existing `AnalyzerResponder`
       interface.
   - Create responder implementation with `buildResponse(lines)` for ASTM
     Q-record queries (not QC parsing).
@@ -154,6 +154,8 @@
   - Override `getAnalyzerResponder()` in `GenericASTMAnalyzer` to return the
     responder implementation.
   - Reuse current `isAnalyzerResult()` behavior for Q-only messages routing.
+  - Implemented via `GenericASTMResponder` class (keeps
+    `GenericASTMLineInserter` focused on result ingest parsing).
 - [ ] T046 [P] [M3] Implement order send service (`send-order`).
 - [ ] T047 [P] [M3] Implement results query service (`query-results`) using H+Q
       ASTM query messages and parse P/O/R response values for ingest.

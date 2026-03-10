@@ -16,6 +16,7 @@ import org.junit.Test;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import org.openelisglobal.BaseWebContextSensitiveTest;
+import org.openelisglobal.analyzer.service.AnalyzerBidirectionalService;
 import org.openelisglobal.analyzer.service.AnalyzerQueryService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
@@ -36,6 +37,9 @@ public class AnalyzerRestControllerTest extends BaseWebContextSensitiveTest {
     @Mock
     private AnalyzerQueryService analyzerQueryService;
 
+    @Mock
+    private AnalyzerBidirectionalService analyzerBidirectionalService;
+
     private ObjectMapper objectMapper;
     private JdbcTemplate jdbcTemplate;
 
@@ -48,6 +52,7 @@ public class AnalyzerRestControllerTest extends BaseWebContextSensitiveTest {
         // Get controller from application context and inject mock service
         AnalyzerRestController controller = webApplicationContext.getBean(AnalyzerRestController.class);
         ReflectionTestUtils.setField(controller, "analyzerQueryService", analyzerQueryService);
+        ReflectionTestUtils.setField(controller, "analyzerBidirectionalService", analyzerBidirectionalService);
         // Clean up analyzer test data before each test
         cleanAnalyzerTestData();
     }
@@ -485,5 +490,31 @@ public class AnalyzerRestControllerTest extends BaseWebContextSensitiveTest {
         // Should return 200 (gracefully resolving by name) instead of 500
         mockMvc.perform(put("/rest/analyzer/analyzers/" + analyzerId).contentType(MediaType.APPLICATION_JSON)
                 .content(updateBody)).andExpect(status().isOk()).andExpect(jsonPath("$.id").value(analyzerId));
+    }
+
+    @Test
+    public void testSendOrder_ReturnsCreated() throws Exception {
+        Map<String, Object> serviceResponse = new HashMap<>();
+        serviceResponse.put("success", true);
+        serviceResponse.put("message", "Order message sent successfully");
+        serviceResponse.put("orderCount", 2);
+        when(analyzerBidirectionalService.sendOrder("2006", "ACC-01")).thenReturn(serviceResponse);
+
+        mockMvc.perform(post("/rest/analyzer/analyzers/2006/send-order").contentType(MediaType.APPLICATION_JSON)
+                .content("{\"accessionNumber\":\"ACC-01\"}")).andExpect(status().isCreated())
+                .andExpect(jsonPath("$.success").value(true)).andExpect(jsonPath("$.orderCount").value(2));
+    }
+
+    @Test
+    public void testQueryResults_ReturnsOk() throws Exception {
+        Map<String, Object> serviceResponse = new HashMap<>();
+        serviceResponse.put("success", true);
+        serviceResponse.put("message", "Results queried and imported successfully");
+        serviceResponse.put("importedResultCount", 1);
+        when(analyzerBidirectionalService.queryResults("2006", "ACC-01", null)).thenReturn(serviceResponse);
+
+        mockMvc.perform(post("/rest/analyzer/analyzers/2006/query-results").contentType(MediaType.APPLICATION_JSON)
+                .content("{\"accessionNumber\":\"ACC-01\"}")).andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true)).andExpect(jsonPath("$.importedResultCount").value(1));
     }
 }
