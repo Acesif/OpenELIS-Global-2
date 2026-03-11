@@ -193,15 +193,22 @@ public class AnalyzerBidirectionalServiceImpl implements AnalyzerBidirectionalSe
     private Map<String, List<String>> buildTestIdToCodesMap(String analyzerTypeId) {
         Map<String, List<String>> testIdToCodes = new LinkedHashMap<>();
         List<AnalyzerTestMapping> mappings = analyzerTestMappingService.getAll();
+        if (mappings == null || mappings.isEmpty()) {
+            return testIdToCodes;
+        }
         for (AnalyzerTestMapping mapping : mappings) {
             if (!analyzerTypeId.equals(mapping.getAnalyzerTypeId()) || mapping.getTestId() == null
                     || mapping.getAnalyzerTestName() == null) {
                 continue;
             }
+            String analyzerCode = mapping.getAnalyzerTestName().trim();
+            if (analyzerCode.isEmpty()) {
+                continue;
+            }
             testIdToCodes.computeIfAbsent(mapping.getTestId(), ignored -> new ArrayList<>());
             List<String> codes = testIdToCodes.get(mapping.getTestId());
-            if (!codes.contains(mapping.getAnalyzerTestName())) {
-                codes.add(mapping.getAnalyzerTestName());
+            if (!codes.contains(analyzerCode)) {
+                codes.add(analyzerCode);
             }
         }
         return testIdToCodes;

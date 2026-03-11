@@ -100,6 +100,35 @@ public class AnalyzerBidirectionalServiceImplTest {
         service.sendOrder("2006", "ACC-00001");
     }
 
+    @Test(expected = LIMSRuntimeException.class)
+    public void sendOrder_WithBlankMappedCode_ThrowsValidationError() {
+        Analyzer analyzer = analyzer("2006", "atype-1");
+        Sample sample = sample("sample-1", "ACC-00002");
+        Analysis analysis = analysis("test-1");
+        AnalyzerTestMapping blankMapping = mapping("atype-1", "test-1", "   ");
+
+        when(analyzerService.get("2006")).thenReturn(analyzer);
+        when(sampleService.getSampleByAccessionNumber("ACC-00002")).thenReturn(sample);
+        when(analysisService.getAnalysesBySampleId("sample-1")).thenReturn(Collections.singletonList(analysis));
+        when(analyzerTestMappingService.getAll()).thenReturn(Collections.singletonList(blankMapping));
+
+        service.sendOrder("2006", "ACC-00002");
+    }
+
+    @Test(expected = LIMSRuntimeException.class)
+    public void sendOrder_WithNullMappings_ThrowsValidationError() {
+        Analyzer analyzer = analyzer("2006", "atype-1");
+        Sample sample = sample("sample-1", "ACC-00003");
+        Analysis analysis = analysis("test-1");
+
+        when(analyzerService.get("2006")).thenReturn(analyzer);
+        when(sampleService.getSampleByAccessionNumber("ACC-00003")).thenReturn(sample);
+        when(analysisService.getAnalysesBySampleId("sample-1")).thenReturn(Collections.singletonList(analysis));
+        when(analyzerTestMappingService.getAll()).thenReturn(null);
+
+        service.sendOrder("2006", "ACC-00003");
+    }
+
     @Test
     public void queryResults_WithEmptyBridgeResponse_ReturnsZeroImportedCount() {
         Analyzer analyzer = analyzer("2006", "atype-1");
@@ -116,6 +145,20 @@ public class AnalyzerBidirectionalServiceImplTest {
         String message = messageCaptor.getValue();
         assertTrue(message.contains("H|\\^&|||OpenELIS^ResultsQuery^1.0"));
         assertTrue(message.contains("Q|1|ACC-XYZ||GLUCOSE"));
+    }
+
+    @Test
+    public void queryResults_WithBlankTestCodes_FallsBackToAll() {
+        Analyzer analyzer = analyzer("2006", "atype-1");
+        when(analyzerService.get("2006")).thenReturn(analyzer);
+        when(bridgeTransportService.sendMessage(eq(analyzer), any(String.class))).thenReturn("");
+
+        service.queryResults("2006", "ACC-XYZ", java.util.Arrays.asList(" ", ""));
+
+        ArgumentCaptor<String> messageCaptor = ArgumentCaptor.forClass(String.class);
+        verify(bridgeTransportService).sendMessage(eq(analyzer), messageCaptor.capture());
+        String message = messageCaptor.getValue();
+        assertTrue(message.contains("Q|1|ACC-XYZ||ALL"));
     }
 
     private Analyzer analyzer(String id, String analyzerTypeId) {

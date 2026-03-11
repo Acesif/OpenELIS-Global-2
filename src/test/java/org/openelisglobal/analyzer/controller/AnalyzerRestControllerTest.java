@@ -7,6 +7,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -18,6 +19,7 @@ import org.mockito.MockitoAnnotations;
 import org.openelisglobal.BaseWebContextSensitiveTest;
 import org.openelisglobal.analyzer.service.AnalyzerBidirectionalService;
 import org.openelisglobal.analyzer.service.AnalyzerQueryService;
+import org.openelisglobal.common.exception.LIMSRuntimeException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -516,5 +518,38 @@ public class AnalyzerRestControllerTest extends BaseWebContextSensitiveTest {
         mockMvc.perform(post("/rest/analyzer/analyzers/2006/query-results").contentType(MediaType.APPLICATION_JSON)
                 .content("{\"accessionNumber\":\"ACC-01\"}")).andExpect(status().isOk())
                 .andExpect(jsonPath("$.success").value(true)).andExpect(jsonPath("$.importedResultCount").value(1));
+    }
+
+    @Test
+    public void testSendOrder_WithMissingAccession_ReturnsBadRequest() throws Exception {
+        when(analyzerBidirectionalService.sendOrder("2006", null))
+                .thenThrow(new LIMSRuntimeException("accessionNumber is required"));
+
+        mockMvc.perform(post("/rest/analyzer/analyzers/2006/send-order").contentType(MediaType.APPLICATION_JSON)
+                .content("{}")).andExpect(status().isBadRequest()).andExpect(jsonPath("$.error").exists());
+    }
+
+    @Test
+    public void testQueryResults_WithTestCodes_ReturnsOk() throws Exception {
+        Map<String, Object> serviceResponse = new HashMap<>();
+        serviceResponse.put("success", true);
+        serviceResponse.put("message", "Results queried and imported successfully");
+        serviceResponse.put("importedResultCount", 2);
+        when(analyzerBidirectionalService.queryResults("2006", "ACC-02", Arrays.asList("MTB-RIF", "XDR")))
+                .thenReturn(serviceResponse);
+
+        mockMvc.perform(post("/rest/analyzer/analyzers/2006/query-results").contentType(MediaType.APPLICATION_JSON)
+                .content("{\"accessionNumber\":\"ACC-02\",\"testCodes\":[\"MTB-RIF\",\"XDR\"]}"))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.importedResultCount").value(2));
+    }
+
+    @Test
+    public void testQueryResults_WithMissingAccession_ReturnsBadRequest() throws Exception {
+        when(analyzerBidirectionalService.queryResults("2006", null, null))
+                .thenThrow(new LIMSRuntimeException("accessionNumber is required"));
+
+        mockMvc.perform(post("/rest/analyzer/analyzers/2006/query-results").contentType(MediaType.APPLICATION_JSON)
+                .content("{}")).andExpect(status().isBadRequest()).andExpect(jsonPath("$.error").exists());
     }
 }
