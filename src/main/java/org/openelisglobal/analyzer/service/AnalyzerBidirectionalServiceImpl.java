@@ -27,10 +27,8 @@ import org.openelisglobal.samplehuman.service.SampleHumanService;
 import org.openelisglobal.test.valueholder.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 @Service
-@Transactional
 public class AnalyzerBidirectionalServiceImpl implements AnalyzerBidirectionalService {
 
     private static final String ORDER_HEADER = "H|\\^&|||OpenELIS^OrderSend^1.0|||||||LIS2-A2\r\n";
