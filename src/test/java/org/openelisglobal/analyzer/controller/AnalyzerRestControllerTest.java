@@ -3,6 +3,7 @@ package org.openelisglobal.analyzer.controller;
 import static org.junit.Assert.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.nullable;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
@@ -515,7 +516,7 @@ public class AnalyzerRestControllerTest extends BaseWebContextSensitiveTest {
         serviceResponse.put("success", true);
         serviceResponse.put("message", "Results queried and imported successfully");
         serviceResponse.put("importedResultCount", 1);
-        when(analyzerBidirectionalService.queryResults(eq("2006"), eq("ACC-01"), eq(null), any(String.class)))
+        when(analyzerBidirectionalService.queryResults(eq("2006"), eq("ACC-01"), eq(null), nullable(String.class)))
                 .thenReturn(serviceResponse);
 
         mockMvc.perform(post("/rest/analyzer/analyzers/2006/query-results").contentType(MediaType.APPLICATION_JSON)
@@ -539,7 +540,7 @@ public class AnalyzerRestControllerTest extends BaseWebContextSensitiveTest {
         serviceResponse.put("message", "Results queried and imported successfully");
         serviceResponse.put("importedResultCount", 2);
         when(analyzerBidirectionalService.queryResults(eq("2006"), eq("ACC-02"), eq(Arrays.asList("MTB-RIF", "XDR")),
-                any(String.class))).thenReturn(serviceResponse);
+                nullable(String.class))).thenReturn(serviceResponse);
 
         mockMvc.perform(post("/rest/analyzer/analyzers/2006/query-results").contentType(MediaType.APPLICATION_JSON)
                 .content("{\"accessionNumber\":\"ACC-02\",\"testCodes\":[\"MTB-RIF\",\"XDR\"]}"))
