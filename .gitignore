@@ -48,6 +48,8 @@ volume/logs/*
 volume/ocl/*
 volume/odoo/*
 .specify/temp/
+# Spec scratch / draft docs (do not commit)
+specs/**/.tmp/
 .specify/audit-reports/*.md
 volume/branding/*
 volume/lucene/*

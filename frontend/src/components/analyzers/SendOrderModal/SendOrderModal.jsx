@@ -31,13 +31,21 @@ const SendOrderModal = ({ analyzer, open, onClose }) => {
   const handleSubmit = () => {
     if (!analyzer?.id) {
       setStatus("error");
-      setMessage("Analyzer ID is required");
+      setMessage(
+        intl.formatMessage({
+          id: "analyzer.sendOrder.validation.analyzerIdRequired",
+        }),
+      );
       return;
     }
     const trimmed = (accessionNumber || "").trim();
     if (!trimmed) {
       setStatus("error");
-      setMessage("Accession number is required");
+      setMessage(
+        intl.formatMessage({
+          id: "analyzer.sendOrder.validation.accessionRequired",
+        }),
+      );
       return;
     }
 

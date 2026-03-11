@@ -15,6 +15,7 @@ import "./QueryResultsModal.css";
 const QueryResultsModal = ({ analyzer, open, onClose }) => {
   const intl = useIntl();
   const [accessionNumber, setAccessionNumber] = useState("");
+  const [testCodesRaw, setTestCodesRaw] = useState("");
   const [status, setStatus] = useState("initial");
   const [message, setMessage] = useState("");
   const [importedCount, setImportedCount] = useState(0);
@@ -22,6 +23,7 @@ const QueryResultsModal = ({ analyzer, open, onClose }) => {
   useEffect(() => {
     if (open && analyzer) {
       setAccessionNumber("");
+      setTestCodesRaw("");
       setStatus("initial");
       setMessage("");
       setImportedCount(0);
@@ -31,20 +33,33 @@ const QueryResultsModal = ({ analyzer, open, onClose }) => {
   const handleSubmit = () => {
     if (!analyzer?.id) {
       setStatus("error");
-      setMessage("Analyzer ID is required");
+      setMessage(
+        intl.formatMessage({
+          id: "analyzer.queryResults.validation.analyzerIdRequired",
+        }),
+      );
       return;
     }
     const trimmed = (accessionNumber || "").trim();
     if (!trimmed) {
       setStatus("error");
-      setMessage("Accession number is required");
+      setMessage(
+        intl.formatMessage({
+          id: "analyzer.queryResults.validation.accessionRequired",
+        }),
+      );
       return;
     }
+    const testCodes = testCodesRaw
+      .trim()
+      .split(/[\s,]+/)
+      .filter(Boolean);
+    const testCodesFilter = testCodes.length > 0 ? testCodes : null;
 
     setStatus("loading");
     setMessage("");
 
-    queryResults(analyzer.id, trimmed, null, (response) => {
+    queryResults(analyzer.id, trimmed, testCodesFilter, (response) => {
       if (response.error || response.statusCode >= 400) {
         setStatus("error");
         setMessage(
@@ -91,6 +106,17 @@ const QueryResultsModal = ({ analyzer, open, onClose }) => {
           onChange={(e) => setAccessionNumber(e.target.value)}
           placeholder="e.g. 2026-A01"
           data-testid="query-results-accession-input"
+          disabled={status === "loading"}
+        />
+        <TextInput
+          id="query-results-test-codes"
+          labelText={intl.formatMessage({
+            id: "analyzer.queryResults.testCodesLabel",
+          })}
+          value={testCodesRaw}
+          onChange={(e) => setTestCodesRaw(e.target.value)}
+          placeholder="e.g. HIV, TB"
+          data-testid="query-results-test-codes-input"
           disabled={status === "loading"}
         />
         {status === "success" && (
