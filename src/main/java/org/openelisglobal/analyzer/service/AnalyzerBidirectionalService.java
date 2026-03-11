@@ -7,5 +7,6 @@ public interface AnalyzerBidirectionalService {
 
     Map<String, Object> sendOrder(String analyzerId, String accessionNumber);
 
-    Map<String, Object> queryResults(String analyzerId, String accessionNumber, List<String> testCodes);
+    Map<String, Object> queryResults(String analyzerId, String accessionNumber, List<String> testCodes,
+            String sysUserId);
 }

@@ -135,7 +135,8 @@ public class AnalyzerBidirectionalServiceImplTest {
         when(analyzerService.get("2006")).thenReturn(analyzer);
         when(bridgeTransportService.sendMessage(eq(analyzer), any(String.class))).thenReturn("");
 
-        Map<String, Object> response = service.queryResults("2006", "ACC-XYZ", Collections.singletonList("GLUCOSE"));
+        Map<String, Object> response = service.queryResults("2006", "ACC-XYZ", Collections.singletonList("GLUCOSE"),
+                "42");
 
         assertTrue((Boolean) response.get("success"));
         assertEquals(0, response.get("importedResultCount"));
@@ -153,7 +154,7 @@ public class AnalyzerBidirectionalServiceImplTest {
         when(analyzerService.get("2006")).thenReturn(analyzer);
         when(bridgeTransportService.sendMessage(eq(analyzer), any(String.class))).thenReturn("");
 
-        service.queryResults("2006", "ACC-XYZ", java.util.Arrays.asList(" ", ""));
+        service.queryResults("2006", "ACC-XYZ", java.util.Arrays.asList(" ", ""), "42");
 
         ArgumentCaptor<String> messageCaptor = ArgumentCaptor.forClass(String.class);
         verify(bridgeTransportService).sendMessage(eq(analyzer), messageCaptor.capture());

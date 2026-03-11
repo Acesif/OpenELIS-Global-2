@@ -20,6 +20,9 @@ public class AnalyzerBridgeTransportServiceImpl implements AnalyzerBridgeTranspo
     @Value("${analyzer.bridge.url:}")
     private String analyzerBridgeUrl;
 
+    @Value("${analyzer.bridge.insecure-tls:false}")
+    private boolean insecureTls;
+
     @Override
     public String sendMessage(Analyzer analyzer, String message) {
         if (analyzerBridgeUrl == null || analyzerBridgeUrl.isBlank()) {
@@ -35,7 +38,7 @@ public class AnalyzerBridgeTransportServiceImpl implements AnalyzerBridgeTranspo
         try {
             URL url = new URL(bridgeEndpoint);
             HttpURLConnection conn = (HttpURLConnection) url.openConnection();
-            if (conn instanceof HttpsURLConnection) {
+            if (conn instanceof HttpsURLConnection && insecureTls) {
                 HttpsURLConnection httpsConn = (HttpsURLConnection) conn;
                 SSLContext sslContext = SSLContext.getInstance("TLS");
                 sslContext.init(null, new javax.net.ssl.TrustManager[] { new X509TrustManager() {

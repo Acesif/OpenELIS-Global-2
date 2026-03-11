@@ -996,14 +996,15 @@ public class AnalyzerRestController extends BaseRestController {
     @PostMapping("/analyzers/{id}/query-results")
     @PreAuthorize("hasRole('GLOBAL_ADMIN')")
     public ResponseEntity<Map<String, Object>> queryResults(@PathVariable String id,
-            @RequestBody Map<String, Object> request) {
+            @RequestBody Map<String, Object> requestBody, HttpServletRequest httpRequest) {
         try {
-            String accessionNumber = request == null ? null : (String) request.get("accessionNumber");
+            String accessionNumber = requestBody == null ? null : (String) requestBody.get("accessionNumber");
             List<String> testCodes = null;
-            if (request != null && request.get("testCodes") instanceof List) {
-                testCodes = (List<String>) request.get("testCodes");
+            if (requestBody != null && requestBody.get("testCodes") instanceof List) {
+                testCodes = (List<String>) requestBody.get("testCodes");
             }
-            Map<String, Object> response = analyzerBidirectionalService.queryResults(id, accessionNumber, testCodes);
+            Map<String, Object> response = analyzerBidirectionalService.queryResults(id, accessionNumber, testCodes,
+                    getSysUserId(httpRequest));
             return ResponseEntity.ok(response);
         } catch (LIMSRuntimeException e) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)

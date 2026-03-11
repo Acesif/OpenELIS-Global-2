@@ -81,13 +81,15 @@ public class AnalyzerBidirectionalServiceImpl implements AnalyzerBidirectionalSe
     }
 
     @Override
-    public Map<String, Object> queryResults(String analyzerId, String accessionNumber, List<String> testCodes) {
+    public Map<String, Object> queryResults(String analyzerId, String accessionNumber, List<String> testCodes,
+            String sysUserId) {
         String normalizedAccession = normalizeRequired("accessionNumber", accessionNumber);
+        String normalizedUserId = normalizeRequired("sysUserId", sysUserId);
         Analyzer analyzer = getRequiredAnalyzer(analyzerId);
         String queryMessage = buildQueryMessage(normalizedAccession, testCodes);
         String rawResponse = bridgeTransportService.sendMessage(analyzer, queryMessage);
 
-        int importedResultCount = ingestAstmResponse(rawResponse);
+        int importedResultCount = ingestAstmResponse(rawResponse, normalizedUserId);
         Map<String, Object> response = new LinkedHashMap<>();
         response.put("success", true);
         response.put("message", "Results queried and imported successfully");
@@ -96,7 +98,7 @@ public class AnalyzerBidirectionalServiceImpl implements AnalyzerBidirectionalSe
         return response;
     }
 
-    private int ingestAstmResponse(String rawResponse) {
+    private int ingestAstmResponse(String rawResponse, String sysUserId) {
         if (rawResponse == null || rawResponse.trim().isEmpty()) {
             return 0;
         }
@@ -107,7 +109,7 @@ public class AnalyzerBidirectionalServiceImpl implements AnalyzerBidirectionalSe
             throw new LIMSRuntimeException("Failed to parse analyzer response: " + reader.getError());
         }
 
-        boolean inserted = reader.insertAnalyzerData("1");
+        boolean inserted = reader.insertAnalyzerData(sysUserId);
         if (!inserted) {
             throw new LIMSRuntimeException("Failed to import queried results: " + reader.getError());
         }
