@@ -1,11 +1,15 @@
 package org.openelisglobal.analyzer.controller;
 
 import jakarta.servlet.http.HttpServletRequest;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 import org.openelisglobal.analyzer.form.AnalyzerRunPreviewForm;
 import org.openelisglobal.analyzer.form.SubmitRequestForm;
 import org.openelisglobal.analyzer.service.FileImportService;
+import org.openelisglobal.analyzer.valueholder.FileImportConfiguration;
 import org.openelisglobal.common.rest.BaseRestController;
 import org.openelisglobal.internationalization.MessageUtil;
 import org.slf4j.Logger;
@@ -22,8 +26,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.multipart.MultipartFile;
 
 /**
- * REST controller for analyzer file upload (preview + submit). Contract path:
- * /rest/analyzers/{analyzerId}/upload/preview and .../submit (OGC-324).
+ * REST controller for analyzer file upload and import workflows.
  */
 @org.springframework.web.bind.annotation.RestController
 @RequestMapping("/rest/analyzers")
@@ -94,6 +97,64 @@ public class AnalyzerUploadRestController extends BaseRestController {
             error.put("error",
                     MessageUtil.getMessageOrDefault("file.import.rest.error.generic", null, "An error occurred"));
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(error);
+        }
+    }
+
+    /**
+     * POST /rest/analyzers/{analyzerId}/import — direct single-step file import.
+     *
+     * This endpoint is intended for bridge-driven delivery. It bypasses preview and
+     * immediately processes + persists imported results.
+     */
+    @PostMapping(value = "/{analyzerId}/import", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<?> directImport(@PathVariable Integer analyzerId, @RequestParam("file") MultipartFile file,
+            HttpServletRequest request) {
+        if (file == null || file.isEmpty()) {
+            Map<String, Object> error = new HashMap<>();
+            error.put("error", "File is required");
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
+        }
+
+        Optional<FileImportConfiguration> configOpt = fileImportService.getByAnalyzerId(analyzerId);
+        if (configOpt.isEmpty()) {
+            Map<String, Object> error = new HashMap<>();
+            error.put("error", "File import configuration not found for analyzer " + analyzerId);
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(error);
+        }
+
+        Path tempFile = null;
+        try {
+            tempFile = Files.createTempFile("bridge-import-" + analyzerId + "-", ".tmp");
+            file.transferTo(tempFile);
+
+            boolean success = fileImportService.processFile(tempFile, configOpt.get(), getSysUserId(request));
+            if (!success) {
+                Map<String, Object> error = new HashMap<>();
+                error.put("success", false);
+                error.put("error", "File import processing failed");
+                return ResponseEntity.status(HttpStatus.UNPROCESSABLE_ENTITY).body(error);
+            }
+
+            Map<String, Object> body = new HashMap<>();
+            body.put("success", true);
+            body.put("analyzerId", analyzerId);
+            body.put("message", "File imported successfully");
+            return ResponseEntity.ok(body);
+
+        } catch (Exception e) {
+            logger.error("Direct import failed for analyzer " + analyzerId, e);
+            Map<String, Object> error = new HashMap<>();
+            error.put("success", false);
+            error.put("error", "Direct import failed: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(error);
+        } finally {
+            if (tempFile != null) {
+                try {
+                    Files.deleteIfExists(tempFile);
+                } catch (Exception ignored) {
+                    logger.debug("Failed to delete temp direct-import file: {}", tempFile);
+                }
+            }
         }
     }
 }

@@ -174,36 +174,37 @@ async function dropFileAndWait(
   expect(fs.existsSync(destPath)).toBeTruthy();
   await videoPause(page, 2_000, testInfo);
 
-  // Wait for FileImportWatchService to process (polls every 60s)
-  let fileProcessed = false;
-  const maxWaitMs = 120_000;
-  const pollIntervalMs = 5_000;
-  let elapsed = 0;
-
-  console.log("Waiting for FileImportWatchService to process file...");
-
-  while (elapsed < maxWaitMs) {
-    if (!fs.existsSync(destPath)) {
-      console.log(`File processed after ${elapsed / 1000}s`);
-      fileProcessed = true;
-      break;
-    }
-    await page.waitForTimeout(pollIntervalMs);
-    elapsed += pollIntervalMs;
-
-    if (elapsed % 15_000 === 0) {
-      console.log(`  Still waiting... (${elapsed / 1000}s elapsed)`);
-    }
-  }
-
-  if (!fileProcessed) {
-    console.log(
-      "File not moved after timeout — checking API for results anyway",
-    );
-  }
-
+  // Bridge-owned flow: do not wait for filesystem disappearance.
+  // Result readiness is verified via AnalyzerResults API in verifyFileResults().
+  await page.waitForTimeout(1_000);
   await videoPause(page, 2_000, testInfo);
   return destPath;
+}
+
+async function waitForResultsInApi(
+  page: any,
+  analyzerName: string,
+  expectedSampleIds: string[],
+  timeoutMs = 120_000,
+) {
+  const start = Date.now();
+  while (Date.now() - start < timeoutMs) {
+    const response = await page.request.get(
+      `/api/OpenELIS-Global/rest/AnalyzerResults?type=${encodeURIComponent(analyzerName)}`,
+    );
+    if (response.ok()) {
+      const text = await response.text();
+      const hasAll = expectedSampleIds.every((id) => text.includes(id));
+      if (hasAll) {
+        console.log(`AnalyzerResults API ready for ${analyzerName}`);
+        return;
+      }
+    }
+    await page.waitForTimeout(3_000);
+  }
+  throw new Error(
+    `Timed out waiting for AnalyzerResults API data for ${analyzerName}`,
+  );
 }
 
 /** Navigate to AnalyzerResults page and verify expected values */
@@ -239,6 +240,15 @@ async function verifyFileResults(
     }
   }
 
+  await waitForResultsInApi(
+    page,
+    analyzerName,
+    expectedResults.map((r) => r.sampleId),
+  );
+
+  await page.goto(`AnalyzerResults?type=${encodeURIComponent(analyzerName)}`, {
+    waitUntil: "domcontentloaded",
+  });
   await videoPause(page, 3_000, testInfo);
 
   const resultsTable = page.locator("table, .orderLegendBody");
