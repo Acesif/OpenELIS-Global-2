@@ -1,5 +1,6 @@
 package org.openelisglobal.analyzer.controller;
 
+import static org.junit.Assert.assertFalse;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
@@ -8,10 +9,13 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Optional;
 import java.util.UUID;
 import org.junit.Before;
 import org.junit.Test;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import org.openelisglobal.BaseWebContextSensitiveTest;
@@ -91,5 +95,84 @@ public class AnalyzerUploadRestControllerTest extends BaseWebContextSensitiveTes
                 .andExpect(jsonPath("$.analyzerId").value(42));
 
         verify(fileImportService).processFile(any(), eq(cfg), eq("1"));
+    }
+
+    @Test
+    public void directImport_ProcessFileFalse_Returns422() throws Exception {
+        FileImportConfiguration cfg = new FileImportConfiguration();
+        cfg.setId(UUID.randomUUID().toString());
+        cfg.setAnalyzerId(7);
+        cfg.setImportDirectory("/tmp/in");
+        cfg.setFilePattern("*.csv");
+        cfg.setFileFormat("CSV");
+        cfg.setDelimiter(",");
+        cfg.setHasHeader(true);
+        cfg.setActive(true);
+        cfg.setSysUserId("1");
+        cfg.setFhirUuid(UUID.randomUUID());
+
+        when(fileImportService.getByAnalyzerId(7)).thenReturn(Optional.of(cfg));
+        when(fileImportService.processFile(any(), eq(cfg), eq("1"))).thenReturn(false);
+
+        MockMultipartFile file = new MockMultipartFile("file", "results.csv", "text/csv", "a\n".getBytes());
+
+        mockMvc.perform(multipart("/rest/analyzers/7/import").file(file).session(mockSession))
+                .andExpect(status().isUnprocessableEntity()).andExpect(jsonPath("$.success").value(false));
+    }
+
+    @Test
+    public void directImport_Success_DeletesStagingTempFile() throws Exception {
+        FileImportConfiguration cfg = new FileImportConfiguration();
+        cfg.setId(UUID.randomUUID().toString());
+        cfg.setAnalyzerId(42);
+        cfg.setImportDirectory("/tmp/in");
+        cfg.setFilePattern("*.csv");
+        cfg.setFileFormat("CSV");
+        cfg.setDelimiter(",");
+        cfg.setHasHeader(true);
+        cfg.setActive(true);
+        cfg.setSysUserId("1");
+        cfg.setFhirUuid(UUID.randomUUID());
+
+        when(fileImportService.getByAnalyzerId(42)).thenReturn(Optional.of(cfg));
+        ArgumentCaptor<Path> pathCaptor = ArgumentCaptor.forClass(Path.class);
+        when(fileImportService.processFile(pathCaptor.capture(), eq(cfg), eq("1"))).thenReturn(true);
+
+        MockMultipartFile file = new MockMultipartFile("file", "results.csv", "text/csv",
+                "Sample,Result\nE2E001,1\n".getBytes());
+
+        mockMvc.perform(multipart("/rest/analyzers/42/import").file(file).session(mockSession))
+                .andExpect(status().isOk());
+
+        Path staged = pathCaptor.getValue();
+        assertFalse("Temp staging file should be deleted after success", Files.exists(staged));
+    }
+
+    @Test
+    public void directImport_ProcessThrows_DeletesStagingTempFile() throws Exception {
+        FileImportConfiguration cfg = new FileImportConfiguration();
+        cfg.setId(UUID.randomUUID().toString());
+        cfg.setAnalyzerId(42);
+        cfg.setImportDirectory("/tmp/in");
+        cfg.setFilePattern("*.csv");
+        cfg.setFileFormat("CSV");
+        cfg.setDelimiter(",");
+        cfg.setHasHeader(true);
+        cfg.setActive(true);
+        cfg.setSysUserId("1");
+        cfg.setFhirUuid(UUID.randomUUID());
+
+        when(fileImportService.getByAnalyzerId(42)).thenReturn(Optional.of(cfg));
+        ArgumentCaptor<Path> pathCaptor = ArgumentCaptor.forClass(Path.class);
+        when(fileImportService.processFile(pathCaptor.capture(), eq(cfg), eq("1")))
+                .thenThrow(new RuntimeException("unit test boom"));
+
+        MockMultipartFile file = new MockMultipartFile("file", "results.csv", "text/csv", "x\n".getBytes());
+
+        mockMvc.perform(multipart("/rest/analyzers/42/import").file(file).session(mockSession))
+                .andExpect(status().isInternalServerError()).andExpect(jsonPath("$.referenceId").exists());
+
+        Path staged = pathCaptor.getValue();
+        assertFalse("Temp staging file should be deleted after failure", Files.exists(staged));
     }
 }
