@@ -6,6 +6,7 @@ import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
+import java.util.UUID;
 import org.openelisglobal.analyzer.form.AnalyzerRunPreviewForm;
 import org.openelisglobal.analyzer.form.SubmitRequestForm;
 import org.openelisglobal.analyzer.service.FileImportService;
@@ -15,6 +16,7 @@ import org.openelisglobal.internationalization.MessageUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -36,6 +38,11 @@ public class AnalyzerUploadRestController extends BaseRestController {
 
     @Autowired
     private FileImportService fileImportService;
+
+    private static final String BRIDGE_DIRECT_IMPORT_STAGING = "bridge-direct-import-staging";
+
+    @Value("${file.import.base.directory:/data/analyzer-imports}")
+    private String fileImportBaseDirectory;
 
     /**
      * POST /rest/analyzers/{analyzerId}/upload/preview — multipart file upload,
@@ -122,9 +129,13 @@ public class AnalyzerUploadRestController extends BaseRestController {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(error);
         }
 
+        final String referenceId = UUID.randomUUID().toString();
         Path tempFile = null;
         try {
-            tempFile = Files.createTempFile("bridge-import-" + analyzerId + "-", ".tmp");
+            java.nio.file.Path stagingDir = java.nio.file.Path.of(fileImportBaseDirectory,
+                    BRIDGE_DIRECT_IMPORT_STAGING);
+            Files.createDirectories(stagingDir);
+            tempFile = Files.createTempFile(stagingDir, "bridge-import-" + analyzerId + "-", ".tmp");
             file.transferTo(tempFile);
 
             boolean success = fileImportService.processFile(tempFile, configOpt.get(), getSysUserId(request));
@@ -142,10 +153,11 @@ public class AnalyzerUploadRestController extends BaseRestController {
             return ResponseEntity.ok(body);
 
         } catch (Exception e) {
-            logger.error("Direct import failed for analyzer " + analyzerId, e);
+            logger.error("Direct import failed for analyzer {}, referenceId={}", analyzerId, referenceId, e);
             Map<String, Object> error = new HashMap<>();
             error.put("success", false);
-            error.put("error", "Direct import failed: " + e.getMessage());
+            error.put("referenceId", referenceId);
+            error.put("error", "Direct import failed. Use referenceId for support logs.");
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(error);
         } finally {
             if (tempFile != null) {

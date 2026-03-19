@@ -19,6 +19,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Executor;
 import java.util.stream.Collectors;
 import org.openelisglobal.analyzer.form.AnalyzerForm;
 import org.openelisglobal.analyzer.service.AnalyzerFieldService;
@@ -82,6 +83,10 @@ public class AnalyzerRestController extends BaseRestController {
 
     @Autowired
     private BridgeRegistrationService bridgeRegistrationService;
+
+    @Autowired
+    @org.springframework.beans.factory.annotation.Qualifier("bridgeRegistrationExecutor")
+    private Executor bridgeRegistrationExecutor;
 
     private final ObjectMapper objectMapper = new ObjectMapper();
 
@@ -848,19 +853,19 @@ public class AnalyzerRestController extends BaseRestController {
      * background — failures are logged but don't prevent analyzer creation.
      */
     private void registerWithBridgeAsync(Analyzer createdAnalyzer) {
-        CompletableFuture.runAsync(() -> registerWithBridge(createdAnalyzer)).exceptionally(e -> {
-            logger.warn("Async bridge registration failed for analyzer {}: {}", createdAnalyzer.getName(),
-                    e.getMessage());
-            return null;
-        });
+        CompletableFuture.runAsync(() -> registerWithBridge(createdAnalyzer), bridgeRegistrationExecutor)
+                .exceptionally(e -> {
+                    logger.warn("Async bridge registration failed for analyzer {}", createdAnalyzer.getName(), e);
+                    return null;
+                });
     }
 
     private void unregisterFromBridgeAsync(String analyzerId, String analyzerName) {
-        CompletableFuture.runAsync(() -> bridgeRegistrationService.unregister(analyzerId)).exceptionally(e -> {
-            logger.warn("Async bridge unregister failed for analyzer {} ({}): {}", analyzerName, analyzerId,
-                    e.getMessage());
-            return null;
-        });
+        CompletableFuture.runAsync(() -> bridgeRegistrationService.unregister(analyzerId), bridgeRegistrationExecutor)
+                .exceptionally(e -> {
+                    logger.warn("Async bridge unregister failed for analyzer {} ({})", analyzerName, analyzerId, e);
+                    return null;
+                });
     }
 
     /**

@@ -32,7 +32,10 @@ public class AnalyzerBridgeStartupRegistrar {
     private BridgeRegistrationService bridgeRegistrationService;
 
     @EventListener(ContextRefreshedEvent.class)
-    public void reRegisterActiveAnalyzers() {
+    public void reRegisterActiveAnalyzers(ContextRefreshedEvent event) {
+        if (event.getApplicationContext().getParent() != null) {
+            return;
+        }
         try {
             List<Analyzer> analyzers = analyzerService.getAllWithTypes();
             int registered = 0;
@@ -71,7 +74,7 @@ public class AnalyzerBridgeStartupRegistrar {
 
             logger.info("Bridge startup registration complete. Registered {} transport bindings", registered);
         } catch (Exception e) {
-            logger.warn("Bridge startup registration failed: {}", e.getMessage());
+            logger.error("Bridge startup registration failed", e);
         }
     }
 }

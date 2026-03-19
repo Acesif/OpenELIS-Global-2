@@ -181,6 +181,28 @@ async function dropFileAndWait(
   return destPath;
 }
 
+function resultListContainsSampleIds(
+  data: { resultList?: unknown[] } | null,
+  expectedSampleIds: string[],
+): boolean {
+  const list = data?.resultList;
+  if (!Array.isArray(list)) {
+    return false;
+  }
+  return expectedSampleIds.every((id) =>
+    list.some((row: any) => {
+      const acc = row?.accessionNumber;
+      const sid = row?.sampleId;
+      return (
+        acc === id ||
+        sid === id ||
+        (typeof acc === "string" && acc.includes(id)) ||
+        (typeof sid === "string" && sid.includes(id))
+      );
+    }),
+  );
+}
+
 async function waitForResultsInApi(
   page: any,
   analyzerName: string,
@@ -193,9 +215,10 @@ async function waitForResultsInApi(
       `/api/OpenELIS-Global/rest/AnalyzerResults?type=${encodeURIComponent(analyzerName)}`,
     );
     if (response.ok()) {
-      const text = await response.text();
-      const hasAll = expectedSampleIds.every((id) => text.includes(id));
-      if (hasAll) {
+      const data = (await response.json().catch(() => null)) as {
+        resultList?: unknown[];
+      } | null;
+      if (resultListContainsSampleIds(data, expectedSampleIds)) {
         console.log(`AnalyzerResults API ready for ${analyzerName}`);
         return;
       }
